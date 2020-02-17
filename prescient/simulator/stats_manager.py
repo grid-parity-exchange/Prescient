@@ -11,6 +11,7 @@ import datetime
 import dateutil.parser
 from typing import Callable
 
+from .options import Options
 from .manager import _Manager
 from .time_manager import PrescientTime
 from prescient.stats.hourly_stats import HourlyStats
@@ -52,7 +53,7 @@ class StatsManager(_Manager):
         self._overall_publisher = Dispatcher()
         self._subscribers = []
 
-    def initialize(self, options):
+    def initialize(self, options: Options) -> None:
         '''Called before a simulation begins'''
         self._options = options
 
@@ -64,7 +65,7 @@ class StatsManager(_Manager):
         self._current_day_stats = None
         self._current_hour_stats = None
 
-    def begin_timestep(self, time_step: PrescientTime):
+    def begin_timestep(self, time_step: PrescientTime) -> None:
         '''Called just before the simulation advances to the indicated time'''
 
         ##### Overview of statistics management: #####

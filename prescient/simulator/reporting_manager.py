@@ -19,7 +19,7 @@ from .stats_manager import StatsManager
 from prescient.stats.overall_stats import OverallStats
 from prescient.stats.daily_stats import DailyStats
 from prescient.reporting.csv import CsvReporter, CsvMultiRowReporter
-import prescient.util.graphutils as graphutils
+from prescient.util import graphutils
 
 
 class ReportingManager(_Manager):
@@ -237,7 +237,7 @@ class ReportingManager(_Manager):
     def setup_daily_stack_graph(self, options, stats_manager: StatsManager):
         stats_manager.register_for_daily_stats(
             lambda daily_stats: ReportingManager.generate_stack_graph(
-                options, daily_stats, self.simulator().data_manager.current_sced_instance))
+                options, daily_stats, self.simulator.data_manager.prior_sced_instance))
 
     @staticmethod
     def generate_stack_graph(options, daily_stats: DailyStats, sced):

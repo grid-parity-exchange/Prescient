@@ -7,186 +7,122 @@
 #  This software is distributed under the Revised BSD License.
 #  ___________________________________________________________________________
 
+from __future__ import annotations
 from .manager import _Manager
 import os.path
 from pyomo.core import value
+from prescient.stats.stats_extractors import RucStatsExtractor
+
+from typing import NamedTuple
+
+class RucPlan(NamedTuple):
+   ruc_instance_to_simulate: RucModel
+   scenario_tree: ScenarioTree
+   deterministic_ruc_instance: RucModel
 
 class DataManager(_Manager):
-    def initialize(self, options):
-
-        model_filename = os.path.join(options.model_directory, "ReferenceModel.py")
-        if not os.path.exists(model_filename):
-            raise RuntimeError("The model %s either does not exist or cannot be read" % model_filename)
-        
-        from pyutilib.misc import import_file
-        self._reference_model_module = import_file(model_filename)
-        # make sure all utility methods required by the simulator are defined in the reference model module.
-        self.validate_reference_model(self._reference_model_module)
-        self._ruc_model = self._reference_model_module.load_model_parameters()
-        self._sced_model = self._reference_model_module.model
-        self._prior_sced_instance = None
-        self._current_sced_instance = None
-        self._scenario_instances_for_this_period = None
-        self._scenario_instances_for_next_period = None
-        self._scenario_tree_for_this_period = None
-        self._scenario_tree_for_next_period = None
-        self._ruc_instance_to_simulate_this_period = None
-        self._deterministic_ruc_instance_for_next_period = None
-        self._deterministic_ruc_instance_for_this_period = None
-        self._prior_sced_instance = None
+    def initialize(self, engine, options):
+        self._ruc_stats_extractor = engine.RucStatsExtractor
+        self.prior_sced_instance = None
+        self.scenario_tree_for_this_period = None
+        self.scenario_tree_for_next_period = None
+        self.ruc_instance_to_simulate_this_period = None
+        self.ruc_instance_to_simulate_next_period = None
+        self.deterministic_ruc_instance_for_this_period = None
+        self.deterministic_ruc_instance_for_next_period = None
 
     def update_time(self, time):
         '''This takes a Time object and makes the appropiate updates to the data'''
         self._current_time = time
 
-    def set_forecast_errors_for_new_ruc_instance(self, options):
+    def set_current_ruc_plan(self, current_ruc_plan: RucPlan):
+        self.ruc_instance_to_simulate_next_period = current_ruc_plan.ruc_instance_to_simulate
+        self.scenario_tree_for_next_period = current_ruc_plan.scenario_tree
+        self.deterministic_ruc_instance_for_next_period =current_ruc_plan.deterministic_ruc_instance
+
+    def set_forecast_errors_for_new_ruc_instance(self, options) -> None:
         ''' Generate new forecast errors from current ruc instances '''
-        if options.run_deterministic_ruc:
-            print("")
-            # print("NOTE: Positive forecast errors indicate projected values higher than actuals")
-            demand_forecast_error = {}  # maps (bus,time-period) pairs to an error, defined as forecast minus actual
-            for b in self.deterministic_ruc_instance_for_this_period.Buses:
-                for t in range(1, value(self.deterministic_ruc_instance_for_this_period.NumTimePeriods) + 1):  # TBD - not sure how to option-drive the upper bound on the time period value.
-                    demand_forecast_error[b, t] = value(self.deterministic_ruc_instance_for_this_period.Demand[b, t]) - \
-                                                  value(self.ruc_instance_to_simulate_this_period.Demand[b, t])
-                    # print("Demand forecast error for bus=%s at t=%2d: %12.2f" % (b, t, demand_forecast_error[b,t]))
+        forecast_ruc = self.deterministic_ruc_instance_for_this_period
+        actuals_ruc = self.ruc_instance_to_simulate_this_period
+        extractor = self._ruc_stats_extractor
 
-            print("")
+        # print("NOTE: Positive forecast errors indicate projected values higher than actuals")
+        self._demand_forecast_error = {}
+        for b in extractor.get_buses(forecast_ruc):
+            for t in range(1, extractor.get_num_time_periods(forecast_ruc) + 1):
+                self._demand_forecast_error[b, t] = \
+                    extractor.get_bus_demand(forecast_ruc, b, t) - \
+                    extractor.get_bus_demand(actuals_ruc, b, t)
 
-            renewables_forecast_error = {}
-            # maps (generator,time-period) pairs to an error, defined as forecast minus actual
-            for g in self.deterministic_ruc_instance_for_this_period.AllNondispatchableGenerators:
-                for t in range(1, value(self.deterministic_ruc_instance_for_this_period.NumTimePeriods) + 1):
-                    renewables_forecast_error[g, t] = \
-                        value(self.deterministic_ruc_instance_for_this_period.MaxNondispatchablePower[g, t]) - \
-                        value(self.ruc_instance_to_simulate_this_period.MaxNondispatchablePower[g, t])
-                    # print("Renewables forecast error for generator=%s at t=%2d: %12.2f" % (g, t, renewables_forecast_error[g, t]))
-        else:
-            demand_forecast_error = None
-            renewables_forecast_error = None
-
-        self._renewables_forecast_error = renewables_forecast_error
-        self._demand_forecast_error = demand_forecast_error
+        self._renewables_forecast_error = {}
+        for g in extractor.get_nondispatchable_generators(forecast_ruc):
+            for t in range(1, extractor.get_num_time_periods(forecast_ruc) + 1):
+                self._renewables_forecast_error[g, t] = \
+                    extractor.get_max_nondispatchable_power(forecast_ruc, g, t) - \
+                    extractor.get_max_nondispatchable_power(actuals_ruc, g, t)
 
 
     def update_forecast_errors_for_delayed_ruc(self, options):
-        ''' update the demand and renewables forecast error dictionaries, using the recently released forecasts '''
-        if options.run_deterministic_ruc:
-            print("")
-            print("Updating forecast errors")
-            print("")
-            for b in sorted(self._deterministic_ruc_instance_for_this_period.Buses):
-                for t in range(1, 1 + options.ruc_every_hours):
-                    self._demand_forecast_error[b, t + options.ruc_every_hours] = \
-                        value(self._deterministic_ruc_instance_for_next_period.Demand[b, t]) - \
-                        value(self._ruc_instance_to_simulate_next_period.Demand[b, t])
-                    # print("Demand forecast error for bus=%s at t=%2d: %12.2f"
-                    #      % (b, t, demand_forecast_error[b, t+options.ruc_every_hours]))
+        ''' update the demand and renewables forecast error dictionaries, using recently released forecasts '''
+        actuals_ruc = self.ruc_instance_to_simulate_next_period
+        forecast_ruc = self.deterministic_ruc_instance_for_next_period
+        extractor = self._ruc_stats_extractor
 
-            print("")
+        for b in extractor.get_buses(forecast_ruc):
+            for t in range(1, options.ruc_every_hours + 1):
+                self._demand_forecast_error[b, t + options.ruc_every_hours] = \
+                    extractor.get_bus_demand(forecast_ruc, b, t) - \
+                    extractor.get_bus_demand(actuals_ruc, b, t)
 
-            for g in sorted(self._deterministic_ruc_instance_for_this_period.AllNondispatchableGenerators):
-                for t in range(1, 1 + options.ruc_every_hours):
-                    self._renewables_forecast_error[g, t + options.ruc_every_hours] = \
-                        value(self._deterministic_ruc_instance_for_next_period.MaxNondispatchablePower[g, t]) - \
-                        value(self._ruc_instance_to_simulate_next_period.MaxNondispatchablePower[g, t])
-                    # print("Renewables forecast error for generator=%s at t=%2d: %12.2f"
-                    #      % (g, t, renewables_forecast_error[g, t+options.ruc_every_hours]))
+        for g in extractor.get_nondispatchable_generators(forecast_ruc):
+            for t in range(1, options.ruc_every_hours + 1):
+                self._renewables_forecast_error[g, t + options.ruc_every_hours] = \
+                    extractor.get_max_nondispatchable_power(forecast_ruc, g, t) - \
+                    extractor.get_max_nondispatchable_power(actuals_ruc, g, t)
 
-    def set_actuals_for_new_ruc_instance(self):
+
+    def set_actuals_for_new_ruc_instance(self) -> None:
         # initialize the actual demand and renewables vectors - these will be incrementally
         # updated when new forecasts are released, e.g., when the next-day RUC is computed.
-        self._actual_demand = dict(((b, t), value(self._ruc_instance_to_simulate_this_period.Demand[b, t]))
-                                  for b in self._ruc_instance_to_simulate_this_period.Buses
-                                  for t in self._ruc_instance_to_simulate_this_period.TimePeriods)
-        self._actual_min_renewables = dict(((g, t), value(self._ruc_instance_to_simulate_this_period.MinNondispatchablePower[g, t]))
-                                          for g in self._ruc_instance_to_simulate_this_period.AllNondispatchableGenerators
-                                          for t in self._ruc_instance_to_simulate_this_period.TimePeriods)
-        self._actual_max_renewables = dict(((g, t), value(self._ruc_instance_to_simulate_this_period.MaxNondispatchablePower[g, t]))
-                                          for g in self._ruc_instance_to_simulate_this_period.AllNondispatchableGenerators
-                                          for t in self._ruc_instance_to_simulate_this_period.TimePeriods)
+        ruc = self.ruc_instance_to_simulate_this_period
+        extractor = self._ruc_stats_extractor
+        times = range(1, extractor.get_num_time_periods(ruc) + 1)
+
+        self._actual_demand = {(b, t): extractor.get_bus_demand(ruc, b, t)
+                               for b in extractor.get_buses(ruc)
+                               for t in times}
+
+        self._actual_min_renewables = {}
+        self._actual_max_renewables = {}
+        for g in extractor.get_nondispatchable_generators(ruc):
+            for t in times:
+                self._actual_min_renewables[g, t] = extractor.get_min_nondispatchable_power(ruc, g, t)
+                self._actual_max_renewables[g, t] = extractor.get_max_nondispatchable_power(ruc, g, t)
 
     def update_actuals_for_delayed_ruc(self, options):
         # update the second 'ruc_every_hours' hours of the current actual demand/renewables vectors
-        for t in range(1,1+options.ruc_every_hours):
-            for b in sorted(self.ruc_instance_to_simulate_next_period.Buses):
-                self._actual_demand[b, t+options.ruc_every_hours] = value(self.ruc_instance_to_simulate_next_period.Demand[b,t])
-            for g in sorted(self.ruc_instance_to_simulate_next_period.AllNondispatchableGenerators):
-                self._actual_min_renewables[g, t+options.ruc_every_hours] = \
-                                    value(self.ruc_instance_to_simulate_next_period.MinNondispatchablePower[g, t])
-                self._actual_max_renewables[g, t+options.ruc_every_hours] = \
-                                    value(self.ruc_instance_to_simulate_next_period.MaxNondispatchablePower[g, t])
+        extractor = self._ruc_stats_extractor
+        actuals_ruc = self.ruc_instance_to_simulate_next_period
+
+        for t in range(1, options.ruc_every_hours+1):
+            for b in extractor.get_buses(actuals_ruc):
+                self._actual_demand[b, t+options.ruc_every_hours] = extractor.get_bus_demand(actuals_ruc, b, t)
+            for g in extractor.get_nondispatchable_generators(actuals_ruc):
+                self._actual_min_renewables[g, t+options.ruc_every_hours] = extractor.get_min_nondispatchable_power(actuals_ruc, g, t)
+                self._actual_max_renewables[g, t+options.ruc_every_hours] = extractor.get_max_nondispatchable_power(actuals_ruc, g, t)
 
     def clear_instances_for_next_period(self):
-        self._ruc_instance_to_simulate_next_period = None
-        self._scenario_tree_for_next_period = None
-        self._scenario_instances_for_next_period = None
-        self._deterministic_ruc_instance_for_next_period = None
-
-    def validate_reference_model(self, module):
-        required_methods = ["fix_binary_variables", "free_binary_variables", "status_var_generator", "define_suffixes",
-                            "load_model_parameters"]
-        for method in required_methods:
-            if not hasattr(module, method):
-                raise RuntimeError("Reference model module does not have required method=%s" % method)
+        self.ruc_instance_to_simulate_next_period = None
+        self.scenario_tree_for_next_period = None
+        self.deterministic_ruc_instance_for_next_period = None
 
 
     ##########
-    # Getters and Setters
+    # Properties
     ##########
     @property
     def current_time(self):
         return self._current_time
-
-    @property
-    def deterministic_ruc_instance_for_this_period(self):
-        return self._deterministic_ruc_instance_for_this_period
-
-    @deterministic_ruc_instance_for_this_period.setter
-    def deterministic_ruc_instance_for_this_period(self, value):
-        self._deterministic_ruc_instance_for_this_period = value
-
-    @property
-    def deterministic_ruc_instance_for_next_period(self):
-        ### TODO add rollover to set next to this, etc
-        return self._deterministic_ruc_instance_for_next_period
-
-    @deterministic_ruc_instance_for_next_period.setter
-    def deterministic_ruc_instance_for_next_period(self, value):
-        self._deterministic_ruc_instance_for_next_period = value
-
-    @property
-    def scenario_tree_for_next_period(self):
-        ### TODO add rollover to set next to this, etc
-        return self._scenario_tree_for_next_period
-
-    @scenario_tree_for_next_period.setter
-    def scenario_tree_for_next_period(self, value):
-        self._scenario_tree_for_next_period = value
-
-    @property
-    def scenario_tree_for_this_period(self):
-        return self._scenario_tree_for_this_period
-
-    @scenario_tree_for_this_period.setter
-    def scenario_tree_for_this_period(self, value):
-        self._scenario_tree_for_this_period = value
-
-    @property
-    def scenario_instances_for_this_period(self):
-        return self._scenario_instances_for_this_period
-
-    @property
-    def scenario_instances_for_next_period(self):
-        return self._scenario_instances_for_next_period
-
-    @property
-    def sced_model(self):
-        return self._sced_model
-
-    @scenario_instances_for_next_period.setter
-    def scenario_instances_for_next_period(self, value):
-        self._scenario_instances_for_next_period = value
 
     @property
     def actual_demand(self):
@@ -201,55 +137,9 @@ class DataManager(_Manager):
         return self._actual_max_renewables
 
     @property
-    def ruc_instance_to_simulate_this_period(self):
-        return self._ruc_instance_to_simulate_this_period
-
-    @ruc_instance_to_simulate_this_period.setter
-    def ruc_instance_to_simulate_this_period(self, value):
-        self._ruc_instance_to_simulate_this_period = value
-
-    @property
-    def ruc_instance_to_simulate_next_period(self):
-        return self._ruc_instance_to_simulate_next_period
-
-    @ruc_instance_to_simulate_next_period.setter
-    def ruc_instance_to_simulate_next_period(self, value):
-        self._ruc_instance_to_simulate_next_period = value
-
-    @property
-    def prior_sced_instance(self):
-        return self._prior_sced_instance
-
-    @prior_sced_instance.setter
-    def prior_sced_instance(self, value):
-        self._prior_sced_instance = value
-
-    @property
-    def current_sced_instance(self):
-        return self._current_sced_instance
-
-    @current_sced_instance.setter
-    def current_sced_instance(self, value):
-        self._current_sced_instance = value
-
-    @property
     def demand_forecast_error(self):
         return self._demand_forecast_error
 
     @property
     def renewables_forecast_error(self):
         return self._renewables_forecast_error
-
-    @property
-    def reference_model_module(self):
-        return self._reference_model_module
-
-    @property
-    def ruc_model(self):
-        return self._ruc_model
-
-    def set_current_ruc_plan(self, current_ruc_plan):
-        self.ruc_instance_to_simulate_next_period = current_ruc_plan.ruc_instance_to_simulate_next_period
-        self.scenario_tree_for_next_period = current_ruc_plan.scenario_tree_for_next_period
-        self.scenario_instances_for_next_period = current_ruc_plan.scenario_instances_for_next_period
-        self.deterministic_ruc_instance_for_next_period =current_ruc_plan.deterministic_ruc_instance_for_next_period

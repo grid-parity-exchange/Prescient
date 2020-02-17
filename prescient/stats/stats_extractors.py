@@ -11,10 +11,11 @@ from prescient.util.math_utils import round_small_values
 import numpy as np
 from pyomo.core import value
 import math
-from typing import NamedTuple, Set, Any, TypeVar, Tuple, Dict
+from typing import NamedTuple, Set, Any, TypeVar, Tuple, Dict, Iterable
 
 
 G = TypeVar('G')
+B = TypeVar('B')
 
 class PreQuickstartCache(NamedTuple):
     ''' Stores select results before quickstart is activated, used to compare after quickstart is enabled '''
@@ -337,6 +338,7 @@ class OperationsStatsExtractor:
         return sum(value(sced_instance.MaximumPowerOutput[g]) 
                    for g in sced_instance.ThermalGenerators)
 
+
 class LoadMismatchStatsExtractor:
     """
     Extracts data from a schedule optimization model that has been configured and solved
@@ -384,4 +386,38 @@ class LoadMismatchStatsExtractor:
         """
         return {b: LoadMismatchStatsExtractor.get_observed_bus_LMP(lmp_sced_instance, b)
                 for b in lmp_sced_instance.Buses}
+
+
+class RucStatsExtractor:
+    """
+    Extracts information from RUC instances
+    """
+
+    @staticmethod
+    def get_num_time_periods(ruc) -> int:
+        ''' Get the number of time periods for which data is available.
+            
+            Time periods are numbered 1..N, where N is the value returned by this method.
+        '''
+        return value(ruc.NumTimePeriods)
+
+    @staticmethod
+    def get_buses(ruc) -> Iterable[B]:
+        return ruc.Buses
+
+    @staticmethod
+    def get_bus_demand(ruc, bus: B, time: int) -> float:
+        return value(ruc.Demand[bus,time])
+
+    @staticmethod
+    def get_nondispatchable_generators(ruc) -> Iterable[G]:
+        return ruc.AllNondispatchableGenerators
+
+    @staticmethod
+    def get_min_nondispatchable_power(ruc, gen: G, time: int) -> float:
+        return value(ruc.MinNondispatchablePower[gen,time])
+
+    @staticmethod
+    def get_max_nondispatchable_power(ruc, gen: G, time: int) -> float:
+        return value(ruc.MaxNondispatchablePower[gen,time])
 

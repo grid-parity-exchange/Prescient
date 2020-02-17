@@ -13,13 +13,14 @@
 #                 MasterOptions                    #
 ####################################################
 # Populate the MasterOptions, composition of ChainOptions, ForErrorOptions, and PRESCIENT options.
+from __future__ import annotations
 import sys
 import os
+from typing import Tuple, Dict
 
 from optparse import OptionParser, OptionGroup
 
-
-def construct_options_parser():
+def construct_options_parser() -> Tuple[OptionParser, Dict[str, Dict[str, bool]]]:
 
     parser = OptionParser()
     guiOverride = {}  # a dictionary of dictionaries to facilitate gui creation
