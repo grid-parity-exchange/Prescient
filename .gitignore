@@ -1,0 +1,17 @@
+# downloads dir
+downloads/
+
+**/__pycache__
+Prescient.egg-info/
+build/
+dist/
+
+examples/simple_nostorage_deterministic_output/
+examples/simple_nostorage_scengen/
+**/.ipynb_checkpoints
+
+*.vscode
+**/.vs
+
+.mypy_cache
+
