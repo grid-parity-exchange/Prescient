@@ -1,16 +1,22 @@
+#  ___________________________________________________________________________
+#
+#  Prescient
+#  Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC
+#  (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S.
+#  Government retains certain rights in this software.
+#  This software is distributed under the Revised BSD License.
+#  ___________________________________________________________________________
+
 from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import TypeVar, Iterable, Optional, Mapping, Tuple, Union
+    from .abstract_types import *
+    from prescient.simulator.options import Options
+    from .data_extractors import ScedDataExtractor, RucDataExtractor
+
 from abc import ABC, abstractmethod
-from typing import TypeVar, Iterable, Optional, Mapping, Tuple, Union
 
-from .options import Options
-import prescient.stats.stats_extractors
-
-OperationsModel = TypeVar('OperationsModel')
-RucModel = TypeVar('RucModel')
-ScenarioTree = TypeVar('ScenarioTree')
-
-Bus = TypeVar('Bus')
-Generator = TypeVar('Generator')
 
 class ModelingEngine(ABC):
     '''
@@ -114,12 +120,12 @@ class ModelingEngine(ABC):
 
     @property
     @abstractmethod
-    def RucStatsExtractor(self) -> stats_extractors.RucStatsExtractor:
+    def ruc_data_extractor(self) -> RucDataExtractor:
         ''' An object that extracts statistics from a RUC model '''
         pass
 
     @property
     @abstractmethod
-    def OperationsStatsExtractor(self) -> stats_extractors.OperationsStatsExtractor:
+    def operations_data_extractor(self) -> ScedDataExtractor:
         ''' An object that extracts statistics from a solved operations model '''
         pass

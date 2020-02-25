@@ -1,7 +1,17 @@
+#  ___________________________________________________________________________
+#
+#  Prescient
+#  Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC
+#  (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S.
+#  Government retains certain rights in this software.
+#  This software is distributed under the Revised BSD License.
+#  ___________________________________________________________________________
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from prescient.simulator import Options
+    from prescient.engine.abstract_types import *
 
 import os
 
@@ -9,16 +19,18 @@ from pyomo.opt import SolverFactory
 from pyomo.repn.plugins.cpxlp import ProblemWriter_cpxlp
 from pyomo.core import value
 
-from prescient.simulator.modeling_engine import *
-from prescient.stats import stats_extractors
+from prescient.engine.modeling_engine import ModelingEngine
+
+from .data_extractors import ScedDataExtractor, RucDataExtractor
 
 class PyomoEngine(ModelingEngine):
 
     def initialize(self, options:Options) -> None:
+        self._sced_extractor = ScedDataExtractor()
+        self._ruc_extractor = RucDataExtractor()
         self._setup_reference_models(options)
         self._setup_solvers(options)
         self._p = PyomoEngine._PluginMethods(options)
-
 
     def create_and_solve_deterministic_ruc(self,
             options: Options,
@@ -310,14 +322,14 @@ class PyomoEngine(ModelingEngine):
         self._solve_options = solve_options
 
     @property
-    def RucStatsExtractor(self) -> stats_extractors.RucStatsExtractor:
+    def ruc_data_extractor(self) -> RucDataExtractor:
         ''' An object that extracts statistics from a RUC model '''
-        return stats_extractors.RucStatsExtractor
+        return self._ruc_extractor
 
     @property
-    def OperationsStatsExtractor(self) -> stats_extractors.OperationsStatsExtractor:
+    def operations_data_extractor(self) -> ScedDataExtractor:
         ''' An object that extracts statistics from a solved operations model '''
-        return stats_extractors.OperationsStatsExtractor
+        return self._sced_extractor
 
 
     class _PluginMethods():

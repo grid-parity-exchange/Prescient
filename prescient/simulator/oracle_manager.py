@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Tuple
     from .options import Options
-    from .modeling_engine import ModelingEngine, OperationsModel, RucModel, ScenarioTree
+    from prescient.engine.modeling_engine import ModelingEngine
     from .data_manager import DataManager
     from .time_manager import PrescientTime
     from prescient.stats.operations_stats import OperationsStats
@@ -23,7 +23,6 @@ import os
 
 from .manager import _Manager
 from .data_manager import RucPlan
-from prescient.stats.stats_extractors import OperationsStatsExtractor as StatsExtractor
 
 class OracleManager(_Manager):
 
@@ -271,9 +270,9 @@ class OracleManager(_Manager):
         if options.enable_quick_start_generator_commitment:
             # Determine whether we are going to run a quickstart optimization
             # TODO: Why the "if True" here?
-            if True or StatsExtractor.has_load_shedding(current_sced_instance):
+            if True or engine.operations_data_extractor.has_load_shedding(current_sced_instance):
                 # Yep, we're doing it.  Cache data we can use to compare results with and without quickstart
-                pre_quickstart_cache = StatsExtractor.get_pre_quickstart_data(current_sced_instance)
+                pre_quickstart_cache = engine.operations_data_extractor.get_pre_quickstart_data(current_sced_instance)
 
                 # TODO: report solution/load shedding before unfixing Quick Start Generators
                 # print("")
@@ -292,7 +291,8 @@ class OracleManager(_Manager):
         ops_stats = self.simulator.stats_manager.collect_operations(current_sced_instance,
                                                                     solve_time,
                                                                     lmp_sced,
-                                                                    pre_quickstart_cache)
+                                                                    pre_quickstart_cache,
+                                                                    self.engine.operations_data_extractor)
 
         self._report_sced_stats(ops_stats)
         return  current_sced_instance

@@ -7,15 +7,15 @@
 #  This software is distributed under the Revised BSD License.
 #  ___________________________________________________________________________
 
-from dataclasses import dataclass, field
-from typing import Dict, Sequence, TypeVar
-from datetime import date
-from prescient.stats.stats_extractors import OperationsStatsExtractor, LoadMismatchStatsExtractor, PreQuickstartCache
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Dict, Sequence, TypeVar
+    from prescient.engine.data_extractors import ScedDataExtractor
+    from prescient.engine.abstract_types import OperationsModel, G, L, B, S
 
-G = TypeVar('G')
-L = TypeVar('L')
-B = TypeVar('B')
-S = TypeVar('S')
+from dataclasses import dataclass, field
+from datetime import date
 
 @dataclass(init=False)
 class HourlyStats:
@@ -92,62 +92,67 @@ class HourlyStats:
         self.hour = hour
         self.event_annotations = []
 
-    def populate_from_sced(self, sced, runtime, lmp_sced, pre_quickstart_cache: PreQuickstartCache):
+    def populate_from_sced(self, 
+                           sced: OperationsModel, 
+                           runtime: float, 
+                           lmp_sced: OperationsModel, 
+                           pre_quickstart_cache: PreQuickstartCache,
+                           extractor: ScedDataExtractor):
         self.sced_runtime = runtime
 
         # This is a constant, doesn't need to be recalculated over and over, keep it here until
         # we decide on a better place to keep it.
-        self.thermal_fleet_capacity = OperationsStatsExtractor.get_fleet_thermal_capacity(sced)
+        self.thermal_fleet_capacity = extractor.get_fleet_thermal_capacity(sced)
 
-        self.total_demand = OperationsStatsExtractor.get_total_demand(sced)
-        self.fixed_costs = OperationsStatsExtractor.get_fixed_costs(sced)
-        self.variable_costs = OperationsStatsExtractor.get_variable_costs(sced)
+        self.total_demand = extractor.get_total_demand(sced)
+        self.fixed_costs = extractor.get_fixed_costs(sced)
+        self.variable_costs = extractor.get_variable_costs(sced)
 
-        self.power_generated = OperationsStatsExtractor.get_power_generated(sced)
+        self.power_generated = extractor.get_total_power_generated(sced)
 
-        self.load_shedding, self.over_generation = OperationsStatsExtractor.get_load_mismatches(sced)
+        self.load_shedding, self.over_generation = extractor.get_load_mismatches(sced)
         if self.load_shedding > 0.0:
             self.event_annotations.append('Load Shedding')
         if self.over_generation > 0.0:
             self.event_annotations.append('Over Generation')
 
-        self.reserve_shortfall = OperationsStatsExtractor.get_reserve_shortfall(sced)
+        self.reserve_shortfall = extractor.get_reserve_shortfall(sced)
         if self.reserve_shortfall > 0.0:
             self.event_annotations.append('Reserve Shortfall')
 
-        self.available_reserve = OperationsStatsExtractor.get_available_reserve(sced)
-        self.available_quickstart = OperationsStatsExtractor.get_available_quick_start(sced)
+        self.available_reserve = extractor.get_available_reserve(sced)
+        self.available_quickstart = extractor.get_available_quick_start(sced)
 
-        self.renewables_available = OperationsStatsExtractor.get_renewables_available(sced)
-        self.renewables_used = OperationsStatsExtractor.get_renewables_used(sced)
-        self.renewables_curtailment = OperationsStatsExtractor.get_renewables_curtailment(sced)
+        self.renewables_available = extractor.get_renewables_available(sced)
+        self.renewables_used = extractor.get_renewables_used(sced)
+        self.renewables_curtailment = extractor.get_total_renewables_curtailment(sced)
 
-        self.on_offs, self.sum_on_off_ramps, self.sum_nominal_ramps = OperationsStatsExtractor.get_on_off_and_ramps(sced)
+        self.on_offs, self.sum_on_off_ramps, self.sum_nominal_ramps = extractor.get_on_off_and_ramps(sced)
 
-        self.price = OperationsStatsExtractor.get_price(self.total_demand, self.fixed_costs, self.variable_costs)
+        self.price = extractor.get_price(self.total_demand, self.fixed_costs, self.variable_costs)
 
-        self.quick_start_additional_costs = OperationsStatsExtractor.get_additional_quickstart_costs(pre_quickstart_cache, sced)
-        self.quick_start_additional_power_generated = OperationsStatsExtractor.get_additional_quickstart_power_generated(pre_quickstart_cache, sced)
-        self.used_as_quickstart = OperationsStatsExtractor.get_generator_quickstart_usage(pre_quickstart_cache, sced)
+        self.quick_start_additional_costs = extractor.get_additional_quickstart_costs(pre_quickstart_cache, sced)
+        self.quick_start_additional_power_generated = extractor.get_additional_quickstart_power_generated(pre_quickstart_cache, sced)
+        self.used_as_quickstart = extractor.get_generator_quickstart_usage(pre_quickstart_cache, sced)
 
-        self.observed_thermal_dispatch_levels = OperationsStatsExtractor.get_all_observed_thermal_dispatch_levels(sced)
-        self.observed_thermal_headroom_levels = OperationsStatsExtractor.get_all_observed_thermal_headroom_levels(sced)
-        self.observed_thermal_states = OperationsStatsExtractor.get_all_observed_thermal_states(sced)
-        self.observed_costs = OperationsStatsExtractor.get_all_observed_costs(sced)
-        self.observed_renewables_levels = OperationsStatsExtractor.get_all_observed_renewables_levels(sced)
-        self.observed_renewables_curtailment = OperationsStatsExtractor.get_all_observed_renewables_curtailment(sced)
+        self.observed_thermal_dispatch_levels = extractor.get_all_thermal_dispatch_levels(sced)
+        self.observed_thermal_headroom_levels = extractor.get_all_thermal_headroom_levels(sced)
+        self.observed_thermal_states = extractor.get_all_thermal_states(sced)
+        self.observed_costs = extractor.get_cost_per_generator(sced)
+        self.observed_renewables_levels = extractor.get_all_nondispatchable_power_used(sced)
+        self.observed_renewables_curtailment = extractor.get_all_renewables_curtailment(sced)
 
-        self.observed_flow_levels = OperationsStatsExtractor.get_all_observed_flow_levels(sced)
+        self.observed_flow_levels = extractor.get_all_flow_levels(sced)
 
-        self.observed_bus_mismatches = OperationsStatsExtractor.get_all_observed_bus_mismatches(sced)
-        self.observed_bus_LMPs = LoadMismatchStatsExtractor.get_all_observed_bus_LMPs(lmp_sced)
+        self.observed_bus_mismatches = extractor.get_all_bus_mismatches(sced)
+        self.observed_bus_LMPs = extractor.get_all_bus_LMPs(lmp_sced)
 
-        self.storage_input_dispatch_levels = OperationsStatsExtractor.get_all_storage_input_dispatch_levels(sced)
-        self.storage_output_dispatch_levels = OperationsStatsExtractor.get_all_storage_output_dispatch_levels(sced)
-        self.storage_soc_dispatch_levels = OperationsStatsExtractor.get_all_storage_soc_dispatch_levels(sced)
+        self.storage_input_dispatch_levels = extractor.get_all_storage_input_dispatch_levels(sced)
+        self.storage_output_dispatch_levels = extractor.get_all_storage_output_dispatch_levels(sced)
+        self.storage_soc_dispatch_levels = extractor.get_all_storage_soc_dispatch_levels(sced)
 
-        self.reserve_requirement = OperationsStatsExtractor.get_reserve_requirement(sced)
+        self.reserve_requirement = extractor.get_reserve_requirement(sced)
 
-        self.reserve_RT_price = LoadMismatchStatsExtractor.get_reserve_RT_price(lmp_sced)
+        self.reserve_RT_price = extractor.get_reserve_RT_price(lmp_sced)
     
 

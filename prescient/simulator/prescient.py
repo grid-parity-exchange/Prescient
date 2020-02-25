@@ -26,7 +26,7 @@ from .stats_manager import StatsManager
 from .reporting_manager import ReportingManager
 from prescient.stats.overall_stats import OverallStats
 
-from prescient.engines.pyomo import PyomoEngine
+from prescient.engine.pyomo import PyomoEngine
 
 try:
     import pstats

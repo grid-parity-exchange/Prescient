@@ -10,8 +10,6 @@
 from __future__ import annotations
 from .manager import _Manager
 import os.path
-from pyomo.core import value
-from prescient.stats.stats_extractors import RucStatsExtractor
 
 from typing import NamedTuple
 
@@ -22,7 +20,7 @@ class RucPlan(NamedTuple):
 
 class DataManager(_Manager):
     def initialize(self, engine, options):
-        self._ruc_stats_extractor = engine.RucStatsExtractor
+        self._ruc_stats_extractor = engine.ruc_data_extractor
         self.prior_sced_instance = None
         self.scenario_tree_for_this_period = None
         self.scenario_tree_for_next_period = None

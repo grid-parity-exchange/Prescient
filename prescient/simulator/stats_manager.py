@@ -116,13 +116,13 @@ class StatsManager(_Manager):
             self._current_hour_stats = HourlyStats(self._options, date, time_step.hour)
 
 
-    def collect_operations(self, sced, runtime, lmp_sced, pre_quickstart_cache):
+    def collect_operations(self, sced, runtime, lmp_sced, pre_quickstart_cache, extractor):
         '''Called when a new operations sced has been run
         
            Must be called within a timestep, i.e., after begin_timestep()
            and before the corresponding end_timestep().
         '''
-        self._current_hour_stats.populate_from_sced(sced, runtime, lmp_sced, pre_quickstart_cache)
+        self._current_hour_stats.populate_from_sced(sced, runtime, lmp_sced, pre_quickstart_cache, extractor)
         return self._current_hour_stats
 
     def collect_quickstart_data(self, pre_quickstart_cache, sced):

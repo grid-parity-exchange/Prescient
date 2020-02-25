@@ -14,7 +14,7 @@ import os
 
 from .time_manager import TimeManager
 from .data_manager import DataManager
-from .modeling_engine import ModelingEngine
+from prescient.engine.modeling_engine import ModelingEngine
 from .oracle_manager import OracleManager
 from .reporting_manager import ReportingManager
 from .stats_manager import StatsManager
