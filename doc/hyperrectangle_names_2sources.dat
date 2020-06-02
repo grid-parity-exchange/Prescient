@@ -1,0 +1,11 @@
+Sources: SoCalSolar SoCalWind
+
+Pattern: sunriseuni3
+-sunu3low (0,1) (0,0.33)
+-sunu3mid (0,1) (0.33,0.67)
+-sunu3high (0,1) (0.67,1)
+
+Pattern: wide1
+-widelow (0,0.1) (0,0.1)
+-widehigh (0.9,1) (0.9,1)
+-wide1resid (0,1) (0,1)

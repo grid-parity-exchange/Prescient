@@ -1,0 +1,20 @@
+command/exec scenario_creator.py
+
+# Options regarding file in- and output:
+--sources-file gosm_test/bpa_sourcelist.csv
+--output-directory gosm_test/output_scenario_creator
+--hyperrectangles-file gosm_test/hyperrectangle_names_1source.dat
+--dps-file gosm_test/spatial_cutpoints.txt
+
+# Options regarding all distributions:
+--plot-variable-gap 10
+--plot-pdf 1
+--plot-cdf 0
+--cdf-inverse-tolerance 1.0e-3
+
+--use-spatial-copula
+--spatial-copula gaussian-copula
+
+--use-same-paths-across-correlated-sources
+
+--partition-file gosm_test/partition.txt

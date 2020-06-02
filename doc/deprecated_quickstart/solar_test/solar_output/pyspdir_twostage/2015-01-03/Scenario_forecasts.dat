@@ -1,0 +1,154 @@
+set Buses := 'Bus1';
+
+set ThermalGenerators := 'Alta' 'ParkCity' 'Solitude' 'Sundance' 'Brighton' ;
+
+set ThermalGeneratorsAtBus['Bus1'] :=  'Alta'  'ParkCity'  'Solitude'  'Sundance'  'Brighton' ;
+
+param TimePeriodLength := 1 ;
+
+param: PowerGeneratedT0 UnitOnT0State MinimumPowerOutput MaximumPowerOutput MinimumUpTime MinimumDownTime MustRun QuickStart := 
+'Alta'      60.0   4    40.0   110.0   4   4 False False
+'ParkCity'  50.0   2    40.0   100.0   2   2 True  False
+'Solitude' 300.0   6   100.0   520.0   6   6 False False
+'Sundance'  50.0   1    50.0   200.0   1   1 False True
+'Brighton' 400.0   8   200.0   600.0   8   8 False False
+;
+
+param: NominalRampUpLimit NominalRampDownLimit StartupRampLimit ShutdownRampLimit := 
+'Alta'      30.0    30.0    70.0    70.0
+'ParkCity'  50.0    50.0    90.0    90.0
+'Solitude'  80.0    80.0   110.0   110.0
+'Sundance' 120.0   120.0   170.0   170.0
+'Brighton' 100.0   100.0   210.0   210.0
+;
+
+param ThermalGeneratorType := 
+'Alta'     G
+'ParkCity' E
+'Solitude' C
+'Sundance' G 
+'Brighton' N
+;
+
+param: PiecewiseType:= Absolute; 
+
+set CostPiecewisePoints['Alta'] :=      40.0  78.0  110.0 ;
+set CostPiecewiseValues['Alta'] :=      1.3100  2.7160  3.9640 ;
+set CostPiecewisePoints['ParkCity'] :=  40.0  80.0  100.0 ;
+set CostPiecewiseValues['ParkCity'] :=  2.0000  4.0000  5.4000 ;
+set CostPiecewisePoints['Solitude'] :=  100.0  345.0  484.0  520.0 ;
+set CostPiecewiseValues['Solitude'] :=  9.0000  12.7995  18.52213  20.87707 ;
+set CostPiecewisePoints['Sundance'] :=  50.0  160.0  165.0  175.0  185.0  195.0  200.0 ;
+set CostPiecewiseValues['Sundance'] :=  1.7968  4.4368  4.5777  4.8689  5.1702  5.4827  5.8079 ;
+set CostPiecewisePoints['Brighton'] :=  200.0  225.0  300.0  350.0  400.0  450.0  500.0  585.0  600.0 ;
+set CostPiecewiseValues['Brighton'] :=  30.0688  34.01655  46.3638  54.8753  63.6108  72.5708  81.7548  97.88185  102.99835 ;
+
+set StartupLags['Alta'] := 4 6 ;
+set StartupCosts['Alta'] := 0.727 0.728 ;
+set StartupLags['ParkCity'] := 2 3 ;
+set StartupCosts['ParkCity'] := 11.95772 16.88216 ;
+set StartupLags['Solitude'] := 6 8 ;
+set StartupCosts['Solitude'] := 10.6945 18.20821 ;
+set StartupLags['Sundance'] := 1 2 ;
+set StartupCosts['Sundance'] := 7.2710 10.4390 ;
+set StartupLags['Brighton'] := 8 10 ;
+set StartupCosts['Brighton'] := 68.23951 102.59067 ;
+
+param: MinNondispatchablePower MaxNondispatchablePower  := NocalSolar 1 0.0 0.0
+ NocalSolar 2 0.0 0.0
+ NocalSolar 3 0.0 0.0
+ NocalSolar 4 0.0 0.0
+ NocalSolar 5 0.0 0.0
+ NocalSolar 6 0.0 0.0
+ NocalSolar 7 8.03 8.03
+ NocalSolar 8 515.47 515.47
+ NocalSolar 9 1577.03 1577.03
+ NocalSolar 10 2297.48 2297.48
+ NocalSolar 11 2588.15 2588.15
+ NocalSolar 12 2884.11 2884.11
+ NocalSolar 13 2790.19 2790.19
+ NocalSolar 14 2647.58 2647.58
+ NocalSolar 15 2151.41 2151.41
+ NocalSolar 16 1248.02 1248.02
+ NocalSolar 17 166.93 166.93
+ NocalSolar 18 1.8 1.8
+ NocalSolar 19 0.0 0.0
+ NocalSolar 20 0.1 0.1
+ NocalSolar 21 0.0 0.0
+ NocalSolar 22 0.0 0.0
+ NocalSolar 23 0.0 0.0
+ NocalSolar 24 0.0 0.0
+ NocalSolar 25 0.0 0.0
+ NocalSolar 26 0.0 0.0
+ NocalSolar 27 0.0 0.0
+ NocalSolar 28 0.0 0.0
+ NocalSolar 29 0.0 0.0
+ NocalSolar 30 0.0 0.0
+ NocalSolar 31 8.03 8.03
+ NocalSolar 32 515.47 515.47
+ NocalSolar 33 1577.03 1577.03
+ NocalSolar 34 2297.48 2297.48
+ NocalSolar 35 2588.15 2588.15
+ NocalSolar 36 2884.11 2884.11
+ NocalSolar 37 2790.19 2790.19
+ NocalSolar 38 2647.58 2647.58
+ NocalSolar 39 2151.41 2151.41
+ NocalSolar 40 1248.02 1248.02
+ NocalSolar 41 166.93 166.93
+ NocalSolar 42 1.8 1.8
+ NocalSolar 43 0.0 0.0
+ NocalSolar 44 0.1 0.1
+ NocalSolar 45 0.0 0.0
+ NocalSolar 46 0.0 0.0
+ NocalSolar 47 0.0 0.0
+ NocalSolar 48 0.0 0.0
+  ;
+param: Demand := Bus1 1 1007.27865
+ Bus1 2 966.582
+ Bus1 3 940.3353
+ Bus1 4 931.2417
+ Bus1 5 938.4759
+ Bus1 6 968.5521
+ Bus1 7 1008.04815
+ Bus1 8 1039.2687
+ Bus1 9 1074.14595
+ Bus1 10 1089.57285
+ Bus1 11 1083.6783
+ Bus1 12 1066.85145
+ Bus1 13 1049.56965
+ Bus1 14 1031.8158
+ Bus1 15 1027.66185
+ Bus1 16 1039.44465
+ Bus1 17 1086.2352
+ Bus1 18 1231.78095
+ Bus1 19 1270.1448
+ Bus1 20 1244.53935
+ Bus1 21 1218.41055
+ Bus1 22 1175.8104
+ Bus1 23 1108.03455
+ Bus1 24 1035.71685
+ Bus1 25 1007.27865
+ Bus1 26 966.582
+ Bus1 27 940.3353
+ Bus1 28 931.2417
+ Bus1 29 938.4759
+ Bus1 30 968.5521
+ Bus1 31 1008.04815
+ Bus1 32 1039.2687
+ Bus1 33 1074.14595
+ Bus1 34 1089.57285
+ Bus1 35 1083.6783
+ Bus1 36 1066.85145
+ Bus1 37 1049.56965
+ Bus1 38 1031.8158
+ Bus1 39 1027.66185
+ Bus1 40 1039.44465
+ Bus1 41 1086.2352
+ Bus1 42 1231.78095
+ Bus1 43 1270.1448
+ Bus1 44 1244.53935
+ Bus1 45 1218.41055
+ Bus1 46 1175.8104
+ Bus1 47 1108.03455
+ Bus1 48 1035.71685
+  ;

@@ -1,0 +1,5 @@
+# this file is a list of sources of uncertainty, line format:,,,
+# name of source , actuals filename , forecasts filename , source type , segment rules filename
+SoCalSolar,output_preprocessor/solar_forecast_actual_SP15_070114_063015.csv,output_preprocessor/solar_forecast_actual_SP15_070114_063015.csv,solar,segment_input_solar.txt
+#SoCalWind,output_preprocessor/wind_forecasts_actuals_SP15_070114_063015.csv,output_preprocessor/wind_forecasts_actuals_SP15_070114_063015.csv,wind,segment_input_wind.txt
+Load,output_preprocessor/caiso_load_070114_063015.csv,output_preprocessor/caiso_load_070114_063015.csv,load,segment_input_load.txt

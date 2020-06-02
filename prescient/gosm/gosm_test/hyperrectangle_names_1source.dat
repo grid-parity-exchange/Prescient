@@ -1,0 +1,78 @@
+# - Patterns start with the keyword "Pattern" followed by a colon, a whitespace and the name of the pattern.
+# - The hyperrectangles belonging to this pattern must be listed below, each hyperractangle in a new line starting
+#   with "-", followed by the hyperrectangle's name, a whitespace and the intervals in the order of the sources as
+#   defined above, separated by whitespaces.
+# - An interval must be written as "(x,y)", where "x" defines the lower and "y" the upper bound. The bounds cannot have
+#   more than four decimal places.
+# - Every hyperrectangle of one pattern must be either disjoint to all other hyperrectangles of this pattern, or a
+#   proper subset of an other hyperrectangle. If a hyperrectangle contains a proper subset, the subset is subtracted
+#   from the hyperrectangle.
+
+Pattern: ide
+-idelow (0,0.3)
+-idemid (0.3,0.7)
+-idehigh (0.7,1)
+
+Pattern: wide
+-widelow (0,0.1)
+-widemid (0.1,0.9)
+-widehigh (0.9,1)
+
+Pattern: wideskew1
+-widesk1low (0,0.05)
+-widesk1mid (0.05,0.85)
+-widesk1high (0.85,1)
+
+Pattern: wideskew2
+-widesk2low (0,0.1)
+-widesk2mid (0.1,0.95)
+-widesk2high (0.95,1)
+
+Pattern: quick
+-quicklow (0,0.5)
+-quickhigh (0.5,1)
+
+Pattern: diverse
+-diverse1 (0,0.2)
+-diverse2 (0.2,0.5)
+-diverse3 (0.5,0.8)
+-diverse4 (0.8,1)
+
+Pattern: extreme
+-extreme1 (0,0.01)
+-extreme2 (0.01,0.5)
+-extreme3 (0.5,0.99)
+-extreme4 (0.99,1)
+
+Pattern: meanonly
+-meanonly (0,1)
+
+Pattern: uni3
+-u3low (0,0.33)
+-u3mid (0.33,0.67)
+-u3high (0.67,1)
+
+Pattern: uni4
+-u4low (0,0.25)
+-u4midlow (0.25,0.5)
+-u4midhigh (0.5,0.75)
+-u4high (0.75,1)
+
+Pattern: uni5
+-u5low (0,0.2)
+-u5midlow (0.2,0.4)
+-u5mid (0.4,0.6)
+-u5midhigh (0.6,0.8)
+-u5high (0.8,1)
+
+Pattern: uni10
+-uXlll (0,0.1)
+-uXllh (0.1,0.2)
+-uXlm (0.2,0.3)
+-uXlhl (0.3,0.4)
+-uXlhh (0.4,0.5)
+-uXhll (0.5,0.6)
+-uXhlh (0.6,0.7)
+-uXhm (0.7,0.8)
+-uXhhl (0.8,0.9)
+-uXhhh (0.9,1)

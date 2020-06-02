@@ -1,0 +1,27 @@
+command/exec scenario_creator.py
+
+# Options regarding file in- and output:
+--sources-file solar_test/sources.csv
+--output-directory solar_test/output_scenario_creator
+--hyperrectangles-file solar_test/hyperrectangle_names_1source.dat
+--dps-file solar_test/GenParamsFun.dat
+--daps-location ../daps
+--scenario-template-file solar_test/simple_nostorage_skeleton.dat
+--tree-template-file solar_test/TreeTemplate.dat
+
+# General options:
+--scenario-day 2014-07-01
+
+# Options regarding the univariate epi-spline distribution:
+--seg-N 20
+--seg-kappa 100
+--probability-constraint-of-distributions 1
+--non-negativity-constraint-distributions 0
+--nonlinear-solver ipopt
+--error-distribution-domain 4
+
+# Options regarding all distributions:
+--plot-variable-gap 10
+--plot-pdf 0
+--plot-cdf 0
+--cdf-inverse-tolerance 1.0e-3

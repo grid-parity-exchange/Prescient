@@ -1,0 +1,10 @@
+command/exec scenario_creator.py
+
+--sources-file sourcelist.csv
+--output-directory output_scenario_creator
+--hyperrectangles-file hyperrectangle_names_1source.dat
+--dps-file test_dps.dat
+--scenario-template-file scenario_template.dat
+--tree-template-file tree_template.dat
+--reference-model-file ReferenceModel.py
+--scenario-day 2015-06-30

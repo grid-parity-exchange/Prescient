@@ -1,0 +1,10 @@
+# Partitions File
+
+Group 1:
+-ARW
+-PSW
+-WFW
+
+Singletons:
+-STL
+-TRW

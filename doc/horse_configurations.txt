@@ -1,0 +1,47 @@
+Horse: horse1
+
+Populator Options:
+--start-date 2015-03-01
+--end-date 2015-03-31
+--sources-file sourcelist.csv
+--output-directory output_horse_racer/horse1
+--scenario-creator-options-file run_scenario_creator_1.txt
+
+Simulator Options:
+--simulate-out-of-sample
+--run-simulator
+--model-directory .
+--solver gurobi
+--plot-individual-generators
+--traceback
+--output-sced-initial-conditions
+--output-sced-demands
+--output-sced-solutions
+--output-ruc-initial-conditions
+--output-ruc-solutions
+--output-ruc-dispatches
+--output-directory output_horse_racer/horse1_sim
+
+Horse: horse2
+
+Populator Options:
+--start-date 2015-03-01
+--end-date 2015-03-31
+--sources-file sourcelist.csv
+--output-directory output_horse_racer/horse2
+--scenario-creator-options-file run_scenario_creator_2.txt
+
+Simulator Options:
+--simulate-out-of-sample
+--run-simulator
+--model-directory .
+--solver gurobi
+--plot-individual-generators
+--traceback
+--output-sced-initial-conditions
+--output-sced-demands
+--output-sced-solutions
+--output-ruc-initial-conditions
+--output-ruc-solutions
+--output-ruc-dispatches
+--output-directory output_horse_racer/horse2_sim

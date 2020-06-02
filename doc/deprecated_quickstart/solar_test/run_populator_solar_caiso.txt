@@ -1,0 +1,18 @@
+command/exec populator.py
+
+--start-date 2015-01-01
+--end-date 2015-06-30
+
+--load-scaling-factor=0.045
+
+--output-directory solar_test/solar_output
+--scenario-creator-options-file solar_test/run_scenario_creator.txt
+--sources-file solar_test/sources.csv
+--allow-multiprocessing 0
+
+--diurnal-pattern-file solar_test/solar_upperbound_SP15_070113_063015.csv
+
+--number-dps 4
+--dps-paths-file solar_test/GenParamsFun.dat
+
+--traceback

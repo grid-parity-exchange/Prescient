@@ -1,0 +1,25 @@
+command/exec simulator.py
+--data-directory=simple_nostorage_scengen 
+--model-directory=..|prescient|models|knueven
+--output-directory=simple_nostorage_stochastic_phserial_output 
+--start-date=06-15-2015 
+--num-days=6
+--traceback 
+--random-seed=10 
+--output-sced-initial-conditions 
+--output-sced-demands 
+--output-sced-solutions 
+--output-ruc-initial-conditions 
+--output-ruc-solutions 
+--output-ruc-dispatches 
+--relax-ramping-if-infeasible 
+--symbolic-solver-labels 
+--reserve-factor=0.0 
+--sced-solver=gurobi 
+--simulate-out-of-sample 
+--plot-individual-generators
+--solve-with-ph
+--ph-mode=serial
+--ph-max-iterations=20
+--ph-options="--default-rho=100.0 --rho-cfgfile=rhoconfig10.py --output-times --enable-ww-extensions --ww-extension-cfgfile=wwph-r1.cfg"
+--ph-ruc-subproblem-solver=gurobi

@@ -1,0 +1,2 @@
+include doc/gosm.pdf
+recursive-include examples *

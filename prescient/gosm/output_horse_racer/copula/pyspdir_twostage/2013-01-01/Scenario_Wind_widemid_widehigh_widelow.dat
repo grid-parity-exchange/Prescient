@@ -1,0 +1,205 @@
+# Vaguely related to the paper by Ela and OMalley 5 bus version 
+# --------------------------------- 
+# Sets and basic parameters 
+# --------------------------------- 
+set StageSet := Stage_1 Stage_2 ; 
+
+set Zones := SingleZone;
+
+set Buses := Bus1 ;
+
+set ThermalGenerators := Alta Brighton ParkCity Solitude Sundance ;
+
+param ThermalGeneratorType := 
+Alta G
+Brighton N
+ParkCity E
+Solitude C
+Sundance G
+;
+
+set ThermalGeneratorsAtBus[Bus1] := Alta Brighton ParkCity Solitude Sundance ;
+
+set QuickStartGenerators := Sundance ;
+
+set NondispatchableGeneratorsAtBus[Bus1] := Wind ;
+
+param:     BusZone   LoadCoefficient := 
+Bus1       SingleZone 0.0
+;
+
+param InitialTime := 1;
+
+param NumTimePeriods := 48;
+
+set CommitmentTimeInStage[Stage_1] := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 ;
+set CommitmentTimeInStage[Stage_2] := ;
+
+set GenerationTimeInStage[Stage_1] := ;
+set GenerationTimeInStage[Stage_2] := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 ;
+
+
+# --------------------------------- 
+# Network parameters 
+# --------------------------------- 
+
+param NumTransmissionLines := 0;
+
+# --------------------------------- 
+# Production parameters 
+# --------------------------------- 
+
+param: PowerGeneratedT0 UnitOnT0State MinimumPowerOutput MaximumPowerOutput MinimumUpTime MinimumDownTime NominalRampUpLimit NominalRampDownLimit StartupRampLimit ShutdownRampLimit FuelCost MustRun QuickStart:= 
+Alta 60.0 4 40.0 110.0 4 4 30.0 30.0 70.0 70.0 1.0 False False
+Brighton 400.0 8 200.0 600.0 8 8 100.0 100.0 210.0 210.0 1.0 False False
+ParkCity 50.0 2 40.0 100.0 2 2 50.0 50.0 90.0 90.0 1.0 True False
+Solitude 300.0 6 100.0 520.0 6 6 80.0 80.0 110.0 110.0 1.0 False False
+Sundance 50.0 1 50.0 200.0 1 1 120.0 120.0 170.0 170.0 1.0 False True
+;
+
+
+# --------------------------------- 
+# Cost parameters 
+# --------------------------------- 
+
+param: MinimumProductionCost := 
+Alta      1310.0 
+Brighton  30068.8
+ParkCity  2000.0 
+Solitude  9000.0 
+Sundance  1796.8 
+;
+
+set StartupLags[Alta] := 4 6 ;
+set StartupLags[Brighton] := 8 10 ;
+set StartupLags[ParkCity] := 2 3 ;
+set StartupLags[Solitude] := 6 8 ;
+set StartupLags[Sundance] := 1 2 ;
+
+set StartupCosts[Alta] := 727.0 728.0 ;
+set StartupCosts[Brighton] := 68239.51 102590.67 ;
+set StartupCosts[ParkCity] := 11957.72 16882.16 ;
+set StartupCosts[Solitude] := 10694.5 18208.21 ;
+set StartupCosts[Sundance] := 7271.0 10439.0 ;
+
+param: ProductionCostA0 ProductionCostA1 ProductionCostA2 := 
+Alta      0.0         0.0         0.0         
+Brighton  0.0         0.0         0.0         
+ParkCity  0.0         0.0         0.0         
+Solitude  0.0         0.0         0.0         
+Sundance  0.0         0.0         0.0         
+;
+
+set CostPiecewisePoints[Alta] := 40.0 78.0 110.0 ;
+set CostPiecewisePoints[Brighton] := 200.0 225.0 300.0 350.0 400.0 450.0 500.0 585.0 600.0 ;
+set CostPiecewisePoints[ParkCity] := 40.0 80.0 100.0 ;
+set CostPiecewisePoints[Solitude] := 100.0 345.0 484.0 520.0 ;
+set CostPiecewisePoints[Sundance] := 50.0 160.0 165.0 175.0 185.0 195.0 200.0 ;
+
+set CostPiecewiseValues[Alta] := 1310.0 2716.0 3964.0 ;
+set CostPiecewiseValues[Brighton] := 30068.8 34016.55 46363.8 54875.3 63610.8 72570.8 81754.8 97881.85 102998.35 ;
+set CostPiecewiseValues[ParkCity] := 2000.0 4000.0 5400.0 ;
+set CostPiecewiseValues[Solitude] := 9000.0 12799.5 18522.13 20877.07 ;
+set CostPiecewiseValues[Sundance] := 1796.8 4436.8 4577.7 4868.9 5170.2 5482.7 5807.9 ;
+
+param LoadMismatchPenalty := 1000000.0;
+
+param ReserveShortfallPenalty := 100000.0;
+param: MinNondispatchablePower MaxNondispatchablePower  := Wind 1 2.5538819438786717 5.1077638877573435
+ Wind 2 22.270394698739146 44.54078939747829
+ Wind 3 39.98690745359962 79.97381490719924
+ Wind 4 56.703420208460095 113.40684041692019
+ Wind 5 75.91993296332058 151.83986592664115
+ Wind 6 95.63644571818105 191.2728914363621
+ Wind 7 116.85295847304153 233.70591694608305
+ Wind 8 138.569471227902 277.138942455804
+ Wind 9 160.78598398276247 321.57196796552495
+ Wind 10 181.50249673762295 363.0049934752459
+ Wind 11 201.21900949248342 402.43801898496685
+ Wind 12 220.4355222473439 440.8710444946878
+ Wind 13 183.6568852175167 367.3137704350334
+ Wind 14 148.8782481876895 297.756496375379
+ Wind 15 116.59961115786228 233.19922231572457
+ Wind 16 90.32097412803509 180.64194825607018
+ Wind 17 67.5423370982079 135.0846741964158
+ Wind 18 47.26370006838067 94.52740013676134
+ Wind 19 27.985063038553477 55.970126077106954
+ Wind 20 0.0 0
+ Wind 21 0.0 0
+ Wind 22 0.0 0
+ Wind 23 0.0 0
+ Wind 24 0.0 0
+ Wind 25 0.0 0
+ Wind 26 0.0 0
+ Wind 27 0.0 0
+ Wind 28 0.0 0
+ Wind 29 0.0 0
+ Wind 30 0.0 0
+ Wind 31 0.0 0
+ Wind 32 0.0 0
+ Wind 33 0.0 0
+ Wind 34 0.0 0
+ Wind 35 0.0 0
+ Wind 36 0.0 0
+ Wind 37 0.0 0
+ Wind 38 0.0 0
+ Wind 39 0.0 0
+ Wind 40 0.0 0
+ Wind 41 0.0 0
+ Wind 42 0.0 0
+ Wind 43 0.0 0
+ Wind 44 0.0 0
+ Wind 45 0.0 0
+ Wind 46 0.0 0
+ Wind 47 0.0 0
+ Wind 48 0.0 0
+  ;
+param: Demand := Bus1 1 1033.7616
+ Bus1 2 989.36955
+ Bus1 3 952.31205
+ Bus1 4 930.2697
+ Bus1 5 934.69005
+ Bus1 6 964.89495
+ Bus1 7 1018.4571
+ Bus1 8 1030.0509
+ Bus1 9 1031.21055
+ Bus1 10 1026.117
+ Bus1 11 1028.8998
+ Bus1 12 1022.93595
+ Bus1 13 1017.2322
+ Bus1 14 1007.1774
+ Bus1 15 1000.45395
+ Bus1 16 1012.53735
+ Bus1 17 1070.69265
+ Bus1 18 1236.9258
+ Bus1 19 1289.09115
+ Bus1 20 1281.01725
+ Bus1 21 1254.4632
+ Bus1 22 1198.6902
+ Bus1 23 1113.30405
+ Bus1 24 1038.43485
+ Bus1 25 1033.7616
+ Bus1 26 989.36955
+ Bus1 27 952.31205
+ Bus1 28 930.2697
+ Bus1 29 934.69005
+ Bus1 30 964.89495
+ Bus1 31 1018.4571
+ Bus1 32 1030.0509
+ Bus1 33 1031.21055
+ Bus1 34 1026.117
+ Bus1 35 1028.8998
+ Bus1 36 1022.93595
+ Bus1 37 1017.2322
+ Bus1 38 1007.1774
+ Bus1 39 1000.45395
+ Bus1 40 1012.53735
+ Bus1 41 1070.69265
+ Bus1 42 1236.9258
+ Bus1 43 1289.09115
+ Bus1 44 1281.01725
+ Bus1 45 1254.4632
+ Bus1 46 1198.6902
+ Bus1 47 1113.30405
+ Bus1 48 1038.43485
+  ;

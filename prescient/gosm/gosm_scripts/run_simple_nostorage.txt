@@ -1,0 +1,37 @@
+command/exec scenario_creator.py
+
+# Options regarding file in- and output:
+--sources-file test_sourcelist.csv
+--output-directory output_scenario_creator
+--hyperrectangles-file cutpoints/hyperrectangle_names_1source.dat
+--dps-file cutpoints/test_dps.dat
+--daps-location ../daps
+--scenario-template-file templates/simple_nostorage_skeleton.dat
+--tree-template-file templates/TreeTemplate.dat
+
+# General options:
+--scenario-day 2015-06-30
+
+# Options regarding solar sources
+--power-level-sunrise-sunset 1
+--dps-sunrise 5
+--dps-sunset 20
+
+# Options regarding multiple sources
+--cross-scenarios 0
+--copula-across-sources gaussian-copula
+
+# Options regarding the univariate epi-spline distribution:
+--seg-N 100
+--seg-kappa 100
+--probability-constraint-distributions 1
+--non-negativity-constraint-distributions 0
+--nonlinear-solver ipopt
+
+# Options regarding all distributions:
+--plot-variable-gap 10
+--plot-pdf 1
+--plot-cdf 0
+--cdf-inverse-tolerance 1.0e-3
+--cdf-inverse-max-refinements 10
+--copula-across-dps gaussian-copula

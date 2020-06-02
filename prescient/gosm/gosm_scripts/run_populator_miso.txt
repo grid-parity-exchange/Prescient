@@ -1,0 +1,22 @@
+command/exec prescient.py
+--model-directory=../models/latorre 
+--run-populator 
+--data-to-fit=rolling 
+--cutpoints-names-filename=../ScenGen/workflow/scengenparams/cpts_names.dat 
+--single-category-width=0.1 
+--output-directory=miso_simple 
+--ruc-horizon=48 
+--dates-forecasts-actuals=../data/MISO/MISO_dates.dat 
+--pyspgen-base-directory=../data/MISO/generation 
+--scenario-skeleton-filename=20140101_miso_skel.dat 
+--L1Linf-solver=cplex 
+--traceback 
+--loads-dps-cuts-filename=../ScenGen/workflow/windgenparams/GenParams8.dat 
+--loads-input-directory=../data/MISO/Load 
+--loads-input-filename=MISO_houlry_load_forcast_and_actual.csv 
+--one-load-cutpoint-pattern=quick 
+--load-scaling-factor=1.0 
+--sources-file=sources_miso_load_only.csv 
+--cutpoints-dps-params-filename=../ScenGen/workflow/windgenparams/GenParams8.dat 
+--pattern-binds 
+--work-with-pattern=absolute 

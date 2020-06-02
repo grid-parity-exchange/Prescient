@@ -1,0 +1,13 @@
+command/exec populator.py
+
+--start-date 2013-01-01
+--end-date 2013-09-30
+
+--load-scaling-factor 0.045
+
+--output-directory gosm_test/bpa_output_aggregate
+--scenario-creator-options-file gosm_test/BPA_scenario_creator.txt
+--sources-file gosm_test/bpa_sourcelist_aggregate.txt
+--allow-multiprocessing 1
+
+--traceback

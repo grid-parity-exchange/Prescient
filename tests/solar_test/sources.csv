@@ -1,0 +1,2 @@
+NocalSolar,solar_test/solar_data.csv,solar_test/solar_data.csv,solar,solar_test/segment_solar.txt,
+Load,solar_test/caiso_load_070114_063015.csv,solar_test/caiso_load_070114_063015.csv,load,solar_test/no_segmentation.txt,

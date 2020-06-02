@@ -1,0 +1,21 @@
+command/exec prescient.py
+--model-directory=..|models|latorre 
+--run-populator 
+--data-to-fit=rolling 
+--cutpoints-names-filename=..|controls|cutpoints|cpts_names.dat 
+--single-category-width=0.1 
+--output-directory=simple_storage_scengen 
+--ruc-horizon=48 
+--scenarios-populate-datesfile=..|controls|datefiles|mid_june_2015.dat 
+--pyspgen-base-file=..|data|UtahCase|simple_storage_skeleton.dat 
+--L1Linf-solver=gurobi 
+--traceback 
+--loads-dps-cuts-filename=..|controls|cutpoints|TailsLimited.dat 
+--loads-input-directory=..|data|CAISO|Load 
+--loads-input-filename=caiso_load_070114_063015.csv 
+--load-scaling-factor=0.045 
+--sources-file=sources|sources_simple_storage.csv 
+--solar-scaling-factor=0.25 
+--solar-frac-nondispatch=0.50 
+--pattern-binds 
+--work-with-pattern=absolute

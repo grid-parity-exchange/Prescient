@@ -1,0 +1,22 @@
+command/exec prescient.py
+# for the solar paper; "fun" refers to the cutpoints and "quick" refers to the two days
+--model-directory=../models/latorre 
+--run-populator 
+--data-to-fit=leave-one-out 
+--cutpoints-names-filename=../controls/cutpoints/cpts_names.dat 
+--single-category-width=0.1 
+--output-directory=solar_caiso_fun_quick 
+--ruc-horizon=48 
+--scenarios-populate-datesfile=../controls/datefiles/twodays.dat 
+--pyspgen-base-file=../data/UtahCase/simple_nostorage_skeleton.dat 
+--L1Linf-solver=gurobi 
+--traceback 
+--loads-dps-cuts-filename=../controls/cutpoints/GenParams8.dat 
+--loads-input-directory=../data/CAISO/Load 
+--loads-input-filename=caiso_load_070114_063015.csv 
+--load-scaling-factor=0.045 
+--sources-file=sources/caiso_fun.csv 
+--solar-scaling-factor=5.0 
+--solar-frac-nondispatch=0.50 
+--pattern-binds 
+--work-with-pattern=absolute

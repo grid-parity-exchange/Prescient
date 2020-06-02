@@ -1,0 +1,19 @@
+Source(SoCalSolar,
+	actuals_file="SP_acts.csv",
+	forecasts_file="SP_forecast.csv",
+	source_type="solar",
+	segmentation_file="seg_solar.txt",
+	capacity_file="ub.dat");
+
+Source(NoCalSolar,
+	actuals_file="NP_acts.csv",
+	forecasts_file="NP_forecast.csv",
+	source_type="solar",
+	is_deterministic="True",
+	scaling_factor="0.5",
+	frac_nondispatch="0.5");
+
+Source(load,
+	actuals_file="load_history.csv",
+	forecasts_file="load_history.csv",
+	source_type="load");

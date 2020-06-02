@@ -1,0 +1,5 @@
+exportPattern("^[[:alpha:]]+")
+importFrom("grDevices", "dev.off", "pdf", "recordPlot")
+  importFrom("graphics", "legend", "lines", "points")
+  importFrom("stats", "cor", "na.omit")
+  importFrom("utils", "read.csv")

@@ -1,0 +1,12 @@
+Source(CAISOSolar,
+	actuals_file="caiso_case/caiso_solar_070113_063015_nonneg.csv",
+	forecasts_file="caiso_case/caiso_solar_070113_063015_nonneg.csv",
+	source_type="solar",
+	segmentation_file="segment_solar.txt",
+	scaling_factor="0.25",
+	diurnal_pattern_file="caiso_case/Upper_bound_caiso_solar_070113_063015.csv");
+Source(CopperSheet,
+	actuals_file="caiso_case/caiso_load_070114_063015.csv",
+	forecasts_file="caiso_case/caiso_load_070114_063015.csv",
+	source_type="load",
+	scaling_factor="0.045");

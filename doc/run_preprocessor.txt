@@ -1,0 +1,13 @@
+command/exec preprocessor.py
+
+# Options regarding file in- and output:
+--preprocessor-list list_of_files.txt
+--output-directory output_preprocessor
+
+# Options regarding the preprocessor:
+--wind-power-pos-threshold 5000
+--wind-power-neg-threshold 0
+--solar-power-pos-threshold 5000
+--solar-power-neg-threshold 0
+--load-pos-threshold 10000
+--load-neg-threshold 0

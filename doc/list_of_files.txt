@@ -1,0 +1,2 @@
+file1.txt,solar
+file2.txt,wind

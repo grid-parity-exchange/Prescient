@@ -1,0 +1,22 @@
+command/exec simulator.py
+--data-directory=simple_nostorage_scengen 
+--model-directory=..|prescient|models|knueven
+--output-directory=simple_nostorage_stochastic_ef_output 
+--start-date=06-15-2015 
+--num-days=6
+--traceback 
+--random-seed=10 
+--output-sced-initial-conditions 
+--output-sced-demands 
+--output-sced-solutions 
+--output-ruc-initial-conditions 
+--output-ruc-solutions 
+--output-ruc-dispatches 
+--relax-ramping-if-infeasible 
+--ef-mipgap=0.0001 
+--symbolic-solver-labels 
+--reserve-factor=0.0 
+--ef-ruc-solver=gurobi
+--sced-solver=gurobi 
+--simulate-out-of-sample 
+--plot-individual-generators

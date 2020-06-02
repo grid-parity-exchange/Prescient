@@ -1,0 +1,10 @@
+{
+  "bus_detail": {
+    "LMP": 0.01,
+    "Overgeneration": 0.01,
+    "Shortfall": 0.01
+  },
+  "runtimes": {
+    "Solve Time": 10.0
+  }
+}

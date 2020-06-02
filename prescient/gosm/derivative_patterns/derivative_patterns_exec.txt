@@ -1,0 +1,4 @@
+command/exec derivative_patterns.py
+--input-directory ../data
+--input-filename all_bpa_data.csv
+--column-name forecasts

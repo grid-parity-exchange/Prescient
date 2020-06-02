@@ -1,0 +1,25 @@
+command/exec scenario_creator.py
+
+# Options regarding file in- and output:
+--sources-file sources/sources_simple_nostorage.csv
+--output-directory output_scenario_creator
+--hyperrectangles-file cutpoints/hyperrectangle_names_1source.dat
+--dps-file cutpoints/test_dps.dat
+--daps-location ../daps
+--scenario-template-file templates/simple_nostorage_skeleton.dat
+--tree-template-file templates/TreeTemplate.dat
+
+# General options:
+--scenario-day 2015-06-30
+
+# Scaling options:
+--load-scaling-factor=0.045
+--solar-scaling-factor=0.25
+--solar-frac-nondispatch=0.0
+
+# Options regarding all distributions:
+--plot-variable-gap 10
+--plot-pdf 1
+--plot-cdf 0
+--cdf-inverse-tolerance 1.0e-3
+--cdf-inverse-max-refinements 10

@@ -1,0 +1,6 @@
+command/exec horse_racer.py
+--start-date 2015-06-20
+--end-date 2015-06-25
+--sources-file test_sourcelist.csv
+--number-of-scenarios 5
+--output-directory scenario_output

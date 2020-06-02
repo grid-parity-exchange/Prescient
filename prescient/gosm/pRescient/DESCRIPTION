@@ -1,0 +1,19 @@
+Package: pRescient
+Type: Package
+Title: R functions for interfacing with Prescient 1.0 output
+Version: 0.1.1
+Authors@R: person("Rachunok", "Benjamin", email = "brachun@sandia.gov",
+  role = c("aut", "cre"))
+Description: Contains functions which allow for scenario output from 
+    Prescient 1.0 to be pulled into R and plotted and such. 
+Depends: R (>= 3.1.0)
+License: What license is it under?
+Encoding: UTF-8
+LazyData: false
+Imports: scales
+RoxygenNote: 6.0.1
+Suggests: testthat
+NeedsCompilation: no
+Packaged: 2017-08-02 19:36:25 UTC; brachun
+Author: Rachunok Benjamin [aut, cre]
+Maintainer: Rachunok Benjamin <brachun@sandia.gov>

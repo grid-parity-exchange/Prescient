@@ -1,0 +1,6 @@
+# Partitions File
+
+Group 1:
+-ARW
+-PSW
+-WFW

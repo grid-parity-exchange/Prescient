@@ -1,0 +1,111 @@
+# horse_configurations.txt
+# This file will specify the configurations for a collection of experiments
+
+Horse: with-copula
+
+Populator Options:
+--start-date 2013-01-01
+--end-date 2013-09-30
+--sources-file gosm_test/bpa_sourcelist.csv
+--wind-frac-nondispatch 0.5
+--load-scaling-factor 0.045
+--output-directory output_horse_racer/copula
+--scenario-creator-options-file gosm_test/BPA_scenario_creator.txt
+--allow-multiprocessing 0
+--traceback
+
+Simulator Options:
+--data-directory output_horse_racer/copula
+--simulate-out-of-sample
+--model-directory .
+--solver gurobi
+--plot-individual-generators
+--traceback
+--output-sced-initial-conditions
+--output-sced-demands
+--output-sced-solutions
+--output-ruc-initial-conditions
+--output-ruc-solutions
+--output-ruc-dispatches
+--output-directory output_horse_racer/copula_sim
+
+Horse: without-copula
+
+Populator Options:
+--start-date 2013-01-01
+--end-date 2013-09-30
+--sources-file gosm_test/bpa_sourcelist.csv
+--wind-frac-nondispatch 0.5
+--load-scaling-factor 0.045
+--output-directory output_horse_racer/copula
+--scenario-creator-options-file gosm_test/BPA_scenario_creator_no_copula.txt
+--allow-multiprocessing 0
+
+Simulator Options:
+--data-directory output_horse_racer/meanonly-quick-diverse-meanonly
+--simulate-out-of-sample
+--model-directory .
+--solver gurobi
+--plot-individual-generators
+--traceback
+--output-sced-initial-conditions
+--output-sced-demands
+--output-sced-solutions
+--output-ruc-initial-conditions
+--output-ruc-solutions
+--output-ruc-dispatches
+--output-directory output_horse_racer/no_copula_sim
+
+Horse: with-copula-more-cutpoints
+
+Populator Options:
+--start-date 2013-01-01
+--end-date 2013-09-30
+--sources-file gosm_test/bpa_sourcelist.csv
+--wind-frac-nondispatch 0.5
+--load-scaling-factor 0.045
+--output-directory output_horse_racer/copula_more_cutpoints
+--scenario-creator-options-file gosm_test/BPA_scenario_creator_more_cutpoints.txt
+--allow-multiprocessing 0
+
+Simulator Options:
+--data-directory output_horse_racer/copula_more_cutpoints
+--simulate-out-of-sample
+--model-directory .
+--solver gurobi
+--plot-individual-generators
+--traceback
+--output-sced-initial-conditions
+--output-sced-demands
+--output-sced-solutions
+--output-ruc-initial-conditions
+--output-ruc-solutions
+--output-ruc-dispatches
+--output-directory output_horse_racer/copula_more_cutpoints_sim
+
+Horse: without-copula-more-cutpoints
+
+Populator Options:
+--start-date 2013-01-01
+--end-date 2013-09-30
+--sources-file gosm_test/bpa_sourcelist.csv
+--wind-frac-nondispatch 0.5
+--load-scaling-factor 0.045
+--output-directory output_horse_racer/no_copula_more_cutpoints
+--scenario-creator-options-file gosm_test/BPA_scenario_creator_more_cutpoints_no_copula.txt
+--allow-multiprocessing 0
+
+Simulator Options:
+--data-directory output_horse_racer/no_copula_more_cutpoints
+--simulate-out-of-sample
+--model-directory .
+--solver gurobi
+--plot-individual-generators
+--traceback
+--output-sced-initial-conditions
+--output-sced-demands
+--output-sced-solutions
+--output-ruc-initial-conditions
+--output-ruc-solutions
+--output-ruc-dispatches
+--output-directory output_horse_racer/no_copula_more_cutpoints_sim

@@ -1,0 +1,4 @@
+# this file is a list of sources of uncertainty
+# name of source , forecasts filename , actuals filename , source type , segment rules filename, upper bounds filename
+Wind,gosm_test/2012-2013_BPA_forecasts_actuals.csv,gosm_test/2012-2013_BPA_forecasts_actuals.csv,wind,gosm_test/segment_bpa.txt,gosm_test/manual_ub.dat
+Load,gosm_test/CAiso-TAC_demand_12-15.csv,gosm_test/CAiso-TAC_demand_12-15.csv,load,gosm_test/no_segmentation.txt,

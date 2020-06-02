@@ -1,0 +1,27 @@
+# multi-stage tests; see also run_ms_specialsim.txt
+command/exec prescient.py
+--model-directory=../models/latorrems 
+--run-populator 
+--data-to-fit=leave-one-out 
+--cutpoints-names-filename=../controls/cutpoints/cpts_names.dat 
+--single-category-width=0.1 
+--output-directory=testing_12ScenWind_latorre 
+--ruc-horizon=48 
+--scenarios-populate-datesfile=../data/CAISO/jan2012TestDates.dat 
+--pyspgen-base-file=../data/UtahCase/simple_multistage_skeleton.dat 
+--L1Linf-solver=gurobi 
+--traceback 
+--loads-dps-cuts-filename=../controls/cutpoints/GenParams1.dat 
+--loads-input-directory=../data/CAISO/Load 
+--loads-input-filename=CAiso_load_2012.csv 
+--load-scaling-factor=0.04 
+--cutpoints-dps-params-filename=../controls/cutpoints/GenParams12.dat 
+--sources-file=sources/sources_simple_wind.csv 
+--wind-scaling-factor=0.25 
+--wind-frac-nondispatch=0.50 
+--multistage-on 
+--zones-filename=CAiso_testcase/SingleZone.dat 
+--pyspgen-multistage-commitment-costs-parameters-filename=CAiso_testcase/costsParameters.dat 
+#--wind-input-directory=../data/CAiso/Wind
+#                                --wind-input-filename=WIND_NP15_DA.csv
+# --one-load-cutpoint-pattern=zero

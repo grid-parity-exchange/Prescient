@@ -1,0 +1,104 @@
+\documentclass[12pt]{article}
+
+\begin{document}
+\title{\textsl{Prescient} User Manual}
+\date{\today}
+\author{Hyun Lee}
+
+\maketitle
+\section{Installation}
+For further clarification, this quick start guide is for using Prescient 2.0 on a Windows 10 computer. All of the commands in the document are done on the Anaconda prompt.\newline
+It is important that the user installs \begin{enumerate}
+	\item Python 3.4
+	\item numpy, scipy, and matplotlib
+	\item pyomo
+	\item IPOPT
+	\item Prescient 2.0
+	
+\end{enumerate}
+
+\subsection{How to get Python}
+A convenient and easy way to acquire Python 3 and the other required modules is through the Anaconda Python distribution. It may be downloaded from the following website:
+\begin{verbatim}
+https://store.continuum.io/cshop/anaconda/
+\end{verbatim}
+Make sure to select the graphical installer for Python 3 for Windows 32- or 64-bit, depending on your operating system. Run the executable installer to install Anaconda.
+This should install the relevant scientific computation libraries, numpy, scipy, and matplotlib as well as a collection of other modules.\newline
+\subsection{How to get Pyomo}
+Installing Pyomo to Python is very simple through the Anaconda prompt\newline
+Type in on the Anaconda prompt:\newline
+\verb|conda install -c conda-forge pyomo|\newline
+Then also type in:\newline
+\verb|conda install -c conda-forge pyomo.extras|\newline
+Through these commands, you should have pyomo installed on your computer. To check that Pyomo is actually installed on your computer, type in:\newline
+\verb|pyomo --version|\newline
+You should get something like this:\newline
+\verb|Pyomo 5.2 (CPython 3.6.1 on Windows 10)|
+\subsection{How to get IPOPT}
+Getting IPOPT on Unix machine is quite simple, but getting it on Windows can be quite tricky. First, download an executable from the following website:
+\begin{verbatim}
+http://apmonitor.com/wiki/index.php/Main/DownloadIpopt
+\end{verbatim}
+After downloading the executable, navigate to the Downloads folder, unzip the downloaded file, and move the folder ipopt\_ampl to the C:\textbackslash directory. Then add this folder to the PATH environment variable. You can do this by opening the Control Panel, navigating to System and Security, then to System, and finally clicking Advanced system settings. Click the button labeled \emph{Environment Variables...} and then find the PATH variable in the User Variables and click \emph{Edit...}. Then click {\it New} and write in \emph{C:\textbackslash ipopt\_ampl}. If there is no PATH variable, click \emph{New...} and give the variable the name PATH  and the value \emph{C:\textbackslash ipopt\_ampl}.\newline
+To check everything was downloaded correctly, type in:\newline \verb|ipopt --version| \newline on you command line. You should get something like this:\newline
+\verb|Ipopt 3.9.1 (MINGW32_NT-5.1 1.0.10(0.46/3/2)), ASL(20101105)|
+ 
+\subsection{Additional Setup}
+As a Windows user, it gets frustrating when programs work on Unix machines, but the same programs do not work for a Windows machine. Therefore to guarantee that the program works for both systems, we have to edit the registry.\newline
+\begin{enumerate}
+	\item Go to your start menu
+	\item Type in regedit
+	\item Click on Default where the data is on \verb|"C:home\Anaconda3\python.exe" "%1"|
+	\item In you \emph{value data}, add $\%*$ to the end.
+	\item Make sure to change the association of the .py files to python files. 
+\end{enumerate}
+Now you should have no trouble with getting programs from a Unix user.
+\section{Example}
+I am going to assume that the user is in the quickStart directory.\newline
+This example is simple, but very important to understanding the basic inner workings of the Prescient program.\newline
+Type in the command:
+\newline
+python runner.py \verb|solar_test|$|$ \verb|run_populator_solar_caiso.txt|\newline
+Result:\newline
+You should be getting specific information for each date:\newline
+populator.py\newline
+Reading in data\newline
+2015-01-01: Creating scenarios.\newline
+2015-01-01: Constructing Distributions\newline
+2015-01-01: Constructing Skeleton Points\newline
+2015-01-01: Truncating Scenarios\newline
+2015-01-01: Plotting Scenarios\newline
+2015-01-01: Done creating scenarios.\newline
+\subsubsection{Dependencies}
+To get a better idea of the relationship between the input files and the output files, read the document:\newline
+ \verb|Dependencies.docx|
+
+\section{What is Prescient?}
+The Prescient program is the joint outcome of Sandia labs and University of California Davis. The program was created on the vision that operations planning models can be more accurate, leading to cost-effective results. Non-parametric error densities are considered of significant importance because they effectively model the real-world scenarios of today. The output from these epi-spline basis functions are used to create probabilistic scenarios.
+\indexspace The program relies on non-stochastic density estimates of forecast errors by using Epi-splines functions. Epi-splines functions are piecewise functions that can be applied as long as historical error data is available. This historical error data is stored in the \verb|solar_data.csv and raw_solar.csv| file which accounts for error estimation for each hour of the day. Thus, our scenarios are created by partitioning the error distributions and connecting the pieces of quantiles together. For example, if we want to form a low-probability tailed event, then we would have to choose quantiles that correspond to this event. Therefore the spread of the scenarios can be adjusted to allow coverage that reflects the expected domain of the local wind conditions. The specification of the hours is done by the calling of \verb|segment_solar.txt| from sources.csv which goes into \verb|solar_data.csv| and chooses the appropriate times. 
+\subsection{Why Precient is Important}
+Because of the current computational limits of today’s planning models, stochastic operations planning models will be effectively used soon. As a result, it is of utmost importance to figure out a way to construct high-quality wind power scenarios as they will be used as inputs for stochastic operations planning models. To add on, these scenarios are taken from high accuracy stochastic process models. If these constructions are successfully implemented, then we can minimize cost and maintain reliability for a broad scope of scenarios.
+\indexspace
+Currently, probability wind power scenarios rely on “point” forecasts. These forecasts are outputs from a numerical weather prediction model which specifies a single trajectory of wind over an operational time horizon. It is important to note that the probabilistic scenarios are constructed by sampling from parametric forms of error distributions. These wind power and forecast errors rely heavily on the geographic locations and the local wind conditions. To add on, these scenarios should capture irregular wind patterns so that operation planning can address these problems. However, it is important for these models to differentiate between completely irregular data such as cyclic ramping events that is not actually seen in real data. Thus, probabilistic scenarios that solely rely on parametric forms of error distributions seem lacking in balancing these two attributes.
+\subsection{Simplified Steps of the Calculation}
+\begin{enumerate}
+	\item We choose the specific hours we want in the day-ahead forecast, and we calculate the estimated forecast error densities for those hours in the next-day forecast. 
+	\item Choose a set of probability values to partition the CDF (Cumulative Distributive Function) of the error density (This part is where we start partitioning). Within each partition, we can obtain the representative forecast error based on the probability-weighted error density.
+	\item The error values are applied to next-day forecast for the specified hour slot which contains the information: hour and probability values
+	\item : Intra-hour values are interpolated to form a 24-hour scenario. 
+\end{enumerate}
+
+\section{Terminology}
+\begin{enumerate} 
+	\item\emph{Day Part Separators}: DPS is a set of specific hours we use to construct the forecast error densities. These values are taken from daps directory which is one directory above quickStart.
+	\item \emph{Cut or Break Point Set}: The cut points can be visualized as lines that slice DPS into pieces. More specifically, imagine for each time, t, it contains a set of k cut points from $c_1, c_2, …, c_k$. Therefore, they can be specified as quantiles of the cumulative forecast error density. The directory is located one directory higher than the present directory, quickStart. The Daps directory contains all the statistical tools to solve the non-parametric, stochastic problems.  
+	\item \emph{Skeleton Points}: For each DPS, t, there are a set of skeleton points which represent the wind power values at t. These points individually are representative of the forecast error partition of the two adjacent cut points. Visually, we can imagine as a dot in between two lines.
+	\item\emph{Data}: The raw data is the real world wind power data taken from Bonneville Power Administration (BPA). The segmentation text files are used to determine which points of information are selected from the data. 
+	\item\emph{Scenarios}: The scenarios are a series of wind power quantities. The quantities at the hours associated with skeleton points are computed using error densities. The values for hours between skeleton points are calculated by interpolating the difference between bounding skeleton points and the forecast. In our case, the program created 8 scenarios with the actual forecast and the predicted forecast.
+	\item\emph{png files}: The png files are graphs of each of the eight scenarios. There are nine total individual graphs, and the first graph is the overlapping of all eight scenarios, including the actual and predicted forecast.
+\end{enumerate}
+
+
+
+
+\end{document}

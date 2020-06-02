@@ -1,0 +1,6 @@
+# Upper bounds for wind capacities
+first_date last_date value
+07/01/12 03/31/13 4711
+04/01/13 04/01/13 4615
+04/02/13 04/30/14 4515
+

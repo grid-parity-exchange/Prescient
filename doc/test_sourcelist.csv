@@ -1,0 +1,5 @@
+# This file is a list of sources of uncertainty, line format:
+# source,actuals file,forecast file,type,segment file,bounds file
+SoCalSolar,SP_acts.csv,SP_forecast.csv,solar,seg_solar.txt,ub.dat
+NoCalSolar,NP_acts.csv,NP_forecast.csv,solar,seg_solar.txt,
+load,load_history.csv,load_history.csv,load,seg_load.txt,

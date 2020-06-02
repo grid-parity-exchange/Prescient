@@ -1,0 +1,2 @@
+# name, column_name, selection_method_keyword, selection_method_data
+width,forecasts,window,0.1

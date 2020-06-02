@@ -1,0 +1,863 @@
+
+
+\documentclass{article}
+\title{Distributions and copulas in GOSM}
+\author{Ma\"{e}l Forcier}
+\date{April 2017}
+
+\usepackage[utf8]{inputenc}
+\usepackage{mathtools}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{relsize}
+\usepackage{dsfont}
+\usepackage[all]{xy}
+\usepackage{float}
+\usepackage{color}
+\usepackage{comment}
+\newcommand{\mf}[1]{\textcolor{red}{$\textrm{Mael: }${#1}}}
+\newcommand{\code}[2]{\texttt{#1}}
+
+\begin{document}
+   \maketitle
+   \section{Introduction}
+
+	We present a python library to use distribution with copulas.
+
+
+	We want to model the random properties of a data. In this section we will take the example of the production of wind power that we want to model by a gaussian.
+
+	Today we do not know what wind production there would be tomorrow., so we model this wind production by a random variable $X$ that has a lot of properties.
+
+	\section{Mathematical Definitions}
+	\newtheorem{definition}{Definition}
+	\newtheorem{property}{Property}
+	\begin{definition}
+	The cumulative density function (cdf) of a random variable $X \in \mathbb{R}$ is the function $F : \mathbb{R} \to [0,1]$ where :
+	\begin{equation*}
+	F(x) = \mathbb{P}(X\leq x)
+	\end{equation*}
+	\end{definition}
+
+	This definition also works when X is a multidimensional random	variable i.e. $\in \mathbb{R}^d$ if we use the notation $(x_1,...,x_d) \leq (y_1,...,y_d) \Leftrightarrow \forall i, x_i \leq y_i$
+
+
+	\begin{definition}
+	If the cdf of $X \in \mathbb{R}$ is differentiable, the probability density function (pdf) of X is the function $f : \mathbb{R} \to [0,1]$ where :
+	\begin{equation*}
+	f(x) = \frac{dF(x)}{dx} = \frac{d\mathbb{P}(X\leq x)}{dx}
+	\end{equation*}
+	If $X \in \mathbb{R}^d$ and F is regular enough, the probability density function pdf of X is the function $f : \mathbb{R} \to [0,1]$ :
+	\begin{equation*}
+	f(x) = \frac{d^d F(x)}{dx_1...dx_d}
+	\end{equation*}
+	\end{definition}
+
+
+
+	Each one of these two functions gives all the informations about how the random variable X behaves. With them, we can compute different charasteristic values of the distribution.
+
+	\begin{definition}
+	The mean of a random variable $X \in \mathbb{R}^d$ is :
+	\begin{equation*}
+	\mathbb{E}(X) = \int_{\mathbb{R}^d} xf(x)dx
+	\end{equation*}
+	\end{definition}
+
+	\begin{definition}
+	The variance of a random variable $X \in \mathbb{R}^d$ is :
+	\begin{equation*}
+	Var(X) = \mathbb{E}((X-\mathbb{E}(X))^2) = \int_{\mathbb{R}^d} (x-\mathbb{E}(X))^2f(x)dx
+	\end{equation*}
+	\end{definition}
+
+	\begin{property}
+	If $X \in \mathbb{R}$ is a random variable with a continuous cdf F,
+	\begin{equation*}
+	\text{then } U = F(X) \text{ is a uniform random variable in [0,1]}
+	\end{equation*}
+	\end{property}
+
+	\section{Distribution user manual}
+
+	To model the random properties of data (for example the production of wind power or wind forecast errors). We define distribution as a python object that contains several methods. NB : This distribution python object does not correspond strictly to the mathematical definition of a distribution because it contains several different methods that describe many things linked to the probability law of the variable. To simplify, when we will talk about distribution, it will refer to this distribution python object.
+
+	\begin{figure}[H]
+\[
+   	\xymatrix{
+   		 & \boxed{input\_data} \ar[dd]_{\_\_init\_\_} & \\
+   		 & & \\
+   		 & \boxed{parameters} \ar[ldd]_{generates\_X} \ar[rdd]^{calculus} & \\
+   		 & & \\
+   		\boxed{sample} \ar@/_/[rr]_{counting} & & \boxed{functions} \ar@/_/[ll]_{CDF^{-1}(Uniform\text{ }variable)}
+   	}
+   \]
+   \caption{Simplified diagram of how a distribution object  works}
+	\end{figure}
+
+	\subsection{Methods and parameters of a distribution object}
+	\subsubsection{cdf, pdf and other functions}
+	The methods cdf and pdf compute the two chararacteristic functions defined above. If the object \texttt{distrobject}  represents a random variable X with cdf F and pdf f, \texttt{distrobject.cdf(x)} will return the value of $F(x)$ and \texttt{distrobject.pdf(x)} will return the value of $f(x)$. Most of the time, this value are calculated using analytical formulas.
+
+	For example, the pdf of a normal distribution is calculated using the formula
+	\begin{equation*}
+	f(x) = \frac{1}{\sqrt{2\pi}}exp(\frac{(x-\mu)^2}{2\sigma^2})
+	\end{equation*}
+
+	To make others calculus and depending on the class of the object, one might need other functions linked to the cdf and the pdf. For example, the method \texttt{cdf\_inverse}  will compute the inverse of the cdf. \texttt{distrobject.cdf\_inverse(x)} will return the value $F^{-1}(x)$.
+
+
+	\subsubsection{mean, var and other parameters}
+	One can see that these formulas depend on parameters. In the previous normal case, they are $\mu$ and $\sigma$. \newline
+
+	Althought the mean and the variance can be interesting values that we calculate using the cdf or the pdf. They also can be considered as parameters. In the normal case, $\mu$ is also the mean and $\sigma^2$ the variance. If the object \texttt{distrobject} represents a random variable X, \texttt{distrobject.mean} will return the value of $\mathbb{E}(x)$ and \texttt{distrobject.var} will return the value of $Var(x)$. \newline
+
+	 Depending on the class of the object, it could have other parameters that would be explained in detail while presenting the different classes. For instance, we can quote the degree of freedom (\texttt{df}) for student distributions, the covariance matrix (\texttt{cov}) for multivariate distribution or the theta parameters (\texttt{theta}) for archimedian copulas.
+
+	\subsubsection{Initializing Distributions}
+
+	The method \_\_init\_\_ creates a new object of a distribution class. It will be called with the specific parameters fo the distribution. For instance, $distrobject = UnivariateNormalDistribution(mean=mu,var=sigma**2)$ will return an Normal distribution object with the parameters \texttt{mu} for the mean and \texttt{sigma**2} for the variance.
+	But, in practice, it is very useful to fit a distribution to a data set.
+	This can be done by calling the \texttt{fit} method of any distribution class with the fit method.
+	This method will estimate the parameters for the distribution from the
+	input data. For instance, \texttt{UnivariateNormalDistribution.fit(data = Y)} will return a normal distribution with the
+	mean and variance fit to the data (in this case, these parameters are
+	just taken to be the sample mean and sample variance of the data).
+
+	\subsubsection{\texttt{generates\_X} and sample}
+
+	A distribution object modelizing a random variable X also has a method that can generates realisations of X following the probability law.
+
+	For instance, in the normal case we call the numpy function \texttt{numpy.random.randn} with the good parameters to generates such variables. In the case of univariate distribution it can also be obtained by generating a uniform variable in [0,1] and composing by the inverse of the cdf. $F^{-1}(U)$, where U is uniformly distributed on [0,1], follows the same probability law as X.
+
+	Because sometimes generating a lot of variables can be long, they are stored automatically in \texttt{distrobject.X}. Then,  \texttt{distrobject.generates\_X(n)} returns a vector of n independent realisations of X and store them in the attribute \texttt{mydistrobject.X} by appending this n new values by appending it to the old attribute.
+
+
+	 \subsection{Files and classes}
+
+	 In order to make comparisons and find the best distribution model for a variable, I implemented several different distributions. Even if they follow the same global pattern described above, their parameters, their functions and the way they are implemented can be very different because of a need to speed up the computation or simply because the mathetical object are really different. All the distributions are coded with classes that one can find in a certain file. I explain in this section how the files are organized and how the classes work. At the beginning of each file's subsection, one can see the whole list of the class it contains.
+
+
+	 \subsubsection{base\_distribution.py}
+	 This file contains various abstract classes that define interfaces and common functions for distributions :\newline
+	 \newline
+	 \texttt{BaseDistribution} \newline
+	 \texttt{UnivariateDistribution} \newline
+	 \texttt{MultivariateDistribution} \newline
+
+	 \texttt{BaseDistribution} is the base class from which all the distributions classes will inherit. This class describes at a minimum, what all distributions must have.
+	 For our purposes, we expect all distributions to define a \texttt{pdf} method and a \texttt{fit} method.\newline
+
+	 \texttt{UnivariateDistribution} inherits from \texttt{BaseDistribution}. It serves as the base class for all univariate distributions.
+	 This exports basic methods for computing the cdf, the inverse cdf, and the expectation over a specific region.
+
+	 \texttt{MultivariateDistribution} inherits from \texttt{BaseDistribution}. It is the abstract class from which all the distributions with more than one variable will inherit. The particularity of multivariate distribution is that it works with dictionnaries. This permits not to confuse the different coordinates of the distribution. To this end, any distribution can be constructed or fit by passing by the keyword \texttt{dimkeys} a list of strings which will serve as names for the dimensions. Then one can call a function which expects a vector as input (say the pdf) with the a dictionary mapping dimension names to the values. This abstract class also contains the method \texttt{rect\_prob} that computes the probability for the random variable to be in a n dimension rectangle defined by two opposed points \texttt{lowerdict} and \texttt{upperdict}. Even thaugh this calculus requires a non trivial recursion, it only needs the cdf to be computed and it is the same calculus for all multivariate distribution.
+
+	 \subsubsection{distributions.py}
+
+	 This file contains all the concrete classes of the classical distributions that are not built with copulas. If they are called Univariate, they directly inherit from \texttt{BaseDistribution}, if they are called Multi they inherit form \texttt{MultivariateDistribution} : \newline
+\newline
+	 \texttt{UnivariateBasicEmpiricalDistribution} \newline
+	 \texttt{UnivariateEmpiricalDistribution} \newline
+	 \texttt{UnivariateEpiSplineDistribution} \newline
+	 \texttt{UnivariateUniformDistribution} \newline
+	 \texttt{UnivariateNormalDistribution} \newline
+	 \texttt{UnivariateStudentDistribution} \newline
+	 \texttt{MultiNormalDistribution} \newline
+	 \texttt{MultiStudentDistribution} \newline
+
+	 \texttt{UnivariateBasicEmpiricalDistribution} is the simplest distribution you can build without making an hypothesis on the model. It assumes that all the results in the \texttt{input\_data} are the only possible ones and that they are equiprobable. This gives us a method to generate a sample, we simply pick randomly one element of \texttt{input\_data}. If we note $Y = (Y_1,...,Y_n) = \texttt{input\_data}$, the functions would be :
+	\begin{equation*}
+  	F(x) = \frac{1}{n}\sum_{k=1}^n \mathds{1}_{Y_k\leq x}
+  	\end{equation*}
+  	\begin{equation*}
+  	\mathbb{P}(X=x) = \frac{1}{n}\sum_{k=1}^n \mathds{1}_{Y_k = x}
+  	\end{equation*}
+  	One can notice that F is not continuous, that implies that f is not well defined. \newline
+
+	 \texttt{UnivariateEmpiricalDistribution} works almost like \texttt{UnivariateBasicEmpirical} but avoids the problem of continuity by cleverly interpolating lines between the points we have. When the set of data is big enough it gives the same result than \texttt{UnivariateBasicEmpricalDistribution}. \newline
+
+	 \texttt{UnivariateEpiSplineDistribution} is a more clever object obtained thanks to the resolution of an optimization problem where the cdf as a particular shape : \newline
+	 \begin{equation*}
+  	F(x) = e^{-g(x)}\text{, where }g\text{ is a piecewise defined polynomial}
+  	\end{equation*}
+  	 For example, one can choose the number N which indicates how much subsegments we want to divide our initial segment to create each piece of the polynomial function. Plus, this class needs the installation of the language pyomo and of the solver ipopt. To learn more about these installation, check \texttt{GOSM} user manual. This class is unusual because it was extracted from an earlier version of software called \texttt{Prescient}.\newline
+
+
+	 \texttt{UnivariateUniformDistribution} contains only two parameters called \texttt{a} and \texttt{b} who represent respectively the minimum and the maximum of the distribution. When an object of this class is called with \texttt{input\_data}, the \texttt{\_\_init\_\_} method, assign the minimum of \texttt{input\_data} to $a$ and its maximum to $b$.
+	 \begin{equation*}
+	 a = \texttt{a} = \texttt{min(input\_data)}
+	 \end{equation*}
+	 \begin{equation*}
+	 b = \texttt{b}= \texttt{max(input\_data)}
+	 \end{equation*}
+	 \[
+   		f(x) =
+   		\begin{cases}
+
+    	\frac{1}{b-a} & \quad \text{if } x \in [a,b]\\
+    	0  & \quad \text{else}\\
+  \end{cases}
+  \]
+	 \[
+   		F(x) =
+   		\begin{cases}
+        0  & \quad \text{if } x \leq a \\
+    	1 & \quad \text{if } x \geq b \\
+    	\frac{x-a}{b-a} & \quad \text{else}
+  \end{cases}
+  \]
+
+  \texttt{UnivariateNormalDistribution} has two parameters \texttt{mean} and \texttt{var} which are stored as attributes. We present below the main formulas that define this class. Each time we represent parameters with their names in the python code and with its usual mathematical notation so that the formulas are not too hard to read.
+  	\begin{equation*}
+  	\mu = \texttt{mean} =  \texttt{mean(input\_data})
+  	\end{equation*}
+  	\begin{equation*}
+  	\sigma^2 = \texttt{var} = \texttt{var(input\_data})
+  	\end{equation*}
+  	\begin{equation*}
+  	f(x) = \frac{1}{\sqrt{2\pi \sigma^2}}e^{-\frac{(x-\mu)^2}{\sigma^2}}
+  	\end{equation*}
+  	\begin{equation*}
+  	F(x) = \int_{-\infty}^x \frac{1}{\sqrt{2\pi\sigma^2}}e^{-\frac{(y-\mu)^2}{\sigma^2}}dy
+  	\end{equation*}
+
+  	\texttt{UnivariateStudentDistribution}
+
+  	\begin{equation*}
+  	\mu = \texttt{mean} = \texttt{mean(input\_data)}
+  	\end{equation*}
+  	\begin{equation*}
+  	\nu = \texttt{df} = \texttt{2var(input\_data)/(var(input\_data)-1)}
+  	\end{equation*}
+  	\begin{equation*}
+  	f(x) = \frac{1}{\sqrt{\nu\pi}}\frac{\Gamma(\frac{\nu+1}{2})}{\Gamma(\frac{\nu}{2})}\left(1+\frac{(x-\mu)^2}{\nu}\right)^{-\frac{\nu+1}{2}}
+  	\end{equation*}
+  	\begin{equation*}
+  	F(x) = \int_{-\infty}^x \frac{1}{\sqrt{\nu\pi}}\frac{\Gamma(\frac{\nu+1}{2})}{\Gamma(\frac{\nu}{2})}\left(1+\frac{(y-\mu)^2}{\nu}\right)^{-\frac{\nu+1}{2}}dy
+  	\end{equation*}
+
+
+	 \texttt{MultiNormalDistribution}
+
+  	\begin{equation*}
+  	\mu = \texttt{mean} = \texttt{mean(input\_data)}
+  	\end{equation*}
+  	\begin{equation*}
+  	K = \texttt{cov} = \texttt{cov(input\_data)}
+  	\end{equation*}
+  	\begin{equation*}
+  	f(x) = \frac{1}{(2\pi)^{\frac{d}{2}}\sqrt{det(K)}}e^{-\frac{(x-\mu)^\top K^{-1} (x-\mu)x}{2}}
+  	\end{equation*}
+  	\begin{equation*}
+  	F(x) = \int_{-\infty}^x \frac{1}{(2\pi)^{\frac{d}{2}}\sqrt{det(K)}}e^{-\frac{(y-\mu)^\top K^{-1} (y-\mu)}{2}}dy
+  	\end{equation*}
+
+  	\texttt{MultiStudentDistribution}
+
+  	\begin{equation*}
+  	\mu = \texttt{mean} = \texttt{mean(input\_data)}
+  	\end{equation*}
+  	\begin{equation*}
+  	\nu = \texttt{df}
+  	\end{equation*}
+  	\begin{equation*}
+  	K = \texttt{cov} = \texttt{cov(input\_data)}
+  	\end{equation*}
+  	\begin{equation*}
+  	f(x) = \frac{\Gamma (\frac{\nu +d}{2})}{\Gamma
+	 (\frac{\nu}{2})(\nu \pi)^{\frac{d}{2}}\sqrt{det(K)}}\left(1+\frac{1}{\nu}(x-\mu)^\top K^{-1} (x-\mu) \right)^{-\frac{\nu +d}{2}}
+  	\end{equation*}
+  	\begin{equation*}
+  	F(x) = \int_{-\infty}^x \frac{1}{\sqrt{\nu\pi}}\frac{\Gamma(\frac{\nu+1}{2})}{\Gamma(\frac{\nu}{2})}\left(1+\frac{(y-\mu)^2}{\nu}\right)^{-\frac{\nu+1}{2}}dy
+  	\end{equation*}
+
+
+	 \subsubsection{copula.py}
+	 This file contains the abstract class \texttt{CopulaBase} which inherits from \texttt{MultivariateDistribution} and from which all the concrete copula classes inherit. The mathematical details of copulas are explained in the next sections. As was the case with our distribution objects and classes in python, our copula objects and classes in python are different from the strict mathematical definition of a copula which is just what we call a C function. The inheritance from \texttt{MultivariateDistribution} is very convenient in our applications, but is non-standard for copula classes.\newline
+\newline
+	 \texttt{CopulaBase} \newline
+	 \texttt{GaussianCopula} \newline
+	 \texttt{StudentCopula} \newline
+	 \texttt{FrankCopula} \newline
+	 \texttt{ClaytonCopula} \newline
+	 \texttt{GumbelCopula} \newline
+	 \texttt{WeigthedCombinedCopula} \newline
+	 \texttt{IndependenceCopula} \newline
+	 \texttt{EmpiricalCopula} \newline
+
+	 \texttt{CopulaBase} is the abstract class that contains the attributes and methods that all the copula classes have in common. The method is to use what we presented as property 1 on each diagonal. Instead of working on the dependence between $X_1$, $X_2$ ... and $X_n$, we prefer to focus on the dependence between $U_1=F_1(X_1)$, $U_2=F_2(X_2)$ ... and $U_n=F_n(X_n)$. It is now much easier to compare the dependence between coordonates that all have the same distribution which is uniform in [0,1]. We work in what we call the U-space, $[0,1]^d$, as opposed to the X-space, $\mathbb{R}^d$. One can easily pass from one to the other by composing coordonate by coordonate with the $F_i$ or by using the formulas presented in the next sections. Like all the children of \texttt{MultivariateDistribution} a copula object has methods and attributes in the X-space, but it contains also its twins in the U-space, just like if a copula object contained the distribution of X and the distribution of U. Considering this analogy, C (as the cdf of U) plays in the U-space the role of cdf in the X-space. c (as the pdf of U) plays in the U-space the role of pdf in the X-space. Finally, generates\_U permits to return samples of U with the good dependence, it plays in the U-space the same role as generates\_X in the X-space.
+
+
+	 \subsubsection{vine.py}
+	 Vine copulas are copulas that are built using other bivariate copulas. I explain them with more details in the next section.\newline
+	 \newline
+	 \texttt{CVineCopula} \newline
+	 \texttt{DVineCopula}
+
+	\subsubsection{distribution\_factory.py}
+
+	 In all the previous files, each definition of a new concrete class begins with \texttt{@register\_distribution(name="name-of-the-class")}. This permits to give string names to the class. The file distribution\_factory.py contains the code that allow us to write :\newline \texttt{distr\_class = distribution\_factory(copula\_string)}\newline
+    \texttt{distr\_object = distr\_class(input)}\newline
+
+     instead of\newline\texttt{if copula\_string =="univariate-uniform":}
+
+    \texttt{distr\_object = UnivariateUniformDistribution(input)} \newline
+    \texttt{if copula\_string =="univariate-normal":}
+
+    \texttt{distr\_object = UnivariateNormalDistribution(input)} \newline etc, for all the cases. \newline
+
+    This pratical way of selecting the classes is also used to build distributions that are created thanks to other ones such as combined copulas or vine copulas.
+
+	 \subsubsection{tester.py}
+	This file contains several unittests to check the distribution classes attempt. Some are just quick tests to check if the code runs. But most of them attempt to verify if the implemented formulas are correct. In order to do that,the method is trying to obtain the same result by different ways or by making a loop on diagram that should be commutative like the one in figure 1. For instance, \texttt{test\_pdf\_cdf} integrates the pdf to compare it to the cdf and differentiate the cdf to verify if it is equal to the pdf. \texttt{test\_c\_with\_C\_2\_dim} integrates twice \texttt{c} and verify if the value is equal to \texttt{C}. \texttt{test\_C\_with\_sample} checks the low loop of diagram in figure 1 in the U-space : with a big data set created by \texttt{generates\_U}, it creates an empirical cdf of U (called \texttt{C\_from\_sample}) and compares it to the actual cdf of U which is \texttt{C}. Another example is \texttt{test\_with\_gaussian\_copula\_3\_dim} which checks if making a distribution with normal (or gaussian) marginals and a gaussian copula give the same result than a creating directly a multinormal (or multigaussian) distribution. \newline
+\newline
+	 \texttt{MultiNormalDistributionTester} \newline
+	 \texttt{UnivariateNormalDistributionTester} \newline
+	 \texttt{MultiStudentDistributionTester} \newline
+	 \texttt{UnivariateStudentDistributionTester}\newline
+	 \texttt{CopulaTester} \newline
+	 \texttt{VineCopulaTester}
+
+
+
+
+   \section{Copulas properties}
+
+	In order to study the dependance of several correlated random variables, we need to focus on a tool called copula. It is more practical to consider our different variables together as a multidimensional variable. The distribution univariate random variables are then called marginals. Copulas permit measurement of the dependance without caring about the marginals. In our object oriented program, it is really practical because one can work on the dependance with the copula while the marginals are just input variables. To introduce and define the copulas, let us quote Sklar's theorem :
+	\newtheorem{Sklar}{Theorem}
+	\begin{Sklar}
+		Sklar, 1959. Let us consider a random vector $X = (X_{1},...,X_{d})$ with a 			cumulative distibution function $F(x_{1},...,x_{d})= \mathbb{P}(X_{1}\leq 	x_{1},..,X_{d}\leq x_{d}).$ \newline
+	Then, exists a function C called copula $C : [0,1]^{d}\to [0,1]$ so that :
+	\begin{equation*}
+	F(x_{1},...x_{d})=C(F_{1}(x_{1}),...,F_{d}(x_{d}))
+	\end{equation*}
+	where $F_{i}$ is the cumulative density function of the ith marginal.\newline
+	The copula C is unique if the marginals are continuous.
+	\end{Sklar}
+
+	We will also use the density of the copula :
+
+	\begin{definition}
+	The copula density of a copula C is the function $c : [0,1]^{d}\to \mathbb{R^+}$:\newline
+	\begin{equation*}
+	c(u,v) = \frac{\partial^d C}{\partial u_{1} ... \partial u_{d}} (u,v)
+	\end{equation*}
+	\newline
+	By differentiating, we obtain the equation :
+	\begin{equation*}
+		f(x_1,...,x_d) = c(F_1(x_1),...,F_d(x_d))f_1(x_1)...f_d(x_d)
+	\end{equation*}
+
+	\end{definition}
+
+	\begin{definition}
+	The Kendall distribution function  $\mathcal{K}_F : [0,1]\to [0,1]$ of a distribution of cumulative density function F is : \newline
+	\begin{equation*}
+	\mathcal{K}_F (u) = \mathbb{P} (F(X) \leq u)
+	\end{equation*}
+	where X is a random variable following the distribution defined by F.
+	\end{definition}
+
+
+	\begin{multline*}
+	\begin{split}
+	\mathcal{K}_F (u)	&= \mathbb{P} (F(X) \leq u) \\
+						&= \mathlarger{ \int_{\mathbb{R}^d} \mathds{1}_{F(x) \leq u}f(x) dx} \\
+						&= \mathlarger{ \int_{\mathbb{R}^d} \mathds{1}_{C(F_1(x_1),...,F_d(x_d)) \leq u} c(F_1(x_1),...,F_d(x_d)) f_1(x_1)...f_d(x_d) dx} \\
+						&= \mathlarger{ \int_{[0,1]^d} \mathds{1}_{C(y) \leq u} c(y) dy}\\
+						&= \mathlarger{ \int_{K_u} c(y) dy} \text{	, where } K_u = \{ y\in [0,1]^d, C(y) \leq u \}\\
+						&= \mathbb{P} (C(U) \leq u)
+	\end{split}
+	\end{multline*}
+	Where U is a random variable on $[0,1]^d$ with cdf C (and uniform marginals).
+
+
+	Intuitively, when we do the changing of variable $y_i=F_i(x_i)$ :\newline We have $dy_i = F_i^\prime (x_i) dx_i = f_i(x_i)dx_i$. So, indeed $dy = f_1(x_1)...f_d(x_d)dx$.\newline
+	The meticulous proof with the Jacobian determinant gives the same result.
+	\newline
+
+	$\mathcal{K}_F$ only depends on the copula C of the distribution function.\newline
+	Thus, we will use the notation $\mathcal{K}_C$. \newline
+	If we write $\Gamma_{u_2,...,u_{d}}(x) = C(x,u_2,...,u_d)$, we also have :
+	\begin{equation*}
+	\mathcal{K}_C (u) = \mathlarger{ \int_0^1 ... \int_0^1 \bigg(\int_0^{\Gamma_{y_2,...,y_{d}}^{-1}(u)} c(y) dy_1 \bigg) dy_2...dy_d}
+	\end{equation*}
+	\newline
+
+
+	We want to use Vine copulas to study multidimensional dependance. To compute such vine copulas, we need to have the partial derivative of C function and its inverse. For each of the following copulas in 2 dimensions, I calculated the partial derivate \begin{math} h(u,v,\theta) = \frac{\partial C_{\theta}}{\partial v} (u,v) \end{math}. I also calculated its inverse \begin{math} h^{-1} \end{math} considering its first variable : \begin{math} h(h^{-1}(u,v,\theta),v,\theta)=u \end{math}
+
+	\begin{figure}
+	\[
+   	\xymatrix{
+   		 & C \ar[ldd]_{\frac{\partial}{\partial u_{1}}} \ar[rdd]^{\frac{\partial^d}{\partial u_{1} ... \partial u_{d}}} & \\
+   		 & & \\
+   		\frac{\partial C}{\partial u_{1}} \ar@/_/[rr]_{\frac{\partial^{d-1}}{\partial u_{2} ... \partial u_{d}}} & & c \ar@/_/[ll]_{\int ... \int}
+   	}
+   \]
+	\caption{Relations between copula functions}
+	\end{figure}
+
+
+   \section{Elliptic Copulas}
+   Explain that they are copulas of multidimensional distributed vector with different law.
+   Add the difference between correlation matrix and covariance matrix and say we only consider 1 on the diagonal.
+
+	\subsection{Gaussian Copula}
+
+	The gaussian copula of correlation matrix K is the copula of a gaussian vector \begin{math} \mathcal{N}(0,K) \end{math}.\newline
+	\newline
+	Because one can change the variance of each marginal, we will only consider covariance matrix where there are only 1 in the diagonal.
+	\newline
+	\newline
+	We will note \begin{math} \mathcal{N}(x)=\frac{1}{\sqrt{2\pi}}\int_{-\infty}^{x} e^{-\frac{t^{2}}{2}}dt \end{math}, the cumulative density function of the standard normal distribution and \begin{math} \mathcal{N}^{-1} \end{math} its inverse.
+
+	\subsubsection{C function in dimension n}
+
+
+	\begin{math}
+	 C_{K}(u_{1},...u_{d})= \mathlarger{ \int_{-\infty}^{\mathcal{N}^{-1}(u_{1})}...\int_{-\infty}^{\mathcal{N}^{-1}(u_{d})} \frac{1}{(2\pi)^{\frac{d}{2}}\sqrt{det(K)}}e^{-\frac{x^\top K^{-1} x}{2}}dx}
+	\end{math}
+	\newline
+	\newline
+	With a change of variable, we have also \newline
+	\newline
+	\begin{math}
+	C_{K}(u_{1},...u_{d})=  \mathlarger{ \int_{0}^{u_{1}}...\int_{0}^{u_{d}} \frac{1}{\sqrt{det(K)}}e^{-\frac{\mathcal{N}^{-1}(x)^\top (K^{-1}-I_{d}) \mathcal{N}^{-1}(x)}{2}}dx}
+	\end{math}
+	\newline
+	\newline
+	\newline
+	where \begin{math} \mathcal{N}^{-1}(x) =  \begin{pmatrix}
+   \mathcal{N}^{-1}(x_{1}) \\
+  \vdots   \\
+   \mathcal{N}^{-1}(x_{d})
+ \end{pmatrix}\end{math}
+
+\subsubsection{C function in dimension 2}
+
+ 	In dimension 2, all matrix of correlation can be written \begin{math} K =
+ \begin{pmatrix}
+  1 & \rho \\
+  \rho & 1
+ \end{pmatrix}
+\end{math}. So we will only consider one parameter \begin{math} \rho \end{math}.\newline
+\newline
+
+\begin{math}
+	C_{\rho} (u,v) = \mathlarger{\int_{-\infty}^{\mathcal{N}^{-1}(u)}\int_{-\infty}^{\mathcal{N}^{-1}(v)} \frac{1}{2\pi\sqrt{1-\rho^{2}}}e^{-\frac{x^2-2\rho x y +y^{2}}{2(1-\rho^{2})} }dx dy}
+\end{math}
+\newline
+\newline
+With the same change of variable, we have also
+\newline
+\begin{math}
+	C_{\rho} (u,v) = \mathlarger{\int_{0}^{u}\int_{0}^{v} \frac{1}{\sqrt{1-\rho^{2}}}e^{-\frac{\rho^{2}\mathcal{N}^{-1}(x)^2-2\rho\mathcal{N}^{-1}(x)\mathcal{N}^{-1}(y) + \rho^{2} \mathcal{N}^{-1}(y)^{2}}{2(1-\rho^{2})} }dx dy}
+\end{math}
+
+\subsubsection{Partial derivative of C}
+
+If we derivate the second formula, we have \newline
+\begin{math}
+h(u,v,\rho)=\frac{\partial C_{\rho}}{\partial v} (u,v) = \mathlarger{\int_{0}^{u} \frac{1}{\sqrt{1-\rho^{2}}}e^{-\frac{\rho^{2}\mathcal{N}^{-1}(x)^2-2\rho\mathcal{N}^{-1}(x)\mathcal{N}^{-1}(v) + \rho^{2} \mathcal{N}^{-1}(v)^{2}}{2(1-\rho^{2})} }dx}
+\end{math}
+\newline
+\newline
+If we derivate the first formula above, we obtain \newline
+\begin{math}
+h(u,v,\rho)=\frac{\partial C_{\rho}}{\partial v} (u,v) = \mathlarger{\frac{1}{\mathcal{N}^{'}(\mathcal{N}^{-1}(v))}\int_{-\infty}^{\mathcal{N}^{-1}(u)} \frac{1}{2\pi\sqrt{1-\rho^{2}}}e^{-\frac{x^2-2\rho x \mathcal{N}^{-1}(v) +\mathcal{N}^{-1}(v)^{2}}{2(1-\rho^{2})} }dx}
+\newline
+\newline
+h(u,v,\rho)=\mathlarger{\int_{-\infty}^{\mathcal{N}^{-1}(u)} \frac{1}{\sqrt{2\pi}}e^{-\frac{(x-\rho \mathcal{N}^{-1}(v))^2}{2(1-\rho^{2})}}dx }
+\newline
+\newline
+h(u,v,\rho)=\mathlarger{\int_{-\infty}^{\frac{\mathcal{N}^{-1}(u)-\rho \mathcal{N}^{-1}(v)}{\sqrt{1-\rho^{2}}}} \frac{1}{\sqrt{2\pi}}e^{-\frac{y^2}{2}dy }}
+\newline
+\newline
+h(u,v,\rho)=\mathlarger{  \mathcal{N}(\frac{\mathcal{N}^{-1}(u)-\rho\mathcal{N}^{-1}(v)}{\sqrt{1-\rho^{2}}})}
+\end{math}
+\newline
+\newline
+If we inverse this function, we obtain\newline
+\newline
+\begin{math}
+h^{-1}(u,v,\rho) = \mathcal{N}(\sqrt{1-\rho^2}\mathcal{N}^{-1}(u)+\rho \mathcal{N}^{-1}(v))
+\end{math}
+
+	\subsubsection{c function in dimension n}
+	\begin{equation*}
+	c_{K}(u_1,...,u_d)=\frac{1}{\sqrt{det(K)}}e^{-\frac{\mathcal{N}^{-1}(u)^\top (K^{-1}-I_{d}) \mathcal{N}^{-1}(u)}{2}}
+	\end{equation*}
+
+	where \begin{math} \mathcal{N}^{-1}(u) =  \begin{pmatrix}
+   \mathcal{N}^{-1}(u_{1}) \\
+  \vdots   \\
+   \mathcal{N}^{-1}(u_{d})
+ \end{pmatrix}\end{math}
+
+	\subsubsection{c function in dimension 2}
+	\begin{math}
+		c_\theta (u,v) = \frac{1}{\sqrt{1-\rho ^2}} e^{-\frac{\rho ^2(\mathcal{N}^{-1}(u)^2+\mathcal{N}^{-1}(v)^2) - 2 \rho \mathcal{N}^{-1}(u) \mathcal{N}^{-1}(v)}{2 (1-\rho ^2)}}
+	\end{math}
+
+
+
+	\subsection{Student Copula}
+	The student copula of correlation matrix K and of degree of freedom \begin{math} \nu \end{math} is the copula of a student random vector \begin{math} t_\nu (0,K) \end{math}.\newline
+	\newline
+	Because one can change the variance of each marginal, we will only consider covariance matrix where there are only 1 in the diagonal.
+	\newline
+	\newline
+	We will note \begin{math} t_\nu(x)=\frac{\Gamma (\frac{\nu+1}{2})}{\sqrt{\nu \pi} \Gamma (\frac{\nu}{2})}\int_{-\infty}^{x} \left(1+\frac{t^2}{\nu}\right)^{-\frac{\nu +1}{2}}dt \end{math}, the cumulative density function of the student distribution with degree of freedom \begin{math} \nu \end{math} and \begin{math}  t_\nu^{-1} \end{math} its inverse. \newline
+	We could write both with the regularized incomplete Beta function \newline \begin{math} I_{a,b}(x) = \frac{1}{B(a,b)} \int_{0}^{x} t^{a-1}(1-t)^{b-1}dt \newline = \frac{\Gamma (a+b)}{\Gamma (a)\Gamma (b)} \int_{0}^{x} t^{a-1}(1-t)^{b-1}dt\end{math} \newline
+	\newline
+	and its inverse \begin{math} I_{a,b}^{-1} \end{math} : \newline
+	\[
+   		t_\nu (x) =  \begin{cases}
+        I_{\frac{\nu}{2},\frac{1}{2}}(\frac{\nu}{x^2+\nu})  & \quad \text{if } x \leq 0 \\
+    	1-I_{\frac{\nu}{2},\frac{1}{2}}(\frac{\nu}{x^2+\nu}) & \quad \text{if } x \geq 0\\
+  	\end{cases}
+  	\]
+
+  	and \newline
+  	\[
+   		t_\nu^{-1} (x) =  \begin{cases}
+        -\sqrt{\nu (\frac{1}{I^{-1}_{\frac{\nu}{2},\frac{1}{2}}(2y)}-1)}  & \quad \text{if } x \leq \frac{1}{2} \\
+    	\sqrt{\nu (\frac{1}{I^{-1}_{\frac{\nu}{2},\frac{1}{2}}(2(1-y))}-1)}  & \quad \text{if } x \geq \frac{1}{2}\\
+  	\end{cases}
+  	\]
+
+	\subsubsection{Generates X}
+	To generates our U vector in the $[0,1]^d$ space, we need to first generates a X vector in the $\mathbb{R}^d$ space following a Multivariate Student Distribution. Thus, we use the equality in law :
+	\begin{equation*}
+	\sqrt{\frac{\nu}{S}} Z \sim t_\nu (0,K)
+	\end{equation*}
+	where $s \sim \chi_\nu^2$ and $Z \sim \mathcal{N} (0,K)$
+
+	\subsubsection{C function in dimension n}
+
+
+	\begin{math}
+	 C_{K}(u_{1},...u_{d})= \mathlarger{ \int_{-\infty}^{t_\nu^{-1}(u_{1})}...\int_{-\infty}^{t_\nu^{-1}(u_{d})} \frac{\Gamma (\frac{\nu +d}{2})}{\Gamma
+	 (\frac{\nu}{2})(\nu \pi)^{\frac{d}{2}}\sqrt{det(K)}}\left(1+\frac{1}{\nu}x^\top K^{-1} x \right)^{-\frac{\nu +d}{2}}dx}
+	\end{math}
+	\newline
+	\newline
+	With a change of variable, we have also \newline
+	\newline
+	\begin{math}
+	C_{K}(u_{1},...u_{d})=  \mathlarger{ \int_{0}^{u_{1}}...\int_{0}^{u_{d}} \frac{\Gamma (\frac{\nu +d}{2}) \Gamma (\frac{\nu}{2})^{^{d-1}}}{\sqrt{det(K)}\Gamma (\frac{\nu +1}{2})^{^{d}}\Pi_{j=1}^d 1+\frac{t_\nu^{-1}(x_j)^2}{2})^{-\frac{\nu+1}{2}}}\left(1+\frac{1}{\nu}t_\nu^{-1}(x)^\top K^{-1} t_\nu^{-1}(x) \right)^{-\frac{\nu +d}{2}}dx}
+	\end{math}
+	\newline
+	\newline
+	\newline
+	where \begin{math} t_\nu^{-1}(x) =  \begin{pmatrix}
+   t_\nu^{-1}(x_{1}) \\
+  \vdots   \\
+   t_\nu^{-1}(x_{d})
+ \end{pmatrix}\end{math}
+
+\subsubsection{C function in dimension 2}
+
+ 	In dimension 2, all matrix of correlation can be written \begin{math} K =
+ \begin{pmatrix}
+  1 & \rho \\
+  \rho & 1
+ \end{pmatrix}
+\end{math}. So we will only consider one parameter \begin{math} \rho \end{math}.\newline
+\newline
+
+\begin{math}
+	C_{\rho,\nu} (u,v) = \mathlarger{\int_{-\infty}^{t_\nu^{-1}(u)}\int_{-\infty}^{t_\nu^{-1}(v)} \frac{1}{2\pi\sqrt{1-\rho^{2}}}\left(1+\frac{x^2 -\rho x y + y^2}{\nu (1-\rho^2)}\right)^{-\frac{\nu +2}{2}}dx dy}
+\end{math}
+\newline
+
+
+\subsubsection{Partial derivative of C}
+
+
+If we derivate the formula above, we obtain (cf Pair copula constructions of muliple dependance) : \newline
+\begin{math}
+h(u,v,\rho,\nu)=\frac{\partial C_{\rho,\nu}}{\partial v} (u,v) = t_\nu \bigg(\frac{t_\nu^{-1}(u)-\rho t_\nu^{-1}(v)}{\sqrt{\frac{(\nu+t_\nu^{-1}(v)^2)(1-\rho ^2)}{\nu+1}}}\bigg)
+\end{math}
+
+If we inverse this function, we obtain\newline
+\newline
+\begin{math}
+h^{-1}(u,v,\rho,\nu) = t_\nu (\sqrt{\frac{(\nu+t_\nu^{-1}(v)^2)(1-\rho)}{\nu+1}}t_\nu^{-1}(u)+\rho t_\nu^{-1}(v))
+\end{math}
+
+
+	\subsubsection{c function in dimension n}
+
+	\begin{equation*}
+	 c_{K,\nu} (u_{1},...,u_{d}) = \frac{\Gamma (\frac{\nu +d}{2}) \Gamma (\frac{\nu}{2})^{^{d-1}}}{\sqrt{det(K)}\Gamma (\frac{\nu +1}{2})^{^{d}}\Pi_{j=1}^d (1+\frac{t_\nu^{-1}(u_{j})^2}{2})^{-\frac{\nu+1}{2}}}\left(1+\frac{1}{\nu}t_\nu^{-1}(u)^\top K^{-1} t_\nu^{-1}(u) \right)^{-\frac{\nu +d}{2}}
+	\end{equation*}
+	\newline
+	 where \begin{math} t_\nu^{-1}(u) =  \begin{pmatrix}
+   t_\nu^{-1}(u_{1}) \\
+  \vdots   \\
+   t_\nu^{-1}(u_{d})
+ \end{pmatrix}\end{math}
+	\subsubsection{c function in dimension 2}
+
+	\begin{equation*}
+		c_\theta (u,v) = \frac{\Gamma (\frac{\nu}{2})\Gamma (\frac{\nu +2}{2})}{\Gamma(\frac{\nu+1}{2})^2 (1+\frac{t_\nu^{-1} (u)^2}{\nu})^{-\frac{\nu+1}{2}} (1+\frac{t_\nu^{-1} (v)^2}{\nu})^{-\frac{\nu+1}{2}} \sqrt{ 1-\rho^2} } \left(1 + \frac{t_\nu^{-1} (u)^2 + t_\nu^{-1} (v)^2 - 2 \rho t_\nu^{-1} (u) t_\nu^{-1} (v)}{\nu (1-\rho^2)}\right)^{-\frac{\nu +1}{2}}
+	\end{equation*}
+
+
+   \section{Archimedean Copulas}
+   Archimedean copulas take the form :
+   \newline
+   \newline
+   \begin{math}
+   C(u_{1},...,u_{d})= \Phi(\Phi^{-1}(u_{1})+...+\Phi^{-1}(u_{d}))
+   \end{math}
+   \newline
+   \newline
+   where \begin{math} \Phi \end{math} is the Laplace transform of a positive nonzero random variable Y :
+	\begin{math} \Phi (u)=\mathbb{E}(e^{-uY})
+	\newline
+	\newline
+	\Phi \end{math} is called the generator function.
+	\newline
+	It generally depends on a parameter called \begin{math} \theta \end{math}.
+	\newline
+	In some papers, the definition of the generator function and its inverse can be inverted. We will use the definition above which gives us simpler formulas.
+	\newline
+
+
+	All of the next formulas can be expressed with the generator function.\newline
+	For example, if we refer to \cite{archimedeancopulas}, we can write the Kendall distribution function thanks to the generator function :
+	\[
+   		\mathcal{K}_C (x) =
+   		\begin{cases}
+        \frac{(-1)^{d-1}(\Phi^{-1}(0))^{d-1}}{(d-1)!}\Phi_-^{(d-1)}(\Phi^{-1}(0))  & \quad \text{if } x=0 \\
+    \sum\limits_{k=0}^{d-2}\frac{(-1)^{k}(\Phi^{-1}(x))^{k}\Phi^{(k)}(\Phi^{-1}(x))}{k!}+\frac{(-1)^{d-1}(\Phi^{-1}(x))^{d-1}\Phi_-^{(d-1)}(\Phi^{-1}(x))}{(d-1)!} & \quad \text{if } x \in ]0,1] \\
+  \end{cases}
+  \]
+   	\subsection{Frank Copula}
+   	\subsubsection{Generator, generator inverse and derivatives}
+   	\begin{math}
+   		\theta \in \mathbb{R} \backslash \{ 0 \} \newline
+   		\newline
+   		\Phi_{\theta}(t)= -\frac{1}{\theta}log(1+e^{-t}(e^{-\theta}-1))
+   		\newline
+   		\newline
+   		\Phi_{\theta}^{-1}(t)=-log(\frac{e^{-\theta t}-1}{e^{-\theta}-1})
+   		\newline
+   		\newline
+   		\Phi_{\theta}^\prime (t)= \frac{e^{-t}}{\theta (\frac{1}{e^{-\theta} -1}+e^{-t})}
+   		\newline
+   		\newline
+   		\Phi_{\theta}^{\prime \prime} (t)= \frac{-e^{-t}}{\theta (e^{-\theta} -1) (\frac{1}{e^{-\theta} -1}+e^{-t})^2}
+   	\end{math}
+
+
+   	\subsubsection{C function in dimension 2}
+   	\begin{math}
+   		C_{\theta}(u,v) = -\frac{1}{\theta}log(1+\frac{(e^{\theta u}-1)(e^{\theta v}-1)}{e^{-\theta}-1})
+   	\end{math}
+
+   	\subsubsection{Partial derivative of C and inverse}
+   	\begin{math}
+   		h(u,v,\theta)=\frac{\partial C_{\theta}}{\partial v} (u,v) = \frac{e^{\theta u}-1}{e^{\theta u}+e^{\theta v}-e^{\theta (u+v-1)}-1}
+   	\newline
+	\newline
+	\text{We first solve } \frac{a X + b}{c X + d}=y \text{, where } a = 1, b =-1, c= 1-e^{\theta (v-1)}, d = e^{\theta v}-1\newline
+	\newline
+	\text{We have then } X = \frac{dy-b}{a-cy}\newline
+	\newline
+	\text{We solve } e^{\theta u}=X : u = \frac{1}{\theta}log(X)\newline
+	\newline
+	\text{So, we now have}\newline
+  	h^{-1}(u,v,\theta) = \frac{1}{\theta}log(\frac{(e^{\theta v}-1)u+1}{1-(1-e^{\theta (v-1)})u})
+   	\end{math}
+
+   	\subsubsection{c function in dimension 2}
+
+   	\begin{math}
+   	c_\theta (u,v) = \frac{\theta e^{\theta (u+v)} (1-e^{-\theta})}{(e^{\theta u}+e^{\theta v}-e^{\theta (u+v-1)}-1)^2}
+   	\end{math}
+
+
+   	\subsection{Gumbel Copula}
+   	\subsubsection{Generator and generator inverse}
+   	\begin{math}
+   		\theta \in  [1,\infty[ \newline
+   		\newline
+   		\Phi_{\theta}(t)= e^{-t^{ \frac{1}{\theta} }}
+   		\newline
+   		\Phi_{\theta}^{-1}(t)=(-log(t))^{\theta} \newline
+   		\Phi_{\theta}^\prime (t) = -\frac{1}{\theta} t^{ \frac{1-\theta}{\theta}} e^{-t^{ \frac{1}{\theta} }} \newline
+   		\Phi_{\theta}^{\prime \prime} (t) = ((-\frac{1}{\theta} t^{ \frac{1-\theta}{\theta}})^2 - \frac{1-\theta}{\theta^2} t^{ \frac{1-2\theta}{\theta}}) e^{-t^{ \frac{1}{\theta} }}
+   	\end{math}
+   	\subsubsection{C function in dimension 2}
+   	\begin{math}
+   		C_{\theta}(u,v) = e^{-((-log(u))^{\theta}+(-log(v))^{\theta})^{\frac{1}{\theta}}}
+   	\end{math}
+   	\subsubsection{Partial derivative of C and inverse}
+   	\begin{math}
+   		h(u,v,\theta)=\frac{\partial C_{\theta}}{\partial v} (u,v) = \frac{1}{v}(-log(v))^{\theta-1}((-log(u))^{\theta}+(-log(v))^{\theta})^{\frac{1}{\theta}-1}e^{-((-log(u)^{\theta}+(-log(v))^{\theta})^{\frac{1}{\theta}}}
+	\newline
+	\newline
+	\text{We have to introduce the lambert W function which is the inverse of } x \to x e^{x} :\newline
+	W(x)e^{W(x)}=x
+	\newline\newline
+	\text{For } x \geq 0, ye^{y}= x \text{ has only one solution y.}\newline
+	\text{So, there is no ambiguity to define } W(x) \text{ if } x\geq 0.
+	\newline
+	\newline
+	\text{We first solve } \lambda X^\alpha e^{-X} = y \text{ where } \lambda = \frac{(-log(v))^{\theta-1}}{v}, \alpha = 1-\theta
+	\newline
+	\newline
+	\text{We obtain } X = \alpha W(\frac{1}{\alpha}(\frac{y}{\lambda})^{\frac{-1}{\theta-1}})
+	\newline
+	\newline
+	\text{Then, we solve } X = ((-log(u))^{\theta}+(-log(v))^{\theta})^{\frac{1}{\theta}}
+	\newline
+	\newline
+	\text{which gives us } u = e^{-(X^{\theta}-(-log(v))^{\theta})^{\frac{1}{\theta}}}
+	\newline
+	\newline
+	\text{Finally, we have }
+  	h^{-1}(u,v,\theta) = e^{-(((\theta-1)W(\frac{-log(v)}{\theta-1}(vu)^{\frac{-1}{\theta -1}}))^{\theta}-(-log(v))^{\theta})^{\frac{1}{\theta}}}
+	\end{math}
+
+	\subsubsection{c function in dimension 2}
+
+	\begin{math}
+		c_\theta (u,v) =  \frac{C_\theta (u,v)}{u v} ((-log(u)^{\theta}+(-log(v))^{\theta})^{-2+\frac{2}{\theta}} [1+ (\theta -1)((-log(u)^{\theta}+(-log(v))^{\theta})^{-\frac{1}{\theta}}]
+	\end{math}
+
+
+
+   	\subsection{Clayton Copula}
+   	\subsubsection{Generator, generator inverse and derivatives}
+   	\begin{math}
+   		\theta \in  [-1,\infty[ \backslash \{ 0 \} \newline
+   		\newline
+   		\Phi_{\theta}(t)= (1+\theta t)_+^{-\frac{1}{\theta} }
+   		\newline
+   		\Phi_{\theta}^{-1}(t)=\frac{1}{\theta}(t^{-\theta}-1) \newline
+   		\newline
+   		\Phi_{\theta}^{(n)}(t) = (-1)^n (1+\theta t)^{-\frac{1+n \theta}{\theta}} \prod\limits_{k=0}^{n-1} (1 + k \theta)
+   	\end{math}
+
+	\subsubsection{C function in dimension 2}
+   	\begin{math}
+   		C_{\theta}(u,v) = (max\{u^{-\theta}+v^{-\theta}-1;0\})^{-\frac{1}{\theta}}
+   	\end{math}
+	\subsubsection{Partial derivative of C and inverse}
+   	\[
+   		h(u,v,\theta)=\frac{\partial C_{\theta}}{\partial v} (u,v) = \begin{cases}
+        v^{-\theta-1}(u^{-\theta}+v^{-\theta}-1)^{-\frac{1}{\theta}-1}  & \quad \text{if } u^{-\theta}+v^{-\theta} \geq 1 \\
+    0  & \quad \text{else} \\
+  \end{cases}
+  \]
+
+  	\begin{math}
+  	h^{-1}(u,v,\theta) = (u^{-\frac{\theta}{\theta+1}}v^{-\theta}-v^{\theta}+1)^{-\frac{1}{\theta}}
+	\end{math}
+	where u must be nonzero.
+
+	\subsubsection{c function in dimension 2}
+	\begin{math}
+		c_\theta (u,v) = (1+\theta)(u v)^{-1-\theta}(u^{-\theta}+v^{-\theta}-1)^{-\frac{1}{\theta}-2}
+	\end{math}
+
+	\section{Empirical Copula}
+	Having a sample of multivariate random variables, we can define the finite empirical distribution of this sample where each realisation of the sample is equiprobable. The empirical copula is the copula of this empirical distribution. Contrary to the other ones, the empirical copula depends on its marginals.
+
+	\begin{equation*}
+	C(u_1,...,u_d) = \sum_{k=1}^n \mathds{1}_{\forall i, F_i(x_k)\leq u_i}
+	\end{equation*}
+
+	where, $F_i$ is the cdf of the marginal i.
+
+
+	\section{Vine Copulas}
+
+	\subsection{Canonical Vine Copula}
+
+	\subsubsection{Global probability density function}
+
+	\begin{equation*}
+		f(x_1,...,x_d)= \prod_{k=1}^d f(x_k) \prod_{j=1}^{d-1} \prod_{i=1}^{d-j} c_{j,j+i|1,...,j-1}(F(x_j|x_1,...,x_{j-1}),F(x_{j+i}|x_1,...,x_{j-1}))
+	\end{equation*}
+
+	\subsubsection{c function in dimension n}
+	By identifying c in the previous equation, we have :
+
+	\begin{equation*}
+		c_{1,...,d}(F_1(x_1),...,F_d(x_d))=  \prod_{j=1}^{d-1} \prod_{i=1}^{d-j} c_{j,j+i|1,...,j-1}(F(x_j|x_1,...,x_{j-1}),F(x_{j+i}|x_1,...,x_{j-1}))
+	\end{equation*}
+
+	We now do an approximation of conditional independance : \newline
+	\begin{math} c_{j,j+i|1,...,j-1}=1 \end{math} when \begin{math} (1,...,j-1) \neq \emptyset \Leftrightarrow j \neq 1\end{math}
+	\newline
+	\newline
+	We obtain :\newline
+	\begin{equation*}
+		c_{1,...,d}(F_1(x_1),...,F_d(x_d)) = \prod_{i=1}^{d-1} c_{1,i+1} (F_1(x_1),F_{i+1}(x_{i+1}))
+	\end{equation*}
+
+	Then,
+
+	\begin{equation*}
+		c_{1,...,d}(u_1,...,u_d) = \prod_{i=1}^{d-1} c_{1,i+1} (u_1,u_d)
+	\end{equation*}
+
+	\subsection{D Vine Copula}
+
+	\subsubsection{Global probability density function}
+
+	\begin{equation*}
+		f(x_1,...,x_d)= \prod_{k=1}^d f(x_k) \prod_{j=1}^{d-1} \prod_{i=1}^{d-j} c_{i,i+j|i+1,...,i+j-1}(F(x_i|x_{i+1},...,x_{i+j-1}),F(x_{i+j}|x_{i+1},...,x_{i+j-1}))
+	\end{equation*}
+
+	\subsubsection{c function in dimension n}
+	By identifying c in the previous equation, we have :
+
+	\begin{equation*}
+		c_{1,...,d}(F_1(x_1),...,F_d(x_d))= \prod_{j=1}^{d-1} \prod_{i=1}^{d-j} c_{i,i+j|i+1,...,i+j-1}(F(x_i|x_{i+1},...,x_{i+j-1}),F(x_{i+j}|x_{i+1},...,x_{i+j-1}))
+	\end{equation*}
+
+	We now do an approximation of conditional independance : \newline
+	\begin{math} c_{i,i+j|i+1,...,i+j-1}=1 \end{math} when \begin{math} (i+1,...,i+j-1) \neq \emptyset \Leftrightarrow j\neq 1\end{math}
+
+	We obtain :\newline
+	\begin{equation*}
+		c_{1,...,d}(F_1(x_1),...,F_d(x_d)) = \prod_{i=1}^{d-1} c_{i,i+1} (F_i(x_i),F_{i+1}(x_{i+1}))
+	\end{equation*}
+
+	Then,
+	\begin{equation*}
+		c_{1,...,d}(u_1,...,u_d) = \prod_{i=1}^{d-1} c_{i,i+1} (u_i,u_{i+1})
+	\end{equation*}
+
+
+\begin{thebibliography}{9}
+
+	\bibitem{archimedeancopulas}
+  	Alexander J. McNeil, Johanna Neslehova
+ 	 \emph{Multivariate Archimedean Copulas, d-monotone Functions and l1-norm Symmetric Distributions},Ann. Stat., 37:3059-3097, 2009.
+
+	\bibitem{vineconstruction}
+  	Kjersti Aas, Claudia Czado, Arnoldo Frigessi, Henrik Bakken,
+ 	 \emph{Pair-copula construction of multiple dependence},
+  	2007.
+
+  	\bibitem{fourcopulas}
+  	Kjersti Aas,
+ 	 \emph{Modeling the dependance structure of financial assets : A survey of four copulas}
+  	2004.
+
+  	\bibitem{kendallfunction}
+  	Johanna F. Ziegel, Tilmann Gneiting,
+ 	 \emph{Copula Calibration}, Electronic Journal of Statistics,
+  	2014.
+
+	\end{thebibliography}
+\end{document}

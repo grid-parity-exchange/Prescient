@@ -1,0 +1,4 @@
+source,proportion
+A,0.2
+B,0.4
+C,0.4

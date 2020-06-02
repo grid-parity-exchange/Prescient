@@ -1,0 +1,27 @@
+command/exec scenario_creator.py
+
+# Options regarding file in- and output:
+--sources-file gosm_test/bpa_sourcelist.csv
+--output-directory gosm_test/output_scenario_creator
+--hyperrectangles-file ../cutpoints/hyperrectangle_names_1source.dat
+--dps-file ../cutpoints/SC1_cutpoints.dat
+--daps-location ../daps
+--scenario-template-file gosm_test/simple_nostorage_skeleton.dat
+--tree-template-file gosm_test/TreeTemplate.dat
+
+# Scaling options
+--wind-frac-nondispatch=0.5
+
+# Options regarding the univariate epi-spline distribution:
+--seg-N 20
+--seg-kappa 100
+--probability-constraint-of-distributions 1
+--non-negativity-constraint-distributions 0
+--nonlinear-solver ipopt
+--error-distribution-domain 4
+
+# Options regarding all distributions:
+--plot-variable-gap 10
+--plot-pdf 1
+--plot-cdf 0
+--cdf-inverse-tolerance 0.001

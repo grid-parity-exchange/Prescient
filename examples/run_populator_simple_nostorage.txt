@@ -1,0 +1,7 @@
+command/exec populator.py
+--output-directory=simple_nostorage_scengen
+--traceback 
+--sources-file=simple_nostorage_sources.txt
+--start-date=2015-06-15
+--end-date=2015-06-20
+--scenario-creator-options-file=run_scenario_creator.txt

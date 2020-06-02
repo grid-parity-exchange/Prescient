@@ -1,0 +1,38 @@
+command/exec copula_test.py
+
+# Options regarding file in- and output:
+--sources-file test_sourcelist.csv
+--output-directory output_scenario_creator
+--hyperrectangles-file hyperrectangle_names_1source.dat
+--dps-file test_dps.dat
+--daps-location /home/maxyves/Documents/Stage_Davis/prescient/daps
+
+# General options:
+--scenario-day 2015-06-30
+#--historic-data-start 2014-08-01
+--historic-data-end 2015-06-29
+--copulas-across-dps 0
+
+# Options regarding solar sources
+--power-level-sunrise-sunset 1
+--dps-sunrise 5
+--dps-sunset 20
+
+# Options regarding multiple sources
+--cross-scenarios 0
+--copula-across-sources gaussian-copula
+
+# Options regarding the univariate epi-spline distribution:
+--seg-N 100
+--seg-kappa 100
+--probability-constraint-distributions 1
+--non-negativity-constraint-distributions 0
+--nonlinear-solver ipopt
+
+# Options regarding all distributions:
+--plot-variable-gap 100
+--plot-pdf 0
+--plot-cdf 0
+--cdf-inverse-tolerance 1.0e-4
+--cdf-inverse-max-refinements 10
+--copula-across-dps gaussian-copula

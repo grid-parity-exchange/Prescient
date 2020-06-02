@@ -1,0 +1,108 @@
+\newcommand{\code}[1]{\textmd{\texttt{#1}}}
+
+%All of Anaconda is stored in one location. To uninstall, just remove the installation location directory.
+\subsection{Python 3.4 or later and Associated Modules}
+\subsubsection{With Anaconda}
+A convenient and easy way to acquire Python 3 and the other required modules is through the Anaconda Python distribution. It may be downloaded from the following website:
+\begin{verbatim}
+https://store.continuum.io/cshop/anaconda/
+\end{verbatim}
+Make sure to select the graphical installer for Python 3 for Windows, Mac OSX or Linux 32- or 64-bit, depending on your operating system. Run the executable installer to install Anaconda.
+This should install the relevant scientific computation libraries, \textit{numpy}, \textit{scipy}, and \textit{matplotlib} as well as a collection of other modules.
+
+\subsubsection{Without Anaconda}
+
+If you do not wish to download Anaconda, you can obtain the relevant Python modules in the following manner.
+On UNIX and MAC OS X systems, Python 3 is usually already installed as python or python3. You can easily check this by 
+executing the command \texttt{python} or the command \texttt{python3} in the terminal.
+This should start the Python interactive shell. The version number should be printed immediately after running the command. You can then exit by typing \texttt{quit()}.
+If executing \texttt{python} starts up python2.x whereas executing \texttt{python3} starts up python3.x, navigate to your home directory and open 
+\texttt{.bashrc} in an editor and add \texttt{alias python=python3}. 
+This way python3.x will be called by the \texttt{python} command line. 
+
+If you do not have the appropriate version of python installed, then you can download an installer from the website:
+\begin{verbatim}
+https://www.python.org
+\end{verbatim}
+Simply download the latest version of Python and follow the instructions on the installer.
+
+Additionally, {\it GOSM} requires the numpy, scipy, matplotlib, xlrd, and openpyxl Python modules.
+For any module which is not installed, you can execute the respective command below to install the module.
+\begin{itemize}
+\item numpy: pip install numpy
+\item scipy:pip install scipy
+\item matplotlib: pip install matplotlib
+\item xlrd: pip install xlrd
+\item openpyxl: pip install openpyxl
+\end{itemize}
+
+\subsection{Pyomo}
+To install Pyomo, simply open a terminal and enter \code{pip install pyomo}.
+This requires administrator access. If you do not have administrator access, 
+the command \code{pip install --user pyomo} will install pyomo in the user's 
+home directory, but it will be installed using the system python.  In the current implementation,
+Pyomo Trunk is recommended.  More details about Trunk are available at www.Pyomo.org.
+
+\subsection{Optimizers}
+There are a couple of options for optimizers which are compatible with \textit{prescient}. These include \textit{CPLEX}, \textit{Gurobi}, and \textit{IPOPT}.
+The installation of any one of these and potentially other optimizers should enable the usage of the program to optimize specific problems.
+\subsubsection{CPLEX}
+Information for CPLEX can be found at the following website:
+\begin{verbatim}
+https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/
+\end{verbatim}
+Installation of the product will likely entail creating an account on the website and may require purchasing a copy for larger optimization problems.
+
+\subsubsection{Gurobi}
+Information for \textit{Gurobi} can be found on the following website:
+\begin{verbatim}
+http://www.gurobi.com/
+\end{verbatim}
+
+\subsubsection{IPOPT}
+If you are using a UNIX or MAC operating system, you can install IPOPT using the following commands in the terminal. Before you run these commands, check what the latest version of IPOPT is on the following website (scroll down to the newest version):
+\begin{verbatim}
+http://www.coin-or.org/download/source/Ipopt/
+\end{verbatim}
+In the commands we will refer to the version of IPOPT as 3.x.x. You should change them to reflect the current version.
+\begin{framed}
+\begin{verbatim}
+wget https://www.coin-or.org/download/source/Ipopt/Ipopt-3.x.x.tgz
+mkdir Ipopt 
+mv Ipopt-3.x.x.tgz Ipopt/
+cd Ipopt/
+tar xvfz Ipopt-3.x.x.tgz
+cd Ipopt-3.x.x
+cd ThirdParty/Blas/
+./get.Blas
+cd ../Lapack
+./get.Lapack
+cd ../ASL
+./get.ASL
+cd ../Metis
+./get.Metis
+cd ../Mumps
+./get.Mumps
+cd
+cd Ipopt/Ipopt-3.x.x
+mkdir build
+cd build
+../configure
+make
+make test
+make install
+\end{verbatim}
+\end{framed}
+After running these commands, open the file \texttt{.bashrc} in your home directory and add the following line to the end of the document with {\it username} replaced with the appropriate name:
+\begin{verbatim}
+export PATH=/home/username/Ipopt/Ipopt-3.x.x/build/bin:$PATH
+\end{verbatim}
+For more information on installing IPOPT, see the following website:
+\begin{verbatim}
+http://www.coin-or.org/Ipopt/documentation/node10.html
+\end{verbatim}
+If you are running a Windows operating system, then you can download an executable from the following website:
+\begin{verbatim}
+http://apmonitor.com/wiki/index.php/Main/DownloadIpopt
+\end{verbatim}
+After downloading the executable, navigate to the Downloads folder, unzip the downloaded file, and move the folder \texttt{ipopt\_ampl} to the C:\textbackslash\ directory. Then add this folder to the PATH environment variable. You can do this by opening the Control Panel, navigating to System and Security, then to System, and finally clicking Advanced system settings. Click the button labeled \emph{Environment Variables...} and then find the PATH variable in the User Variables and click \emph{Edit...}. Then click {\it New} and write in \code{C:\textbackslash ipopt\_ampl}. If there is no PATH variable, click \emph{New...} and give the variable the name PATH  and the value \code{C:\textbackslash ipopt\_ampl}.

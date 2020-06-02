@@ -1,0 +1,5 @@
+#source_name,forecasts,actuals,source_type,segmentation_file
+ARW,gosm_test/data/ARW.csv,gosm_test/data/ARW.csv,wind,gosm_test/segment_bpa.txt,
+PSW,gosm_test/data/PSW.csv,gosm_test/data/PSW.csv,wind,gosm_test/segment_bpa.txt,
+WFW,gosm_test/data/WFW.csv,gosm_test/data/WFW.csv,wind,gosm_test/segment_bpa.txt,
+Load,gosm_test/fake_demand.csv,gosm_test/fake_demand.csv,load,gosm_test/no_segmentation.txt,

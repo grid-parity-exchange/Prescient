@@ -1,0 +1,3 @@
+# name, column_name, method, desired_proportion
+forecasts,forecasts,window,0.2
+enumerate,derivative_patterns,enumerate

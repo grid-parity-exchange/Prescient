@@ -1,0 +1,13 @@
+command/exec markov_populator.py
+--power-source wind.csv
+--start-date 2013-01-01
+--end-date 2013-01-31
+--output-directory markov_output
+--use-error-quantiles
+--error-quantile-size 0.1
+--consider-derivatives
+--explicit-derivative-quantiles 0,0.5,1
+--number-of-scenarios 100
+--capacity 4000
+--source-name wind
+--allow-multiprocessing

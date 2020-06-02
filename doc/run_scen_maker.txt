@@ -1,0 +1,4 @@
+command/exec ScenMaker.py
+--sources-file test_sourcelist.csv
+--number-of-scenarios 5
+--output-directory scenario_output

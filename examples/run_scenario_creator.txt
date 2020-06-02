@@ -1,0 +1,9 @@
+command/exec scenario_creator.py
+--sources-file=sources.txt
+--scenario-day=2015-06-15
+--hyperrectangles-file hyperrectangle_names_1source.dat
+--dps-file SolarLimited.dat
+--scenario-template-file utah_case/simple_nostorage_skeleton.dat
+--tree-template-file TreeTemplate.dat
+--reference-model-file ReferenceModel.py
+--solar-frac-nondispatch=0.0

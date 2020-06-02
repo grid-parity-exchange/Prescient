@@ -1,0 +1,24 @@
+# for research - works on Aug 26, 2015 (see also ms_updates_specialsim12wind.bash)
+# note that the sources use data from outside the prescient release
+command/exec prescient.py
+--model-directory=../models/latorrems  
+--run-populator  
+--sources-file=sources/sources_forecastupdates.csv  
+--data-to-fit=leave-one-out  
+--cutpoints-names-filename=../controls/cutpoints/cpts_names.dat  
+--single-category-width=0.1  
+--output-directory=testing12ScenWind_BPA  
+--ruc-horizon=48  
+--scenarios-populate-datesfile=../controls/datefiles/2013_10dates.dat  
+--pyspgen-base-file=../data/UtahCase/test_case_skel_multi.dat  
+--L1Linf-solver=gurobi  
+--traceback  
+--loads-dps-cuts-filename=../controls/cutpoints/GenParams1.dat  
+--loads-input-directory=../data/CAISO/Load  
+--loads-input-filename=CAiso-TAC_demand_12-15.csv  
+--load-scaling-factor=0.045  
+--wind-scaling-factor=1.0  
+--wind-frac-nondispatch=0.30  
+--compute-adjusted-intraday-scenarios-wind  
+--multistage-on  
+--pyspgen-multistage-commitment-costs-parameters-filename=CAiso_testcase/costsParameters.dat

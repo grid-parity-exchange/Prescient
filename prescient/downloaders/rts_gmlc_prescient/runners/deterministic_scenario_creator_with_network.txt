@@ -1,0 +1,5 @@
+command/exec scenario_creator.py
+--scenario-template-file templates/rts_with_network_template_hotstart.dat
+--tree-template-file templates/scenario_tree_template.dat
+--reference-model-file ../../prescient/models/fast/ReferenceModel.py
+--disable-plots
