@@ -1,4 +1,4 @@
-# prescient
+# Prescient
 Code base for Prescient production cost model / scenario generation / prediction interval capabilities.
 
 ## Getting started
@@ -103,7 +103,7 @@ or use the Python unit test interface:
 python -m unittest test_pop_sim_rts-gmlc.py
 ```
 
-Developers
+### Developers
 
 By contributing to this software project, you are agreeing to the following terms and conditions for your contributions:
 
