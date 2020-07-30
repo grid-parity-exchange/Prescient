@@ -7,10 +7,11 @@
 #  This software is distributed under the Revised BSD License.
 #  ___________________________________________________________________________
 
-from .simulator import Simulator
-from .data_manager import DataManager
-from .oracle_manager import OracleManager
-from .reporting_manager import ReportingManager
-from .stats_manager import StatsManager
-from .time_manager import TimeManager
-from .options import Options
+# This file just identifies the data type used to pass options within prescient.
+# If we ever change options parsers, we can change the options type once here instead of
+# changing it everywhere.
+
+import optparse 
+
+Options = optparse.Values
+

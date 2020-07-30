@@ -8,6 +8,13 @@
 #  ___________________________________________________________________________
 
 import abc
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .simulator import Simulator
+
+
+import abc 
 import weakref
 
 ### Manager Class
@@ -19,10 +26,9 @@ class _Manager(abc.ABC):
     def __init__(self):
         self._simulator = None
 
-    def set_simulator(self, simulator):
+    def set_simulator(self, simulator: Simulator):
         self._simulator = weakref.ref(simulator)
 
     @property
-    def simulator(self):
-        return self._simulator
-
+    def simulator(self) -> Simulator:
+        return self._simulator()

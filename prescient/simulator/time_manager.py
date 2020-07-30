@@ -8,14 +8,62 @@
 #  ___________________________________________________________________________
 
 from .manager import _Manager
+from __future__ import annotations
 import dateutil
 import sys
 import datetime
 from datetime import timedelta
 import time
+from typing import Optional, Iterable
 
-class TimeManager(_Manager):
-    def initialize(self, options):
+#from .manager import _Manager
+#from .options import Options
+from . import manager
+from . import options
+
+
+class PrescientTime:
+    '''
+    A point in time during a simulation, with one hour granularity
+    '''
+    def __init__(self, date:str, next_date:str, next_next_date:str, hour:int, is_planning_time:bool, is_ruc_start_hour:bool):
+        self._date = date
+        self._next_date = next_date
+        self._next_next_date = next_next_date
+        self._hour = hour
+        self._is_planning_time = is_planning_time
+        self._is_ruc_start_hour = is_ruc_start_hour
+
+
+    @property
+    def date(self) -> str:
+        return self._date
+
+    @property
+    def next_date(self) -> Optional[str]:
+        return self._next_date
+
+    @property
+    def next_next_date(self) -> Optional[str]:
+        return self._next_next_date
+
+    @property
+    def hour(self) -> int:
+        return self._hour
+
+    @property
+    def is_planning_time(self) -> bool:
+        return self._is_planning_time
+
+    @property
+    def is_ruc_start_hour(self) -> bool:
+        return self._is_ruc_start_hour
+
+class TimeManager(manager._Manager):
+    '''
+    Provides information about the times included in a simulation, including all times of interest during a simulation
+    '''
+    def initialize(self, options: Options) -> None:
         # validate the start date
         try:
             self._start_date = dateutil.parser.parse(options.start_date).date()
@@ -62,8 +110,8 @@ class TimeManager(_Manager):
 
 
 
-    def time_steps(self):
-        '''a generator which yields new instances of the Time class'''
+    def time_steps(self) -> Iterable[PrescientTime]:
+        '''a generator which yields a PrescientTime instance for each time of interest in the simulation'''
         next_dates = self._dates_to_simulate[1:] + [None]
         next_next_dates = next_dates[1:] + [None]
         for date, next_date, next_next_date in zip(self._dates_to_simulate, next_dates, next_next_dates):
@@ -109,7 +157,7 @@ class TimeManager(_Manager):
                     time = PrescientTime(date, next_date, next_next_date, h, planning_time, is_ruc_start_hour)
                     yield time
 
-    def get_first_time_step(self):
+    def get_first_time_step(self) -> PrescientTime:
         first_date = self._get_first_date()
         second_date = self._get_second_date()
         third_date = self._get_third_date()
@@ -118,49 +166,16 @@ class TimeManager(_Manager):
         is_ruc_start_hour = False
         return PrescientTime(first_date, second_date, third_date, first_hour, planning_time, is_ruc_start_hour)
 
-    def is_first_time_step(self, time):
+    def is_first_time_step(self, time: PrescientTime) -> bool:
         return time.hour == 0 and time.date == self._get_first_date()
 
-    def _get_first_date(self):
+    def _get_first_date(self) -> str:
         return self._dates_to_simulate[0]
 
-    def _get_second_date(self):
+    def _get_second_date(self) -> Optional[str]:
         return self._dates_to_simulate[1] if len(self._dates_to_simulate) > 1 else None
 
-    def _get_third_date(self):
+    def _get_third_date(self) -> Optional[str]:
         return self._dates_to_simulate[2] if len(self._dates_to_simulate) > 2 else None
 
 
-class PrescientTime:
-    def __init__(self, date:str, next_date:str, next_next_date:str, hour:int, is_planning_time:bool, is_ruc_start_hour:bool):
-        self._date = date
-        self._next_date = next_date
-        self._next_next_date = next_next_date
-        self._hour = hour
-        self._is_planning_time = is_planning_time
-        self._is_ruc_start_hour = is_ruc_start_hour
-
-
-    @property
-    def date(self) -> str:
-        return self._date
-
-    @property
-    def next_date(self) -> str:
-        return self._next_date
-
-    @property
-    def next_next_date(self) -> str:
-        return self._next_next_date
-
-    @property
-    def hour(self) -> int:
-        return self._hour
-
-    @property
-    def is_planning_time(self) -> bool:
-        return self._is_planning_time
-
-    @property
-    def is_ruc_start_hour(self) -> bool:
-        return self._is_ruc_start_hour

@@ -17,6 +17,7 @@ import os
 import pyutilib
 import profile
 from . import master_options as MasterOptions
+from .options import Options
 from .simulator import Simulator
 from .data_manager import DataManager
 from .time_manager import TimeManager
@@ -25,23 +26,26 @@ from .stats_manager import StatsManager
 from .reporting_manager import ReportingManager
 from prescient.stats.overall_stats import OverallStats
 
+from prescient.engine.pyomo import PyomoEngine
+
 try:
     import pstats
     pstats_available=True
 except ImportError:
     pstats_available=False
 
-def create_prescient(options):
-    timeManager = TimeManager()
-    dataManager = DataManager()
-    oracleManager = OracleManager()
+def create_prescient(options: Options):
+    engine = PyomoEngine()
+    time_manager = TimeManager()
+    data_manager = DataManager()
+    oracle_manager = OracleManager()
     stats_manager = StatsManager()
     reporting_manager = ReportingManager()
-    prescient = Simulator(timeManager, dataManager, oracleManager, stats_manager, reporting_manager)
+    prescient = Simulator(engine, time_manager, data_manager, oracle_manager, stats_manager, reporting_manager)
     return prescient
 
 
-def main_prescient(options):
+def main_prescient(options: Options):
     ans = None
 
     if pstats_available and options.profile > 0:

@@ -7,10 +7,12 @@
 #  This software is distributed under the Revised BSD License.
 #  ___________________________________________________________________________
 
-from .simulator import Simulator
-from .data_manager import DataManager
-from .oracle_manager import OracleManager
-from .reporting_manager import ReportingManager
-from .stats_manager import StatsManager
-from .time_manager import TimeManager
-from .options import Options
+from typing import TypeVar
+
+G = TypeVar('G') # Generator
+B = TypeVar('B') # Bus
+L = TypeVar('L') # Line
+S = TypeVar('S') # Storage
+OperationsModel = TypeVar('OperationsModel')
+RucModel = TypeVar('TypeVar')
+ScenarioTree = TypeVar('ScenarioTree')
