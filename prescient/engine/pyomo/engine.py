@@ -15,13 +15,27 @@ if TYPE_CHECKING:
 
 import os
 
-from pyomo.opt import SolverFactory
+from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.repn.plugins.cpxlp import ProblemWriter_cpxlp
 from pyomo.core import value
 
 from prescient.engine.modeling_engine import ModelingEngine
 
 from .data_extractors import ScedDataExtractor, RucDataExtractor
+
+## termination conditions which are acceptable
+safe_termination_conditions = [
+                               TerminationCondition.maxTimeLimit,
+                               TerminationCondition.maxIterations,
+                               TerminationCondition.minFunctionValue,
+                               TerminationCondition.minStepLength,
+                               TerminationCondition.globallyOptimal,
+                               TerminationCondition.locallyOptimal,
+                               TerminationCondition.feasible,
+                               TerminationCondition.optimal,
+                               TerminationCondition.maxEvaluations,
+                               TerminationCondition.other,
+                              ]
 
 class PyomoEngine(ModelingEngine):
 
@@ -130,8 +144,8 @@ class PyomoEngine(ModelingEngine):
                                      keepfiles=options.keep_solver_files,
                                      **self._solve_options[self._sced_solver])
 
-        if sced_results.solution.status.key != "optimal":
-            print("SCED RESULTS STATUS=", sced_results.solution.status.key)
+        if sced_results.solver.termination_condition not in safe_termination_conditions:
+            print("SCED RESULTS STATUS=", sced_results.solver.termination_condition)
             print("")
             print("Failed to solve SCED optimization instance - no feasible solution exists!")
             print("SCED RESULTS:", sced_results)
@@ -197,7 +211,7 @@ class PyomoEngine(ModelingEngine):
                                          keepfiles=options.keep_solver_files,
                                          **self._solve_options[self._sced_solver])
 
-        if lmp_sced_results.solution.status.key != "optimal":
+        if lmp_sced_results.solver.termination_condition not in safe_termination_conditions:
             raise RuntimeError("Failed to solve LMP SCED")
 
         lmp_sced_instance.solutions.load_from(lmp_sced_results)
