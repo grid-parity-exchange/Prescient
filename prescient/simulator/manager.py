@@ -7,8 +7,8 @@
 #  This software is distributed under the Revised BSD License.
 #  ___________________________________________________________________________
 
-import abc
 from __future__ import annotations
+import abc
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .simulator import Simulator
