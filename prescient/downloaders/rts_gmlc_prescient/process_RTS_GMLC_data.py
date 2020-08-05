@@ -18,7 +18,7 @@ def gmlc_to_prescient(source, aggregate=False, forecast_error=True):
     """
     This takes the RTS-GMLC time series data and 
     puts it into the format required for prescient
-    :param source: options are WIND, PV, RTPV, or HYDRO
+    :param source: options are WIND, PV, RTPV, or Hydro
     :param aggregate: Aggregate all sites within the file or not?
     :return: writes csv files of forecast/actual in prescient format
     """
@@ -63,7 +63,7 @@ def gmlc_to_prescient_by_zone(source, forecast_error=True):
     This takes the RTS-GMLC time series data and 
     puts it into the format required for prescient, 
     aggregated by zone (1, 2, or 3 for RTS-GMLC)
-    :param source: options are WIND, PV, RTPV, or HYDRO
+    :param source: options are WIND, PV, RTPV, or Hydro
     :param aggregate: Aggregate all sites within the file or not?
     :return: writes csv files of forecast/actual in prescient format
     """
@@ -114,7 +114,7 @@ def load_by_bus(source, forecast_error=True):
     This takes the RTS-GMLC time series data and 
     puts it into the format required for prescient, 
     aggregated by zone (1, 2, or 3 for RTS-GMLC)
-    :param source: options are WIND, PV, RTPV, or HYDRO
+    :param source: options are WIND, PV, RTPV, or Hydro
     :param aggregate: Aggregate all sites within the file or not?
     :return: writes csv files of forecast/actual in prescient format
     """
@@ -161,7 +161,7 @@ def source_contribution_factors(source, by_zone=True):
     renewable source to the overall generation, based on
     actual values, and calculated either at the system 
     level or separately for each zone. 
-    :param source: options are WIND, PV, RTPV, or HYDRO 
+    :param source: options are WIND, PV, RTPV, or Hydro 
     :param by_zone: Overall system or by zone?
     :return: file with source name and the contribution
              factor associated with that source
@@ -224,18 +224,18 @@ def create_timeseries(base_dir=None):
     gmlc_to_prescient('WIND', forecast_error=forecast_error)
     gmlc_to_prescient('PV', forecast_error=forecast_error)
     gmlc_to_prescient('RTPV', forecast_error=forecast_error)
-    gmlc_to_prescient('HYDRO', forecast_error=forecast_error)
+    gmlc_to_prescient('Hydro', forecast_error=forecast_error)
     gmlc_to_prescient('WIND', aggregate=True, forecast_error=forecast_error)
     gmlc_to_prescient('PV', aggregate=True, forecast_error=forecast_error)
     gmlc_to_prescient('RTPV', aggregate=True, forecast_error=forecast_error)
-    gmlc_to_prescient('HYDRO', aggregate=True, forecast_error=forecast_error)
+    gmlc_to_prescient('Hydro', aggregate=True, forecast_error=forecast_error)
     gmlc_to_prescient('Load', aggregate=True, forecast_error=forecast_error)
 
 
     gmlc_to_prescient_by_zone('WIND', forecast_error=forecast_error)
     gmlc_to_prescient_by_zone('PV', forecast_error=forecast_error)
     gmlc_to_prescient_by_zone('Load', forecast_error=forecast_error)
-    gmlc_to_prescient_by_zone('HYDRO', forecast_error=forecast_error)
+    gmlc_to_prescient_by_zone('Hydro', forecast_error=forecast_error)
     gmlc_to_prescient_by_zone('RTPV', forecast_error=forecast_error)
 
     load_by_bus('Load', forecast_error=forecast_error)
@@ -246,8 +246,8 @@ def create_timeseries(base_dir=None):
     source_contribution_factors('PV', by_zone=False)
     source_contribution_factors('RTPV', by_zone=True)
     source_contribution_factors('RTPV', by_zone=False)
-    source_contribution_factors('HYDRO', by_zone=True)
-    source_contribution_factors('HYDRO', by_zone=False)
+    source_contribution_factors('Hydro', by_zone=True)
+    source_contribution_factors('Hydro', by_zone=False)
 
 if __name__ == '__main__':
     create_timeseries()
