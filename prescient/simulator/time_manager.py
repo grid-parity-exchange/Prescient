@@ -7,8 +7,8 @@
 #  This software is distributed under the Revised BSD License.
 #  ___________________________________________________________________________
 
-from .manager import _Manager
 from __future__ import annotations
+from .manager import _Manager
 import dateutil
 import sys
 import datetime
