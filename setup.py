@@ -34,7 +34,7 @@ setup(name='prescient',
                 'populator.py = prescient.scripts.populator:main',
                 'scenario_creator.py = prescient.scripts.scenario_creator:main',
                 'simulator.py = prescient.scripts.simulator:main',
-                'prescient.py = prescient.simulator.prescient:main'
+                #'prescient.py = prescient.simulator.prescient:main'
             ]
         },
       package_data={'prescient.downloaders.rts_gmlc_prescient':['runners/*.txt','runners/templates/*']},
