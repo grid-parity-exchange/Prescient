@@ -101,7 +101,7 @@ def load_basic_data(model):
             print("Multiple buses is not supported by buildBusZone in ReferenceModel.py -- someone should fix that!")
             exit(1)
     
-    model.BusZone = Param(model.Buses, mutable=True)
+    model.BusZone = Param(model.Buses, mutable=True, within=Any)
     model.BuildBusZone = BuildAction(rule=buildBusZone)
     
     model.LoadCoefficient = Param(model.Buses, default=0.0)
@@ -172,8 +172,8 @@ def load_basic_data(model):
     
     model.TransmissionLines = Set()
     
-    model.BusFrom = Param(model.TransmissionLines)
-    model.BusTo   = Param(model.TransmissionLines)
+    model.BusFrom = Param(model.TransmissionLines, within=Any)
+    model.BusTo   = Param(model.TransmissionLines, within=Any)
 
     model.LinesTo = Set(model.Buses)
     model.LinesFrom = Set(model.Buses)
@@ -242,10 +242,9 @@ def load_basic_data(model):
     model.NondispatchableGeneratorsAtBus = Set(model.Buses, initialize=nd_gen_init)
     
     def NonNoBus_init(m):
-        retval = set()
         for b in m.Buses:
-            retval = retval.union([gen for gen in m.NondispatchableGeneratorsAtBus[b]])
-        return retval
+            for g in m.NondispatchableGeneratorsAtBus[b]:
+                yield g
     
     model.AllNondispatchableGenerators = Set(initialize=NonNoBus_init)
 
@@ -260,7 +259,7 @@ def load_basic_data(model):
     
     model.ReserveZones = Set()
     model.ZonalReserveRequirement = Param(model.ReserveZones, model.TimePeriods, default=0.0, mutable=True, within=NonNegativeReals)
-    model.ReserveZoneLocation = Param(model.ThermalGenerators)
+    model.ReserveZoneLocation = Param(model.ThermalGenerators, within=Any)
     
     def form_thermal_generator_reserve_zones(m,rz):
         return (g for g in m.ThermalGenerators if m.ReserveZoneLocation[g]==rz)
@@ -606,7 +605,7 @@ def load_basic_data(model):
         else:
             return "Absolute"
     
-    model.PiecewiseType = Param(validate=piecewise_type_validator,initialize=piecewise_type_init, mutable=True)  #irios: default="Absolute" initialize=piecewise_type_init
+    model.PiecewiseType = Param(validate=piecewise_type_validator,initialize=piecewise_type_init, mutable=True, within=Any)  #irios: default="Absolute" initialize=piecewise_type_init
     
     def piecewise_init(m, g):
         return []
@@ -867,7 +866,7 @@ def load_basic_data(model):
     
     
     model.Storage = Set()
-    model.StorageAtBus = Set(model.Buses, initialize=Set())
+    model.StorageAtBus = Set(model.Buses)
     
     def verify_storage_buses_rule(m, s):
         for b in m.Buses:
