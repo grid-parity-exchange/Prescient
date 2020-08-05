@@ -17,11 +17,11 @@ if sys.version[0] == '2':
     print("Error: This package must be installed with python3")
     sys.exit(1)
 
-from setuptools import find_packages, setup
+from setuptools import setup, find_namespace_packages
 
-packages = find_packages()
+packages = find_namespace_packages(include=['prescient.*'])
 
-setup(name='Prescient',
+setup(name='prescient',
       version='2.0',
       description='Power Generation Scenario creation and simulation utilities',
       url='https://github.com/jwatsonnm/prescient',
@@ -37,6 +37,7 @@ setup(name='Prescient',
                 'prescient.py = prescient.simulator.prescient:main'
             ]
         },
+      package_data={'prescient.downloaders.rts_gmlc_prescient':['runners/*.txt','runners/templates/*']},
       install_requires=['numpy','matplotlib','pandas','scipy','pyomo','six',
                         'pyutilib', 'python-dateutil', 'networkx']
      )
