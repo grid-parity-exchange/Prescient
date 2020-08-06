@@ -338,8 +338,7 @@ def write_template( rts_gmlc_dir, file_name, copper_sheet = False, reserve_facto
             x1 = round(gen_spec.OutputPct1 * gen_spec.MaxPower,1)
             x2 = round(gen_spec.OutputPct2 * gen_spec.MaxPower,1)
             x3 = round(gen_spec.OutputPct3 * gen_spec.MaxPower,1)
-            print("set CostPiecewisePoints[%s] := %12.1f %12.1f %12.1f %12.1f ;" % (gen_id, x0, x1, x2, x3),
-                  file=dat_file)
+
             # NOTES:
             # 1) Fuel price is in $/MMBTU
             # 2) Heat Rate quantities are in BTU/KWH 
@@ -348,8 +347,19 @@ def write_template( rts_gmlc_dir, file_name, copper_sheet = False, reserve_facto
             y1 = gen_spec.FuelPrice * (((x1-x0) * (gen_spec.HeatRateIncr1 * 1000.0 / 1000000.0))) + y0
             y2 = gen_spec.FuelPrice * (((x2-x1) * (gen_spec.HeatRateIncr2 * 1000.0 / 1000000.0))) + y1
             y3 = gen_spec.FuelPrice * (((x3-x2) * (gen_spec.HeatRateIncr3 * 1000.0 / 1000000.0))) + y2
-            print("set CostPiecewiseValues[%s] := %12.2f %12.2f %12.2f %12.2f ;" % (gen_id, y0, y1, y2, y3),
-                  file=dat_file)
+
+            ## for the nuclear unit
+            if y0 == y3:
+                ## PRESCIENT currently doesn't gracefully handle generators with zero marginal cost
+                print("set CostPiecewisePoints[%s] := %12.1f %12.1f ;" % (gen_id, x0, x3),
+                      file=dat_file)
+                print("set CostPiecewiseValues[%s] := %12.2f %12.2f ;" % (gen_id, y0, y3+0.01),
+                      file=dat_file)
+            else:
+                print("set CostPiecewisePoints[%s] := %12.1f %12.1f %12.1f %12.1f ;" % (gen_id, x0, x1, x2, x3),
+                      file=dat_file)
+                print("set CostPiecewiseValues[%s] := %12.2f %12.2f %12.2f %12.2f ;" % (gen_id, y0, y1, y2, y3),
+                      file=dat_file)
     
     print("", file=dat_file)
     
