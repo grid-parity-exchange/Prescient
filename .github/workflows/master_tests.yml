@@ -9,7 +9,7 @@ on:
     pull_request:
         branches:
             - master
-    # nightly tests at 2:04
+    # nightly tests at 8:00 UTC
     schedule:
         - cron:  '0 8 * * *'
 
