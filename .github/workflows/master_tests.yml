@@ -11,7 +11,7 @@ on:
             - master
     # nightly tests at 2:04
     schedule:
-        - cron:  '4 2 * * *'
+        - cron:  '0 8 * * *'
 
 defaults:
     run:
