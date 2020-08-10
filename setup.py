@@ -12,10 +12,11 @@ import glob
 import sys
 import os
 
-# We raise an error if trying to install with python2
-if sys.version[0] == '2':
-    print("Error: This package must be installed with python3")
-    sys.exit(1)
+# We raise an error if trying to install with less than python 3.7
+if sys.version_info < (3,7):
+    sys.exit("This package requires Python 3.7 or greater")
+if sys.version_info >= (4,0):
+    sys.exit("Support for Python 4 is undetermined")
 
 from setuptools import setup, find_namespace_packages
 
@@ -27,6 +28,7 @@ setup(name='prescient',
       url='https://github.com/jwatsonnm/prescient',
       author='Jean-Paul Watson, David Woodruff, Andrea Staid, Dominic Yang',
       author_email='jwatson@sandia.gov',
+      python_requires='>=3.7, <4',
       packages=packages,
       entry_points={
             'console_scripts': [
