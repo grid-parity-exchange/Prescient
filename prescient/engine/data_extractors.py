@@ -278,7 +278,7 @@ class ScedDataExtractor(ABC):
     def get_all_thermal_states(self, sced: OperationsModel) -> Dict[G, bool]:
         """Get whether each thermal generator is turned on."""
         return {g: self.is_generator_on(sced, g)
-                for g in sced.ThermalGenerators}
+                for g in self.get_thermal_generators(sced)}
 
     def get_all_thermal_headroom_levels(self, sced: OperationsModel) -> Dict[G, float]:
         """ Get the thermal headroom for all thermal generators """
