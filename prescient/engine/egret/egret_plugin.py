@@ -479,172 +479,130 @@ def _output_solution_for_deterministic_ruc(ruc_instance,
                                           ruc_every_hours,
                                           max_thermal_generator_label_length=DEFAULT_MAX_LABEL_LENGTH):
 
-    last_time_period = min(value(ruc_instance.NumTimePeriods)+1, 37)
-    last_time_period_storage = min(value(ruc_instance.NumTimePeriods)+1, 27)
+    last_time_period = min(len(ruc_instance.data['system']['time_keys']), 36)
+    last_time_period_storage = min(len(ruc_instance.data['system']['time_keys']), 26)
+
+    thermal_gens = dict(ruc_instance.elements(element_type='generator', generator_type='thermal'))
+
     print("Generator Commitments:")
-    for g in sorted(ruc_instance.ThermalGenerators):
+    for g,gdict in thermal_gens.items():
         print(("%-"+str(max_thermal_generator_label_length)+"s: ") % g, end=' ')
-        for t in range(1, last_time_period):
-            print("%2d"% int(round(value(ruc_instance.UnitOn[g, t]))), end=' ')
-            if t == ruc_every_hours: 
+        for t in range(last_time_period):
+            print("%2d"% int(round(gdict['commitment']['values'][t])), end=' ')
+            if t+1 == ruc_every_hours: 
                 print(" |", end=' ')
         print("")
 
     print("")
     print("Generator Dispatch Levels:")
-    for g in sorted(ruc_instance.ThermalGenerators):
+    for g,gdict in thermal_gens.items():
         print(("%-"+str(max_thermal_generator_label_length)+"s: ") % g, end=' ')
-        for t in range(1, last_time_period):
-            print("%7.2f"% value(ruc_instance.PowerGenerated[g,t]), end=' ')
-            if t == ruc_every_hours: 
+        for t in range(last_time_period):
+            print("%7.2f"% gdict['pg']['values'][t], end=' ')
+            if t+1 == ruc_every_hours: 
                 print(" |", end=' ')
         print("")
 
     print("")
     print("Generator Reserve Headroom:")
     total_headroom = [0.0 for i in range(0, last_time_period)]  # add the 0 in for simplicity of indexing
-    for g in sorted(ruc_instance.ThermalGenerators):
+    for g,gdict in thermal_gens.items():
         print(("%-"+str(max_thermal_generator_label_length)+"s: ") % g, end=' ')
-        for t in range(1, last_time_period):
-            headroom = math.fabs(value(ruc_instance.MaximumPowerAvailable[g, t]) -
-                                 value(ruc_instance.PowerGenerated[g, t]))
+        for t in range(last_time_period):
+            headroom = gdict['headroom']['values'][t]
             print("%7.2f" % headroom, end=' ')
             total_headroom[t] += headroom
-            if t == ruc_every_hours: 
+            if t+1 == ruc_every_hours: 
                 print(" |", end=' ')
         print("")
     print(("%-"+str(max_thermal_generator_label_length)+"s: ") % "Total", end=' ')
-    for t in range(1, last_time_period):
+    for t in range(last_time_period):
         print("%7.2f" % total_headroom[t], end=' ')
+        if t+1 == ruc_every_hours: 
+            print(" |", end=' ')
     print("")
 
-    if len(ruc_instance.Storage) > 0:
-        
-        directory = "./deterministic_simple_storage"
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-            csv_hourly_output_filename = os.path.join(directory, "Storage_summary_for_" + str(this_date) + ".csv")
-        else:
-            csv_hourly_output_filename = os.path.join(directory, "Storage_summary_for_" + str(this_date) + ".csv")
-
-        csv_hourly_output_file = open(csv_hourly_output_filename, "w")
+    storage = dict(ruc_instance.elements(element_type='storage'))
+    if len(storage) > 0:
         
         print("Storage Input levels")
-        for s in sorted(ruc_instance.Storage):
+        for s,sdict in storage.items():
             print("%30s: " % s, end=' ')
-            print(s, end=' ', file=csv_hourly_output_file)
-            print("Storage Input:", file=csv_hourly_output_file)
-            for t in range(1, last_time_period_storage):
-                print("%7.2f"% value(ruc_instance.PowerInputStorage[s,t]), end=' ')
-                print("%7.2f"% value(ruc_instance.PowerInputStorage[s,t]), end=' ', file=csv_hourly_output_file)
-                if t == ruc_every_hours: 
+            for t in range(last_time_period_storage):
+                print("%7.2f"% sdict['p_charge']['values'][t], end=' ')
+                if t+1 == ruc_every_hours: 
                     print(" |", end=' ')
-                    print(" |", end=' ', file=csv_hourly_output_file)
-            print("", file=csv_hourly_output_file)
             print("")
 
         print("Storage Output levels")
-        for s in sorted(ruc_instance.Storage):
+        for s,sdict in storage.items():
             print("%30s: " % s, end=' ')
-            print(s, end=' ', file=csv_hourly_output_file)
-            print("Storage Output:", file=csv_hourly_output_file)
-            for t in range(1,last_time_period_storage):
-                print("%7.2f"% value(ruc_instance.PowerOutputStorage[s,t]), end=' ', file=csv_hourly_output_file)
-                print("%7.2f"% value(ruc_instance.PowerOutputStorage[s,t]), end=' ')
-                if t == ruc_every_hours: 
+            for t in range(last_time_period_storage):
+                print("%7.2f"% sdict['p_discharge']['values'][t], end=' ')
+                if t+1 == ruc_every_hours: 
                     print(" |", end=' ')
-                    print(" |", end=' ', file=csv_hourly_output_file)
-            print("", file=csv_hourly_output_file)
             print("")
 
         print("Storage SOC levels")
-        for s in sorted(ruc_instance.Storage):
+        for s,sdict in storage.items():
             print("%30s: " % s, end=' ')
-            print(s, end=' ', file=csv_hourly_output_file)
-            print("Storage SOC:", file=csv_hourly_output_file)
-            for t in range(1,last_time_period_storage):
-                print("%7.2f"% value(ruc_instance.SocStorage[s,t]), end=' ', file=csv_hourly_output_file)
-                print("%7.2f"% value(ruc_instance.SocStorage[s,t]), end=' ')
-                if t == ruc_every_hours: 
+            for t in range(last_time_period_storage):
+                print("%7.2f"% sdict['state_of_charge']['values'][t], end=' ')
+                if t+1 == ruc_every_hours: 
                     print(" |", end=' ')
-                    print(" |", end=' ', file=csv_hourly_output_file)
-            print("", file=csv_hourly_output_file)
             print("")
 
 
 def _report_fixed_costs_for_deterministic_ruc(deterministic_instance):
 
-    second_stage = "Stage_1" # TBD - data-drive this - maybe get it from the scenario tree? StageSet should also be ordered in the UC models.
+    costs = sum( sum(g_dict['commitment_cost']['values']) for _,g_dict in deterministic_instance.elements(element_type='generator', generator_type='thermal'))
 
-    print("Fixed costs:    %12.2f" % value(deterministic_instance.CommitmentStageCost[second_stage]))
+    print("Fixed costs:    %12.2f" % costs)
 
 def _report_generation_costs_for_deterministic_ruc(deterministic_instance):
+    costs = sum( sum(g_dict['production_cost']['values']) for _,g_dict in deterministic_instance.elements(element_type='generator', generator_type='thermal'))
 
-    # only worry about two-stage models for now..
-    second_stage = "Stage_2" # TBD - data-drive this - maybe get it from the scenario tree? StageSet should also be ordered in the UC models.
-
-    print("Variable costs: %12.2f" % value(deterministic_instance.GenerationStageCost[second_stage]))
+    print("Variable costs: %12.2f" % costs)
     
 def _report_load_generation_mismatch_for_deterministic_ruc(ruc_instance):
 
-    for t in sorted(ruc_instance.TimePeriods):
+    time_periods = ruc_instance.data['system']['time_keys']
+
+    buses = ruc_instance.data['elements']['bus']
+
+    for i,t in enumerate(time_periods):
         mismatch_reported = False
-        sum_mismatch = round_small_values(sum(value(ruc_instance.LoadGenerateMismatch[b, t])
-                                              for b in ruc_instance.Buses))
+        sum_mismatch = round_small_values(sum(bdict['p_balance_violation']['values'][i]
+                                              for bdict in buses.values()))
         if sum_mismatch != 0.0:
-            posLoadGenerateMismatch = round_small_values(sum(value(ruc_instance.posLoadGenerateMismatch[b, t])
-                                                             for b in ruc_instance.Buses))
-            negLoadGenerateMismatch = round_small_values(sum(value(ruc_instance.negLoadGenerateMismatch[b, t])
-                                                             for b in ruc_instance.Buses))
+            posLoadGenerateMismatch = round_small_values(sum(max(bdict['p_balance_violation']['values'][i],0.)
+                                                            for bdict in buses.values()))
+            negLoadGenerateMismatch = round_small_values(sum(min(bdict['p_balance_violation']['values'][i],0.)
+                                                            for bdict in buses.values()))
             if negLoadGenerateMismatch != 0.0:
-                print("Projected over-generation reported at t=%d -   total=%12.2f" % (t, negLoadGenerateMismatch))
-                mismatch_reported = True
+                print("Projected over-generation reported at t=%s -   total=%12.2f" % (t, negLoadGenerateMismatch))
             if posLoadGenerateMismatch != 0.0:
-                print("Projected load shedding reported at t=%d -     total=%12.2f" % (t, posLoadGenerateMismatch))
-                mismatch_reported = True
+                print("Projected load shedding reported at t=%s -     total=%12.2f" % (t, posLoadGenerateMismatch))
 
-        reserve_shortfall_value = round_small_values(value(ruc_instance.ReserveShortfall[t]))
-        if reserve_shortfall_value != 0.0:
-            print("Projected reserve shortfall reported at t=%d - total=%12.2f" % (t, reserve_shortfall_value))
-            mismatch_reported = True
-
-        if mismatch_reported:
-
-            print("")
-            print("Dispatch detail for time period=%d" % t)
-            total_generated = 0.0
-            for g in sorted(ruc_instance.ThermalGenerators):
-                unit_on = int(round(value(ruc_instance.UnitOn[g, t])))
-                print("%-30s %2d %12.2f %12.2f" % (g, 
-                                                   unit_on, 
-                                                   value(ruc_instance.PowerGenerated[g,t]),
-                                                   value(ruc_instance.MaximumPowerAvailable[g,t]) - value(ruc_instance.PowerGenerated[g,t])), end=' ')
-                if (unit_on == 1) and (math.fabs(value(ruc_instance.PowerGenerated[g,t]) -
-                                                 value(ruc_instance.MaximumPowerOutput[g])) <= 1e-5): 
-                    print(" << At max output", end=' ')
-                elif (unit_on == 1) and (math.fabs(value(ruc_instance.PowerGenerated[g,t]) -
-                                                   value(ruc_instance.MinimumPowerOutput[g])) <= 1e-5): 
-                    print(" << At min output", end=' ')
-                if value(ruc_instance.MustRun[g]):
-                    print(" ***", end=' ')
-                print("")
-                if unit_on == 1:
-                    total_generated += value(ruc_instance.PowerGenerated[g,t])
-            print("")
-            print("Total power dispatched=%7.2f" % total_generated)
+        if 'reserve_shortfall' in ruc_instance.data['system']:
+            reserve_shortfall_value = round_small_values(ruc_instance.data['system']['reserve_shortfall']['values'][i])
+            if reserve_shortfall_value != 0.0:
+                print("Projected reserve shortfall reported at t=%s - total=%12.2f" % (t, reserve_shortfall_value))
 
 def _report_curtailment_for_deterministic_ruc(deterministic_instance):
+    
+    rn_gens = dict(deterministic_instance.elements(element_type='generator', generator_type='renewable'))
+    time_periods = deterministic_instance.data['system']['time_keys']
 
     curtailment_in_some_period = False
-    for t in deterministic_instance.TimePeriods:
-        quantity_curtailed_this_period = sum(value(deterministic_instance.MaxNondispatchablePower[g,t]) - \
-                                    value(deterministic_instance.NondispatchablePowerUsed[g,t]) \
-                                    for g in deterministic_instance.AllNondispatchableGenerators)
+    for i,t in enumerate(time_periods):
+        quantity_curtailed_this_period = sum(gdict['p_max']['values'][i] - gdict['pg']['values'][i] \
+                                            for gdict in rn_gens.values())
         if quantity_curtailed_this_period > 0.0:
             if curtailment_in_some_period == False:
                 print("Renewables curtailment summary (time-period, aggregate_quantity):")
                 curtailment_in_some_period = True
-            print("%2d %12.2f" % (t, quantity_curtailed_this_period))
+            print("%s %12.2f" % (t, quantity_curtailed_this_period))
 
 ## NOTE: in closure for deterministic_ruc_solver_plugin
 def create_create_and_solve_deterministic_ruc(deterministic_ruc_solver):
@@ -682,14 +640,13 @@ def create_create_and_solve_deterministic_ruc(deterministic_ruc_solver):
             print("RUC instance written to file=" + current_ruc_filename)
 
 
-        ## TODO: reenable this output
-        '''
-        if len(ruc_instance_for_this_period.ThermalGenerators) == 0:
+        thermal_gens = dict(ruc_instance_for_this_period.elements(element_type='generator', generator_type='thermal'))
+        if len(thermal_gens) == 0:
             max_thermal_generator_label_length = None
         else:
-            max_thermal_generator_label_length = max((len(this_generator) for this_generator in ruc_instance_for_this_period.ThermalGenerators))
+            max_thermal_generator_label_length = max((len(this_generator) for this_generator in thermal_gens))
         
-        total_cost = ruc_instance_for_this_period.TotalCostObjective()
+        total_cost = ruc_instance_for_this_period.data['system']['total_cost']
         print("")
         print("Deterministic RUC Cost: {0:.2f}".format(total_cost))
     
@@ -710,7 +667,6 @@ def create_create_and_solve_deterministic_ruc(deterministic_ruc_solver):
         _report_load_generation_mismatch_for_deterministic_ruc(ruc_instance_for_this_period)                        
         print("")
         _report_curtailment_for_deterministic_ruc(ruc_instance_for_this_period)                        
-        '''
     
         return ruc_instance_for_this_period, None
     return create_and_solve_deterministic_ruc
@@ -921,9 +877,7 @@ def _create_deterministic_ruc(options,
     #if (prior_deterministic_ruc is None) and options.relax_t0_ramping_initial_day:
     #    reference_model.enforce_t1_ramp_rates = True
 
-    # TODO: reenable reporting
-    #if output_initial_conditions:
-    if False:
+    if output_initial_conditions:
         _report_initial_conditions_for_deterministic_ruc(new_ruc_md,
                                                          max_thermal_generator_label_length=max_thermal_generator_label_length)
 
@@ -1098,18 +1052,17 @@ def _get_ruc_data(options,
 def _report_initial_conditions_for_deterministic_ruc(deterministic_instance,
                                                     max_thermal_generator_label_length=DEFAULT_MAX_LABEL_LENGTH):
 
+    tgens = dict(deterministic_instance.elements(element_type='generator', generator_type='thermal'))
     print("")
-    print("Initial condition detail (gen-name t0-unit-on t0-unit-on-state t0-power-generated must-run):")
-    deterministic_instance.PowerGeneratedT0.pprint()
-    deterministic_instance.UnitOnT0State.pprint()
+    print("Initial condition detail (gen-name t0-unit-on t0-unit-on-state t0-power-generated):")
     #assert(len(deterministic_instance.PowerGeneratedT0) == len(deterministic_instance.UnitOnT0State))
-    for g in sorted(deterministic_instance.ThermalGenerators):
-        print(("%-"+str(max_thermal_generator_label_length)+"s %5d %7d %12.2f %6d") % 
+    for g,gdict in tgens.items():
+        print(("%-"+str(max_thermal_generator_label_length)+"s %5d %7d %12.2f" ) % 
               (g, 
-               value(deterministic_instance.UnitOnT0[g]),
-               value(deterministic_instance.UnitOnT0State[g]), 
-               value(deterministic_instance.PowerGeneratedT0[g]),
-               value(deterministic_instance.MustRun[g])))
+               int(gdict['initial_status']>0),
+               gdict['initial_status'],
+               gdict['initial_p_output'],
+               ))
 
     # it is generally useful to know something about the bounds on output capacity
     # of the thermal fleet from the initial condition to the first time period. 
@@ -1119,45 +1072,50 @@ def _report_initial_conditions_for_deterministic_ruc(deterministic_instance,
 
     # output the total amount of power generated at T0
     total_t0_power_output = 0.0
-    for g in sorted(deterministic_instance.ThermalGenerators):    
-        total_t0_power_output += value(deterministic_instance.PowerGeneratedT0[g])
+    for g,gdict in tgens.items():
+        total_t0_power_output += gdict['initial_p_output']
     print("")
     print("Power generated at T0=%8.2f" % total_t0_power_output)
     
     # compute the amount of new generation that can be brought on-line the first period.
     total_new_online_capacity = 0.0
-    for g in sorted(deterministic_instance.ThermalGenerators):
-        t0_state = value(deterministic_instance.UnitOnT0State[g])
+    for g,gdict in tgens.items():
+        t0_state = gdict['initial_status']
         if t0_state < 0: # the unit has been off
-            if int(math.fabs(t0_state)) >= value(deterministic_instance.MinimumDownTime[g]):
-                total_new_online_capacity += min(value(deterministic_instance.StartupRampLimit[g]), value(deterministic_instance.MaximumPowerOutput[g]))
+            if int(math.fabs(t0_state)) >= gdict['min_down_time']:
+                if isinstance(gdict['p_max'], dict):
+                    p_max = gdict['p_max']['values'][0]
+                else:
+                    p_max = gdict['p_max']
+                total_new_online_capacity += min(gdict['startup_capacity'], p_max)
     print("")
     print("Total capacity at T=1 available to add from newly started units=%8.2f" % total_new_online_capacity)
 
     # compute the amount of generation that can be brough off-line in the first period
     # (to a shut-down state)
     total_new_offline_capacity = 0.0
-    for g in sorted(deterministic_instance.ThermalGenerators):
-        t0_state = value(deterministic_instance.UnitOnT0State[g])
+    for g,gdict in tgens.items():
+        t0_state = gdict['initial_status']
         if t0_state > 0: # the unit has been on
-            if t0_state >= value(deterministic_instance.MinimumUpTime[g]):
-                if value(deterministic_instance.PowerGeneratedT0[g]) <= value(deterministic_instance.ShutdownRampLimit[g]):
-                    total_new_offline_capacity += value(deterministic_instance.PowerGeneratedT0[g])
+            if t0_state >= gdict['min_up_time']:
+                if gdict['initial_p_output'] <= gdict['shutdown_capacity']:
+                    total_new_offline_capacity += gdict['initial_p_output']
     print("")
     print("Total capacity at T=1 available to drop from newly shut-down units=%8.2f" % total_new_offline_capacity)
-    assert (len(deterministic_instance.PowerGeneratedT0) == len(deterministic_instance.UnitOnT0State))
 
 def _report_demand_for_deterministic_ruc(ruc_instance,
                                          ruc_every_hours,
                                          max_bus_label_length=DEFAULT_MAX_LABEL_LENGTH):
 
+    load = ruc_instance.data['elements']['load']
+    times = ruc_instance.data['system']['time_keys']
     print("")
     print("Projected Demand:")
-    for b in sorted(ruc_instance.Buses):
+    for b, ldict in load.items():
         print(("%-"+str(max_bus_label_length)+"s: ") % b, end=' ')
-        for t in range(1,min(value(ruc_instance.NumTimePeriods)+1, 37)):
-            print("%8.2f"% value(ruc_instance.Demand[b,t]), end=' ')
-            if t == ruc_every_hours: 
+        for i in range(min(len(times), 36)):
+            print("%8.2f"% ldict['p_load']['values'][i], end=' ')
+            if i+1 == ruc_every_hours: 
                 print(" |", end=' ')
         print("")
 
