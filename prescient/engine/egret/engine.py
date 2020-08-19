@@ -130,7 +130,7 @@ class EgretEngine(ModelingEngine):
             print("------------------------------------------------------------------------------")
 
         try:
-            sced_results, pyo_results = self._p.call_solver(self._sced_solver,
+            sced_results, sced_time = self._p.call_solver(self._sced_solver,
                                                             pyo_model,
                                                             options,
                                                             options.sced_solver_options)
@@ -151,7 +151,7 @@ class EgretEngine(ModelingEngine):
 
         self._attach_fake_pyomo_objects(sced_results)
 
-        return sced_results, pyo_results.solver.time
+        return sced_results, sced_time
 
 
     def enable_quickstart_and_solve(self,
@@ -165,7 +165,7 @@ class EgretEngine(ModelingEngine):
         pyo_model = create_tight_unit_commitment_model(sced_instance, network_constraints='power_balance_constraints')
 
         try:
-            sced_results, pyo_results = self._p.call_solver(self._sced_solver,
+            sced_results, _ = self._p.call_solver(self._sced_solver,
                                                             pyo_model,
                                                             options,
                                                             options.sced_solver_options)

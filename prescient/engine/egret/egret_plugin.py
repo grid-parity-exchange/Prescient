@@ -60,7 +60,12 @@ def call_solver(solver,instance,options,solver_options,relaxed=False):
 
     md = _save_uc_results(m, relaxed)
 
-    return md, results
+    if hasattr(results, 'egret_metasolver_status'):
+        time = results.egret_metasolver_status['time']
+    else:
+        time = results.solver.wallclock_time
+
+    return md,time
 
 
 ## utility for constructing pyomo data dictionary from the passed in parameters to use
