@@ -109,12 +109,12 @@ def _get_data_dict( data_model, time_horizon, demand_dict, reserve_dict, reserve
                     UnitOnT0Dict, UnitOnT0StateDict, PowerGeneratedT0Dict, StorageSocOnT0Dict):
 
     ## get some useful generators
-    Buses = sorted(data_model.Buses)
-    TransmissionLines = sorted(data_model.TransmissionLines)
-    Interfaces = sorted(data_model.Interfaces)
-    ThermalGenerators = sorted(data_model.ThermalGenerators)
-    AllNondispatchableGenerators = sorted(data_model.AllNondispatchableGenerators)
-    Storage = sorted(data_model.Storage)
+    Buses = data_model.Buses
+    TransmissionLines = data_model.TransmissionLines
+    Interfaces = data_model.Interfaces
+    ThermalGenerators = data_model.ThermalGenerators
+    AllNondispatchableGenerators = data_model.AllNondispatchableGenerators
+    Storage = data_model.Storage
 
     data = {None: { 'Buses': {None: [b for b in Buses]},
                     'StageSet': {None: ["Stage_1", "Stage_2"]},
@@ -141,15 +141,15 @@ def _get_data_dict( data_model, time_horizon, demand_dict, reserve_dict, reserve
                     'ThermalGenerators': {None: [gen for gen in data_model.ThermalGenerators]},
                     'ThermalGeneratorType': dict((gen, data_model.ThermalGeneratorType[gen])
                                                  for gen in ThermalGenerators),
-                    'ThermalGeneratorsAtBus': dict((b, [gen for gen in sorted(data_model.ThermalGeneratorsAtBus[b])])
+                    'ThermalGeneratorsAtBus': dict((b, [gen for gen in data_model.ThermalGeneratorsAtBus[b]])
                                                    for b in Buses),
                     'QuickStart': dict((g, value(data_model.QuickStart[g])) for g in ThermalGenerators),
-                    'QuickStartGenerators': {None: [g for g in sorted(data_model.QuickStartGenerators)]},
+                    'QuickStartGenerators': {None: [g for g in data_model.QuickStartGenerators]},
                     'AllNondispatchableGenerators': {None: [g for g in AllNondispatchableGenerators]},
                     'NondispatchableGeneratorType': dict((gen, data_model.NondispatchableGeneratorType[gen])
                                                          for gen in AllNondispatchableGenerators),
-                    'MustRunGenerators': {None: [g for g in sorted(data_model.MustRunGenerators)]},
-                    'NondispatchableGeneratorsAtBus': dict((b, [gen for gen in sorted(data_model.NondispatchableGeneratorsAtBus[b])])
+                    'MustRunGenerators': {None: [g for g in data_model.MustRunGenerators]},
+                    'NondispatchableGeneratorsAtBus': dict((b, [gen for gen in data_model.NondispatchableGeneratorsAtBus[b]])
                                                            for b in Buses),
                     'Demand': demand_dict,
                     'ReserveRequirement': reserve_dict,
@@ -194,7 +194,7 @@ def _get_data_dict( data_model, time_horizon, demand_dict, reserve_dict, reserve
                     'ShutdownFixedCost': dict((g, value(data_model.ShutdownFixedCost[g]))
                                               for g in ThermalGenerators),
                     'Storage': {None: [s for s in Storage]},
-                    'StorageAtBus': dict((b, [s for s in sorted(data_model.StorageAtBus[b])])
+                    'StorageAtBus': dict((b, [s for s in data_model.StorageAtBus[b]])
                                          for b in Buses),
                     'MinimumPowerOutputStorage': dict((s, value(data_model.MinimumPowerOutputStorage[s]))
                                                       for s in Storage),

@@ -1,0 +1,3070 @@
+# 
+# 122_HYDRO_1: Deterministic
+# 122_HYDRO_2: Deterministic
+# 122_HYDRO_3: Deterministic
+# 122_HYDRO_4: Deterministic
+# 122_HYDRO_5: Deterministic
+# 122_HYDRO_6: Deterministic
+# 113_PV_1: Deterministic
+# 102_PV_1: Deterministic
+# 101_PV_1: Deterministic
+# 102_PV_2: Deterministic
+# 104_PV_1: Deterministic
+# 101_PV_2: Deterministic
+# 101_PV_3: Deterministic
+# 101_PV_4: Deterministic
+# 103_PV_1: Deterministic
+# 119_PV_1: Deterministic
+# 118_RTPV_1: Deterministic
+# 118_RTPV_2: Deterministic
+# 118_RTPV_3: Deterministic
+# 118_RTPV_4: Deterministic
+# 118_RTPV_5: Deterministic
+# 118_RTPV_6: Deterministic
+# 118_RTPV_7: Deterministic
+# 118_RTPV_8: Deterministic
+# 118_RTPV_9: Deterministic
+# 118_RTPV_10: Deterministic
+# 122_WIND_1: Deterministic
+param NumTimePeriods := 48 ;
+
+param TimePeriodLength := 1 ;
+
+set StageSet := Stage_1 Stage_2 ;
+
+set CommitmentTimeInStage[Stage_1] := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 ;
+
+set CommitmentTimeInStage[Stage_2] := ;
+
+set GenerationTimeInStage[Stage_1] := ;
+
+set GenerationTimeInStage[Stage_2] := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 ;
+
+set Buses := 
+Abel
+Adams
+Adler
+Agricola
+Aiken
+Alber
+Alder
+Alger
+Ali
+Allen
+Anna
+Archer
+Arne
+Arnold
+Arthur
+Asser
+Aston
+Astor
+Attar
+Attila
+Attlee
+Aubrey
+Austen
+Avery
+;
+
+set TransmissionLines := 
+A1
+A2
+A3
+A4
+A5
+A6
+A7
+A8
+A9
+A10
+A11
+A12-1
+A13-2
+A14
+A15
+A16
+A17
+A18
+A19
+A20
+A21
+A22
+A23
+A24
+A25-1
+A25-2
+A26
+A27
+A28
+A29
+A30
+A31-1
+A31-2
+A32-1
+A32-2
+A33-1
+A33-2
+A34
+;
+
+param: BusFrom BusTo ThermalLimit Impedence :=
+             A1            Abel           Adams   175.00000000      0.00014000
+             A2            Abel           Adler   175.00000000      0.00211000
+             A3            Abel           Aiken   175.00000000      0.00085000
+             A4           Adams        Agricola   175.00000000      0.00127000
+             A5           Adams           Alber   175.00000000      0.00192000
+             A6           Adler             Ali   175.00000000      0.00119000
+             A7           Adler           Avery   400.00000000      0.00084000
+             A8        Agricola             Ali   175.00000000      0.00104000
+             A9           Aiken           Allen   175.00000000      0.00088000
+            A10           Alber           Allen   175.00000000      0.00061000
+            A11           Alder           Alger   175.00000000      0.00061000
+          A12-1           Alger             Ali   175.00000000      0.00165000
+          A13-2           Alger           Allen   175.00000000      0.00165000
+            A14             Ali            Anna   400.00000000      0.00084000
+            A15             Ali          Archer   400.00000000      0.00084000
+            A16           Allen            Anna   400.00000000      0.00084000
+            A17           Allen          Archer   400.00000000      0.00084000
+            A18            Anna            Arne   500.00000000      0.00048000
+            A19            Anna          Arnold   500.00000000      0.00042000
+            A20          Archer            Arne   500.00000000      0.00048000
+            A21          Archer          Austen   500.00000000      0.00097000
+            A22            Arne          Austen   500.00000000      0.00087000
+            A23          Arnold           Asser   500.00000000      0.00059000
+            A24          Arthur           Asser   500.00000000      0.00017000
+          A25-1          Arthur          Attlee   500.00000000      0.00049000
+          A25-2          Arthur          Attlee   500.00000000      0.00049000
+            A26          Arthur           Avery   500.00000000      0.00052000
+            A27           Asser           Aston   500.00000000      0.00026000
+            A28           Asser           Attar   500.00000000      0.00023000
+            A29           Aston           Astor   500.00000000      0.00014000
+            A30           Aston          Aubrey   500.00000000      0.00105000
+          A31-1           Astor          Attlee   500.00000000      0.00026000
+          A31-2           Astor          Attlee   500.00000000      0.00026000
+          A32-1           Attar          Attila   500.00000000      0.00040000
+          A32-2           Attar          Attila   500.00000000      0.00040000
+          A33-1          Attila          Austen   500.00000000      0.00022000
+          A33-2          Attila          Austen   500.00000000      0.00022000
+            A34          Attlee          Aubrey   500.00000000      0.00068000
+;
+
+set ThermalGenerators := 
+101_CT_1
+101_CT_2
+101_STEAM_3
+101_STEAM_4
+102_CT_1
+102_CT_2
+102_STEAM_3
+102_STEAM_4
+107_CC_1
+113_CT_1
+113_CT_2
+113_CT_3
+113_CT_4
+115_STEAM_1
+115_STEAM_2
+115_STEAM_3
+116_STEAM_1
+118_CC_1
+123_STEAM_2
+123_STEAM_3
+123_CT_1
+123_CT_4
+123_CT_5
+121_NUCLEAR_1
+;
+
+set ThermalGeneratorsAtBus[Abel] := 
+101_CT_1
+101_CT_2
+101_STEAM_3
+101_STEAM_4
+;
+
+set ThermalGeneratorsAtBus[Adams] := 
+102_CT_1
+102_CT_2
+102_STEAM_3
+102_STEAM_4
+;
+
+set ThermalGeneratorsAtBus[Adler] := 
+;
+
+set ThermalGeneratorsAtBus[Agricola] := 
+;
+
+set ThermalGeneratorsAtBus[Aiken] := 
+;
+
+set ThermalGeneratorsAtBus[Alber] := 
+;
+
+set ThermalGeneratorsAtBus[Alder] := 
+107_CC_1
+;
+
+set ThermalGeneratorsAtBus[Alger] := 
+;
+
+set ThermalGeneratorsAtBus[Ali] := 
+;
+
+set ThermalGeneratorsAtBus[Allen] := 
+;
+
+set ThermalGeneratorsAtBus[Anna] := 
+;
+
+set ThermalGeneratorsAtBus[Archer] := 
+;
+
+set ThermalGeneratorsAtBus[Arne] := 
+113_CT_1
+113_CT_2
+113_CT_3
+113_CT_4
+;
+
+set ThermalGeneratorsAtBus[Arnold] := 
+;
+
+set ThermalGeneratorsAtBus[Arthur] := 
+115_STEAM_1
+115_STEAM_2
+115_STEAM_3
+;
+
+set ThermalGeneratorsAtBus[Asser] := 
+116_STEAM_1
+;
+
+set ThermalGeneratorsAtBus[Aston] := 
+;
+
+set ThermalGeneratorsAtBus[Astor] := 
+118_CC_1
+;
+
+set ThermalGeneratorsAtBus[Attar] := 
+;
+
+set ThermalGeneratorsAtBus[Attila] := 
+;
+
+set ThermalGeneratorsAtBus[Attlee] := 
+121_NUCLEAR_1
+;
+
+set ThermalGeneratorsAtBus[Aubrey] := 
+;
+
+set ThermalGeneratorsAtBus[Austen] := 
+123_STEAM_2
+123_STEAM_3
+123_CT_1
+123_CT_4
+123_CT_5
+;
+
+set ThermalGeneratorsAtBus[Avery] := 
+;
+
+set NondispatchableGenerators := 
+122_HYDRO_1
+122_HYDRO_2
+122_HYDRO_3
+122_HYDRO_4
+122_HYDRO_5
+122_HYDRO_6
+113_PV_1
+102_PV_1
+101_PV_1
+102_PV_2
+104_PV_1
+101_PV_2
+101_PV_3
+101_PV_4
+103_PV_1
+119_PV_1
+118_RTPV_1
+118_RTPV_2
+118_RTPV_3
+118_RTPV_4
+118_RTPV_5
+118_RTPV_6
+118_RTPV_7
+118_RTPV_8
+118_RTPV_9
+118_RTPV_10
+122_WIND_1
+;
+
+set NondispatchableGeneratorsAtBus[Abel] := 
+101_PV_1
+101_PV_2
+101_PV_3
+101_PV_4
+;
+
+set NondispatchableGeneratorsAtBus[Adams] := 
+102_PV_1
+102_PV_2
+;
+
+set NondispatchableGeneratorsAtBus[Adler] := 
+103_PV_1
+;
+
+set NondispatchableGeneratorsAtBus[Agricola] := 
+104_PV_1
+;
+
+set NondispatchableGeneratorsAtBus[Aiken] := 
+;
+
+set NondispatchableGeneratorsAtBus[Alber] := 
+;
+
+set NondispatchableGeneratorsAtBus[Alder] := 
+;
+
+set NondispatchableGeneratorsAtBus[Alger] := 
+;
+
+set NondispatchableGeneratorsAtBus[Ali] := 
+;
+
+set NondispatchableGeneratorsAtBus[Allen] := 
+;
+
+set NondispatchableGeneratorsAtBus[Anna] := 
+;
+
+set NondispatchableGeneratorsAtBus[Archer] := 
+;
+
+set NondispatchableGeneratorsAtBus[Arne] := 
+113_PV_1
+;
+
+set NondispatchableGeneratorsAtBus[Arnold] := 
+;
+
+set NondispatchableGeneratorsAtBus[Arthur] := 
+;
+
+set NondispatchableGeneratorsAtBus[Asser] := 
+;
+
+set NondispatchableGeneratorsAtBus[Aston] := 
+;
+
+set NondispatchableGeneratorsAtBus[Astor] := 
+118_RTPV_1
+118_RTPV_2
+118_RTPV_3
+118_RTPV_4
+118_RTPV_5
+118_RTPV_6
+118_RTPV_7
+118_RTPV_8
+118_RTPV_9
+118_RTPV_10
+;
+
+set NondispatchableGeneratorsAtBus[Attar] := 
+119_PV_1
+;
+
+set NondispatchableGeneratorsAtBus[Attila] := 
+;
+
+set NondispatchableGeneratorsAtBus[Attlee] := 
+;
+
+set NondispatchableGeneratorsAtBus[Aubrey] := 
+122_HYDRO_1
+122_HYDRO_2
+122_HYDRO_3
+122_HYDRO_4
+122_HYDRO_5
+122_HYDRO_6
+122_WIND_1
+;
+
+set NondispatchableGeneratorsAtBus[Austen] := 
+;
+
+set NondispatchableGeneratorsAtBus[Avery] := 
+;
+
+param MustRun := 
+121_NUCLEAR_1 1
+;
+
+param ThermalGeneratorType := 
+101_CT_1 O
+101_CT_2 O
+101_STEAM_3 C
+101_STEAM_4 C
+102_CT_1 O
+102_CT_2 O
+102_STEAM_3 C
+102_STEAM_4 C
+107_CC_1 G
+113_CT_1 G
+113_CT_2 G
+113_CT_3 G
+113_CT_4 G
+115_STEAM_1 O
+115_STEAM_2 O
+115_STEAM_3 C
+116_STEAM_1 C
+118_CC_1 G
+123_STEAM_2 C
+123_STEAM_3 C
+123_CT_1 G
+123_CT_4 G
+123_CT_5 G
+121_NUCLEAR_1 N
+;
+
+param NondispatchableGeneratorType := 
+122_HYDRO_1 H
+122_HYDRO_2 H
+122_HYDRO_3 H
+122_HYDRO_4 H
+122_HYDRO_5 H
+122_HYDRO_6 H
+113_PV_1 S
+102_PV_1 S
+101_PV_1 S
+102_PV_2 S
+104_PV_1 S
+101_PV_2 S
+101_PV_3 S
+101_PV_4 S
+103_PV_1 S
+119_PV_1 S
+118_RTPV_1 S
+118_RTPV_2 S
+118_RTPV_3 S
+118_RTPV_4 S
+118_RTPV_5 S
+118_RTPV_6 S
+118_RTPV_7 S
+118_RTPV_8 S
+118_RTPV_9 S
+118_RTPV_10 S
+122_WIND_1 W
+;
+
+param: MinimumPowerOutput MaximumPowerOutput MinimumUpTime MinimumDownTime NominalRampUpLimit NominalRampDownLimit StartupRampLimit ShutdownRampLimit := 
+       101_CT_1       8.00      20.00  1  1     180.00     180.00       8.00       8.00
+       101_CT_2       8.00      20.00  1  1     180.00     180.00       8.00       8.00
+    101_STEAM_3      30.00      76.00  8  4     120.00     120.00      30.00      30.00
+    101_STEAM_4      30.00      76.00  8  4     120.00     120.00      30.00      30.00
+       102_CT_1       8.00      20.00  1  1     180.00     180.00       8.00       8.00
+       102_CT_2       8.00      20.00  1  1     180.00     180.00       8.00       8.00
+    102_STEAM_3      30.00      76.00  8  4     120.00     120.00      30.00      30.00
+    102_STEAM_4      30.00      76.00  8  4     120.00     120.00      30.00      30.00
+       107_CC_1     170.00     355.00  8  5     248.40     248.40     170.00     170.00
+       113_CT_1      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+       113_CT_2      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+       113_CT_3      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+       113_CT_4      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+    115_STEAM_1       5.00      12.00  4  2      60.00      60.00       5.00       5.00
+    115_STEAM_2       5.00      12.00  4  2      60.00      60.00       5.00       5.00
+    115_STEAM_3      62.00     155.00  8  8     180.00     180.00      62.00      62.00
+    116_STEAM_1      62.00     155.00  8  8     180.00     180.00      62.00      62.00
+       118_CC_1     170.00     355.00  8  5     248.40     248.40     170.00     170.00
+    123_STEAM_2      62.00     155.00  8  8     180.00     180.00      62.00      62.00
+    123_STEAM_3     140.00     350.00 24 48     240.00     240.00     140.00     140.00
+       123_CT_1      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+       123_CT_4      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+       123_CT_5      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+  121_NUCLEAR_1     396.00     400.00 24 48    1200.00    1200.00     396.00     396.00
+;
+
+set StartupLags[101_CT_1] := 1 ;
+set StartupCosts[101_CT_1] :=        51.75 ;
+set StartupLags[101_CT_2] := 1 ;
+set StartupCosts[101_CT_2] :=       103.49 ;
+set StartupLags[101_STEAM_3] := 4 10 12 ;
+set StartupCosts[101_STEAM_3] :=      7144.02     10276.95     11172.01 ;
+set StartupLags[101_STEAM_4] := 4 10 12 ;
+set StartupCosts[101_STEAM_4] :=      7355.42     10488.35     11383.41 ;
+set StartupLags[102_CT_1] := 1 ;
+set StartupCosts[102_CT_1] :=       155.24 ;
+set StartupLags[102_CT_2] := 1 ;
+set StartupCosts[102_CT_2] :=       206.99 ;
+set StartupLags[102_STEAM_3] := 4 10 12 ;
+set StartupCosts[102_STEAM_3] :=      7566.82     10699.75     11594.81 ;
+set StartupLags[102_STEAM_4] := 4 10 12 ;
+set StartupCosts[102_STEAM_4] :=      7778.21     10911.15     11806.21 ;
+set StartupLags[107_CC_1] := 5 ;
+set StartupCosts[107_CC_1] :=     28046.68 ;
+set StartupLags[113_CT_1] := 3 ;
+set StartupCosts[113_CT_1] :=      5665.23 ;
+set StartupLags[113_CT_2] := 3 ;
+set StartupCosts[113_CT_2] :=      6053.96 ;
+set StartupLags[113_CT_3] := 3 ;
+set StartupCosts[113_CT_3] :=      6442.68 ;
+set StartupLags[113_CT_4] := 3 ;
+set StartupCosts[113_CT_4] :=      6831.40 ;
+set StartupLags[115_STEAM_1] := 2 4 12 ;
+set StartupCosts[115_STEAM_1] :=       393.28       455.37       703.76 ;
+set StartupLags[115_STEAM_2] := 2 4 12 ;
+set StartupCosts[115_STEAM_2] :=       807.25       869.35      1117.74 ;
+set StartupLags[115_STEAM_3] := 8 11 60 ;
+set StartupCosts[115_STEAM_3] :=     14569.83     15722.80     22784.80 ;
+set StartupLags[116_STEAM_1] := 8 11 60 ;
+set StartupCosts[116_STEAM_1] :=     14569.83     15722.80     22784.80 ;
+set StartupLags[118_CC_1] := 5 ;
+set StartupCosts[118_CC_1] :=     28435.40 ;
+set StartupLags[123_STEAM_2] := 8 11 60 ;
+set StartupCosts[123_STEAM_2] :=     14569.83     15722.80     22784.80 ;
+set StartupLags[123_STEAM_3] := 48 96 ;
+set StartupCosts[123_STEAM_3] :=     21381.74     36749.81 ;
+set StartupLags[123_CT_1] := 3 ;
+set StartupCosts[123_CT_1] :=      7220.12 ;
+set StartupLags[123_CT_4] := 3 ;
+set StartupCosts[123_CT_4] :=      7608.84 ;
+set StartupLags[123_CT_5] := 3 ;
+set StartupCosts[123_CT_5] :=      7997.57 ;
+set StartupLags[121_NUCLEAR_1] := 48 ;
+set StartupCosts[121_NUCLEAR_1] :=     63999.82 ;
+
+set CostPiecewisePoints[101_CT_1] :=          8.0         12.0         16.0         20.0 ;
+set CostPiecewiseValues[101_CT_1] :=      1085.78      1477.23      1869.52      2298.06 ;
+set CostPiecewisePoints[101_CT_2] :=          8.0         12.0         16.0         20.0 ;
+set CostPiecewiseValues[101_CT_2] :=      1168.57      1564.17      1960.59      2430.54 ;
+set CostPiecewisePoints[101_STEAM_3] :=         30.0         45.3         60.7         76.0 ;
+set CostPiecewiseValues[101_STEAM_3] :=       841.58      1058.71      1320.06      1596.57 ;
+set CostPiecewisePoints[101_STEAM_4] :=         30.0         45.3         60.7         76.0 ;
+set CostPiecewiseValues[101_STEAM_4] :=       905.00      1125.36      1389.97      1669.71 ;
+set CostPiecewisePoints[102_CT_1] :=          8.0         12.0         16.0         20.0 ;
+set CostPiecewiseValues[102_CT_1] :=      1212.04      1567.93      1946.60      2344.93 ;
+set CostPiecewisePoints[102_CT_2] :=          8.0         12.0         16.0         20.0 ;
+set CostPiecewiseValues[102_CT_2] :=      1294.83      1654.87      2037.67      2440.14 ;
+set CostPiecewisePoints[102_STEAM_3] :=         30.0         45.3         60.7         76.0 ;
+set CostPiecewiseValues[102_STEAM_3] :=       735.10      1017.59      1338.62      1683.12 ;
+set CostPiecewisePoints[102_STEAM_4] :=         30.0         45.3         60.7         76.0 ;
+set CostPiecewiseValues[102_STEAM_4] :=       798.52      1084.24      1408.53      1785.37 ;
+set CostPiecewisePoints[107_CC_1] :=        170.0        231.7        293.3        355.0 ;
+set CostPiecewiseValues[107_CC_1] :=      4772.50      6204.35      7854.66      9738.37 ;
+set CostPiecewisePoints[113_CT_1] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[113_CT_1] :=      1122.43      1417.43      1742.49      2075.88 ;
+set CostPiecewisePoints[113_CT_2] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[113_CT_2] :=      1207.95      1507.23      1836.56      2174.23 ;
+set CostPiecewisePoints[113_CT_3] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[113_CT_3] :=      1293.47      1597.02      1930.63      2272.58 ;
+set CostPiecewisePoints[113_CT_4] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[113_CT_4] :=      1378.99      1686.82      2024.70      2370.92 ;
+set CostPiecewisePoints[115_STEAM_1] :=          5.0          7.3          9.7         12.0 ;
+set CostPiecewiseValues[115_STEAM_1] :=       897.29      1183.65      1483.77      1791.15 ;
+set CostPiecewisePoints[115_STEAM_2] :=          5.0          7.3          9.7         12.0 ;
+set CostPiecewiseValues[115_STEAM_2] :=       949.04      1259.20      1584.16      1915.34 ;
+set CostPiecewisePoints[115_STEAM_3] :=         62.0         93.0        124.0        155.0 ;
+set CostPiecewiseValues[115_STEAM_3] :=      1500.20      2132.60      2829.88      3668.44 ;
+set CostPiecewisePoints[116_STEAM_1] :=         62.0         93.0        124.0        155.0 ;
+set CostPiecewiseValues[116_STEAM_1] :=      1735.07      2345.32      3011.01      3751.15 ;
+set CostPiecewisePoints[118_CC_1] :=        170.0        231.7        293.3        355.0 ;
+set CostPiecewiseValues[118_CC_1] :=      4795.62      6188.62      7898.32      9901.23 ;
+set CostPiecewisePoints[123_STEAM_2] :=         62.0         93.0        124.0        155.0 ;
+set CostPiecewiseValues[123_STEAM_2] :=      1437.42      2039.74      2751.76      3775.85 ;
+set CostPiecewisePoints[123_STEAM_3] :=        140.0        210.0        280.0        350.0 ;
+set CostPiecewiseValues[123_STEAM_3] :=      3582.87      4981.72      6497.03      8137.68 ;
+set CostPiecewisePoints[123_CT_1] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[123_CT_1] :=      1088.23      1377.15      1704.99      2046.98 ;
+set CostPiecewisePoints[123_CT_4] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[123_CT_4] :=      1173.75      1466.95      1799.06      2145.33 ;
+set CostPiecewisePoints[123_CT_5] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[123_CT_5] :=      1259.26      1556.74      1893.13      2243.67 ;
+set CostPiecewisePoints[121_NUCLEAR_1] :=        396.0        400.0 ;
+set CostPiecewiseValues[121_NUCLEAR_1] :=      3208.99      3209.00 ;
+
+param: UnitOnT0State PowerGeneratedT0 :=
+       101_CT_1 -28         0.00
+       101_CT_2 -28         0.00
+    101_STEAM_3 168        30.00
+    101_STEAM_4 168        30.00
+       102_CT_1 -168         0.00
+       102_CT_2 -168         0.00
+    102_STEAM_3 168        30.00
+    102_STEAM_4 168        30.00
+       107_CC_1 168       170.00
+       113_CT_1 -168         0.00
+       113_CT_2 -168         0.00
+       113_CT_3 -168         0.00
+       113_CT_4 -168         0.00
+    115_STEAM_1 -168         0.00
+    115_STEAM_2 -168         0.00
+    115_STEAM_3 168        62.00
+    116_STEAM_1 168        62.00
+       118_CC_1 168       170.00
+    123_STEAM_2 168        62.00
+    123_STEAM_3 168       140.00
+       123_CT_1 -168         0.00
+       123_CT_4 -168         0.00
+       123_CT_5 -168         0.00
+  121_NUCLEAR_1 168       396.00
+;
+
+param: MinNondispatchablePower MaxNondispatchablePower  := 
+ 122_HYDRO_1 1 24.5 24.5
+ 122_HYDRO_2 1 24.5 24.5
+ 122_HYDRO_3 1 24.5 24.5
+ 122_HYDRO_4 1 24.5 24.5
+ 122_HYDRO_5 1 24.5 24.5
+ 122_HYDRO_6 1 24.5 24.5
+ 113_PV_1 1 0.0 0.0
+ 102_PV_1 1 0.0 0.0
+ 101_PV_1 1 0.0 0.0
+ 102_PV_2 1 0.0 0.0
+ 104_PV_1 1 0.0 0.0
+ 101_PV_2 1 0.0 0.0
+ 101_PV_3 1 0.0 0.0
+ 101_PV_4 1 0.0 0.0
+ 103_PV_1 1 0.0 0.0
+ 119_PV_1 1 0.0 0.0
+ 118_RTPV_1 1 0.0 0.0
+ 118_RTPV_2 1 0.0 0.0
+ 118_RTPV_3 1 0.0 0.0
+ 118_RTPV_4 1 0.0 0.0
+ 118_RTPV_5 1 0.0 0.0
+ 118_RTPV_6 1 0.0 0.0
+ 118_RTPV_7 1 0.0 0.0
+ 118_RTPV_8 1 0.0 0.0
+ 118_RTPV_9 1 0.0 0.0
+ 118_RTPV_10 1 0.0 0.0
+ 122_WIND_1 1 0.0 673.9
+ 122_HYDRO_1 2 25.0 25.0
+ 122_HYDRO_2 2 25.0 25.0
+ 122_HYDRO_3 2 25.0 25.0
+ 122_HYDRO_4 2 25.0 25.0
+ 122_HYDRO_5 2 25.0 25.0
+ 122_HYDRO_6 2 25.0 25.0
+ 113_PV_1 2 0.0 0.0
+ 102_PV_1 2 0.0 0.0
+ 101_PV_1 2 0.0 0.0
+ 102_PV_2 2 0.0 0.0
+ 104_PV_1 2 0.0 0.0
+ 101_PV_2 2 0.0 0.0
+ 101_PV_3 2 0.0 0.0
+ 101_PV_4 2 0.0 0.0
+ 103_PV_1 2 0.0 0.0
+ 119_PV_1 2 0.0 0.0
+ 118_RTPV_1 2 0.0 0.0
+ 118_RTPV_2 2 0.0 0.0
+ 118_RTPV_3 2 0.0 0.0
+ 118_RTPV_4 2 0.0 0.0
+ 118_RTPV_5 2 0.0 0.0
+ 118_RTPV_6 2 0.0 0.0
+ 118_RTPV_7 2 0.0 0.0
+ 118_RTPV_8 2 0.0 0.0
+ 118_RTPV_9 2 0.0 0.0
+ 118_RTPV_10 2 0.0 0.0
+ 122_WIND_1 2 0.0 606.5
+ 122_HYDRO_1 3 24.5 24.5
+ 122_HYDRO_2 3 24.5 24.5
+ 122_HYDRO_3 3 24.5 24.5
+ 122_HYDRO_4 3 24.5 24.5
+ 122_HYDRO_5 3 24.5 24.5
+ 122_HYDRO_6 3 24.5 24.5
+ 113_PV_1 3 0.0 0.0
+ 102_PV_1 3 0.0 0.0
+ 101_PV_1 3 0.0 0.0
+ 102_PV_2 3 0.0 0.0
+ 104_PV_1 3 0.0 0.0
+ 101_PV_2 3 0.0 0.0
+ 101_PV_3 3 0.0 0.0
+ 101_PV_4 3 0.0 0.0
+ 103_PV_1 3 0.0 0.0
+ 119_PV_1 3 0.0 0.0
+ 118_RTPV_1 3 0.0 0.0
+ 118_RTPV_2 3 0.0 0.0
+ 118_RTPV_3 3 0.0 0.0
+ 118_RTPV_4 3 0.0 0.0
+ 118_RTPV_5 3 0.0 0.0
+ 118_RTPV_6 3 0.0 0.0
+ 118_RTPV_7 3 0.0 0.0
+ 118_RTPV_8 3 0.0 0.0
+ 118_RTPV_9 3 0.0 0.0
+ 118_RTPV_10 3 0.0 0.0
+ 122_WIND_1 3 0.0 569.6
+ 122_HYDRO_1 4 27.4 27.4
+ 122_HYDRO_2 4 27.4 27.4
+ 122_HYDRO_3 4 27.4 27.4
+ 122_HYDRO_4 4 27.4 27.4
+ 122_HYDRO_5 4 27.4 27.4
+ 122_HYDRO_6 4 27.4 27.4
+ 113_PV_1 4 0.0 0.0
+ 102_PV_1 4 0.0 0.0
+ 101_PV_1 4 0.0 0.0
+ 102_PV_2 4 0.0 0.0
+ 104_PV_1 4 0.0 0.0
+ 101_PV_2 4 0.0 0.0
+ 101_PV_3 4 0.0 0.0
+ 101_PV_4 4 0.0 0.0
+ 103_PV_1 4 0.0 0.0
+ 119_PV_1 4 0.0 0.0
+ 118_RTPV_1 4 0.0 0.0
+ 118_RTPV_2 4 0.0 0.0
+ 118_RTPV_3 4 0.0 0.0
+ 118_RTPV_4 4 0.0 0.0
+ 118_RTPV_5 4 0.0 0.0
+ 118_RTPV_6 4 0.0 0.0
+ 118_RTPV_7 4 0.0 0.0
+ 118_RTPV_8 4 0.0 0.0
+ 118_RTPV_9 4 0.0 0.0
+ 118_RTPV_10 4 0.0 0.0
+ 122_WIND_1 4 0.0 503.9
+ 122_HYDRO_1 5 38.7 38.7
+ 122_HYDRO_2 5 38.7 38.7
+ 122_HYDRO_3 5 38.7 38.7
+ 122_HYDRO_4 5 38.7 38.7
+ 122_HYDRO_5 5 38.7 38.7
+ 122_HYDRO_6 5 38.7 38.7
+ 113_PV_1 5 0.0 0.0
+ 102_PV_1 5 0.0 0.0
+ 101_PV_1 5 0.0 0.0
+ 102_PV_2 5 0.0 0.0
+ 104_PV_1 5 0.0 0.0
+ 101_PV_2 5 0.0 0.0
+ 101_PV_3 5 0.0 0.0
+ 101_PV_4 5 0.0 0.0
+ 103_PV_1 5 0.0 0.0
+ 119_PV_1 5 0.0 0.0
+ 118_RTPV_1 5 0.0 0.0
+ 118_RTPV_2 5 0.0 0.0
+ 118_RTPV_3 5 0.0 0.0
+ 118_RTPV_4 5 0.0 0.0
+ 118_RTPV_5 5 0.0 0.0
+ 118_RTPV_6 5 0.0 0.0
+ 118_RTPV_7 5 0.0 0.0
+ 118_RTPV_8 5 0.0 0.0
+ 118_RTPV_9 5 0.0 0.0
+ 118_RTPV_10 5 0.0 0.0
+ 122_WIND_1 5 0.0 345.5
+ 122_HYDRO_1 6 38.7 38.7
+ 122_HYDRO_2 6 38.7 38.7
+ 122_HYDRO_3 6 38.7 38.7
+ 122_HYDRO_4 6 38.7 38.7
+ 122_HYDRO_5 6 38.7 38.7
+ 122_HYDRO_6 6 38.7 38.7
+ 113_PV_1 6 0.0 0.0
+ 102_PV_1 6 0.0 0.0
+ 101_PV_1 6 0.0 0.0
+ 102_PV_2 6 0.0 0.0
+ 104_PV_1 6 0.0 0.0
+ 101_PV_2 6 0.0 0.0
+ 101_PV_3 6 0.0 0.0
+ 101_PV_4 6 0.0 0.0
+ 103_PV_1 6 0.0 0.0
+ 119_PV_1 6 0.0 0.0
+ 118_RTPV_1 6 0.0 0.0
+ 118_RTPV_2 6 0.0 0.0
+ 118_RTPV_3 6 0.0 0.0
+ 118_RTPV_4 6 0.0 0.0
+ 118_RTPV_5 6 0.0 0.0
+ 118_RTPV_6 6 0.0 0.0
+ 118_RTPV_7 6 0.0 0.0
+ 118_RTPV_8 6 0.0 0.0
+ 118_RTPV_9 6 0.0 0.0
+ 118_RTPV_10 6 0.0 0.0
+ 122_WIND_1 6 0.0 484.5
+ 122_HYDRO_1 7 39.2 39.2
+ 122_HYDRO_2 7 39.2 39.2
+ 122_HYDRO_3 7 39.2 39.2
+ 122_HYDRO_4 7 39.2 39.2
+ 122_HYDRO_5 7 39.2 39.2
+ 122_HYDRO_6 7 39.2 39.2
+ 113_PV_1 7 0.0 28.2
+ 102_PV_1 7 0.0 8.9
+ 101_PV_1 7 0.0 9.4
+ 102_PV_2 7 0.0 8.9
+ 104_PV_1 7 0.0 9.2
+ 101_PV_2 7 0.0 9.0
+ 101_PV_3 7 0.0 9.0
+ 101_PV_4 7 0.0 9.4
+ 103_PV_1 7 0.0 0.6
+ 119_PV_1 7 0.0 0.6
+ 118_RTPV_1 7 0.1 0.1
+ 118_RTPV_2 7 0.1 0.1
+ 118_RTPV_3 7 0.0 0.0
+ 118_RTPV_4 7 0.1 0.1
+ 118_RTPV_5 7 0.1 0.1
+ 118_RTPV_6 7 0.1 0.1
+ 118_RTPV_7 7 0.1 0.1
+ 118_RTPV_8 7 0.1 0.1
+ 118_RTPV_9 7 0.1 0.1
+ 118_RTPV_10 7 0.0 0.0
+ 122_WIND_1 7 0.0 592.4
+ 122_HYDRO_1 8 38.7 38.7
+ 122_HYDRO_2 8 38.7 38.7
+ 122_HYDRO_3 8 38.7 38.7
+ 122_HYDRO_4 8 38.7 38.7
+ 122_HYDRO_5 8 38.7 38.7
+ 122_HYDRO_6 8 38.7 38.7
+ 113_PV_1 8 0.0 47.3
+ 102_PV_1 8 0.0 13.5
+ 101_PV_1 8 0.0 14.7
+ 102_PV_2 8 0.0 13.7
+ 104_PV_1 8 0.0 14.5
+ 101_PV_2 8 0.0 13.8
+ 101_PV_3 8 0.0 13.8
+ 101_PV_4 8 0.0 14.7
+ 103_PV_1 8 0.0 10.6
+ 119_PV_1 8 0.0 10.2
+ 118_RTPV_1 8 1.8 1.8
+ 118_RTPV_2 8 1.8 1.8
+ 118_RTPV_3 8 1.5 1.5
+ 118_RTPV_4 8 1.8 1.8
+ 118_RTPV_5 8 1.8 1.8
+ 118_RTPV_6 8 1.8 1.8
+ 118_RTPV_7 8 2.0 2.0
+ 118_RTPV_8 8 1.8 1.8
+ 118_RTPV_9 8 1.6 1.6
+ 118_RTPV_10 8 0.7 0.7
+ 122_WIND_1 8 0.0 494.5
+ 122_HYDRO_1 9 39.2 39.2
+ 122_HYDRO_2 9 39.2 39.2
+ 122_HYDRO_3 9 39.2 39.2
+ 122_HYDRO_4 9 39.2 39.2
+ 122_HYDRO_5 9 39.2 39.2
+ 122_HYDRO_6 9 39.2 39.2
+ 113_PV_1 9 0.0 57.7
+ 102_PV_1 9 0.0 16.2
+ 101_PV_1 9 0.0 17.5
+ 102_PV_2 9 0.0 16.3
+ 104_PV_1 9 0.0 17.3
+ 101_PV_2 9 0.0 16.4
+ 101_PV_3 9 0.0 16.5
+ 101_PV_4 9 0.0 17.4
+ 103_PV_1 9 0.0 22.6
+ 119_PV_1 9 0.0 22.7
+ 118_RTPV_1 9 3.5 3.5
+ 118_RTPV_2 9 3.5 3.5
+ 118_RTPV_3 9 3.5 3.5
+ 118_RTPV_4 9 3.5 3.5
+ 118_RTPV_5 9 3.5 3.5
+ 118_RTPV_6 9 3.5 3.5
+ 118_RTPV_7 9 4.0 4.0
+ 118_RTPV_8 9 3.9 3.9
+ 118_RTPV_9 9 3.5 3.5
+ 118_RTPV_10 9 1.6 1.6
+ 122_WIND_1 9 0.0 318.7
+ 122_HYDRO_1 10 38.7 38.7
+ 122_HYDRO_2 10 38.7 38.7
+ 122_HYDRO_3 10 38.7 38.7
+ 122_HYDRO_4 10 38.7 38.7
+ 122_HYDRO_5 10 38.7 38.7
+ 122_HYDRO_6 10 38.7 38.7
+ 113_PV_1 10 0.0 63.3
+ 102_PV_1 10 0.0 17.9
+ 101_PV_1 10 0.0 18.6
+ 102_PV_2 10 0.0 17.8
+ 104_PV_1 10 0.0 18.4
+ 101_PV_2 10 0.0 18.0
+ 101_PV_3 10 0.0 18.3
+ 101_PV_4 10 0.0 18.6
+ 103_PV_1 10 0.0 32.9
+ 119_PV_1 10 0.0 33.1
+ 118_RTPV_1 10 5.0 5.0
+ 118_RTPV_2 10 5.0 5.0
+ 118_RTPV_3 10 5.1 5.1
+ 118_RTPV_4 10 4.9 4.9
+ 118_RTPV_5 10 5.0 5.0
+ 118_RTPV_6 10 5.0 5.0
+ 118_RTPV_7 10 5.7 5.7
+ 118_RTPV_8 10 5.8 5.8
+ 118_RTPV_9 10 5.4 5.4
+ 118_RTPV_10 10 2.4 2.4
+ 122_WIND_1 10 0.0 134.1
+ 122_HYDRO_1 11 37.3 37.3
+ 122_HYDRO_2 11 37.3 37.3
+ 122_HYDRO_3 11 37.3 37.3
+ 122_HYDRO_4 11 37.3 37.3
+ 122_HYDRO_5 11 37.3 37.3
+ 122_HYDRO_6 11 37.3 37.3
+ 113_PV_1 11 0.0 65.4
+ 102_PV_1 11 0.0 18.1
+ 101_PV_1 11 0.0 18.5
+ 102_PV_2 11 0.0 17.9
+ 104_PV_1 11 0.0 18.2
+ 101_PV_2 11 0.0 17.9
+ 101_PV_3 11 0.0 18.4
+ 101_PV_4 11 0.0 18.2
+ 103_PV_1 11 0.0 38.8
+ 119_PV_1 11 0.0 38.8
+ 118_RTPV_1 11 5.9 5.9
+ 118_RTPV_2 11 5.9 5.9
+ 118_RTPV_3 11 6.0 6.0
+ 118_RTPV_4 11 5.6 5.6
+ 118_RTPV_5 11 6.1 6.1
+ 118_RTPV_6 11 5.8 5.8
+ 118_RTPV_7 11 7.1 7.1
+ 118_RTPV_8 11 7.3 7.3
+ 118_RTPV_9 11 6.6 6.6
+ 118_RTPV_10 11 3.0 3.0
+ 122_WIND_1 11 0.0 98.0
+ 122_HYDRO_1 12 36.8 36.8
+ 122_HYDRO_2 12 36.8 36.8
+ 122_HYDRO_3 12 36.8 36.8
+ 122_HYDRO_4 12 36.8 36.8
+ 122_HYDRO_5 12 36.8 36.8
+ 122_HYDRO_6 12 36.8 36.8
+ 113_PV_1 12 0.0 65.3
+ 102_PV_1 12 0.0 18.2
+ 101_PV_1 12 0.0 18.4
+ 102_PV_2 12 0.0 18.1
+ 104_PV_1 12 0.0 18.0
+ 101_PV_2 12 0.0 18.2
+ 101_PV_3 12 0.0 18.2
+ 101_PV_4 12 0.0 18.6
+ 103_PV_1 12 0.0 44.2
+ 119_PV_1 12 0.0 43.1
+ 118_RTPV_1 12 6.5 6.5
+ 118_RTPV_2 12 6.5 6.5
+ 118_RTPV_3 12 6.3 6.3
+ 118_RTPV_4 12 6.2 6.2
+ 118_RTPV_5 12 6.6 6.6
+ 118_RTPV_6 12 6.4 6.4
+ 118_RTPV_7 12 7.8 7.8
+ 118_RTPV_8 12 8.2 8.2
+ 118_RTPV_9 12 7.4 7.4
+ 118_RTPV_10 12 3.4 3.4
+ 122_WIND_1 12 0.0 124.1
+ 122_HYDRO_1 13 36.8 36.8
+ 122_HYDRO_2 13 36.8 36.8
+ 122_HYDRO_3 13 36.8 36.8
+ 122_HYDRO_4 13 36.8 36.8
+ 122_HYDRO_5 13 36.8 36.8
+ 122_HYDRO_6 13 36.8 36.8
+ 113_PV_1 13 0.0 65.4
+ 102_PV_1 13 0.0 17.6
+ 101_PV_1 13 0.0 18.2
+ 102_PV_2 13 0.0 17.7
+ 104_PV_1 13 0.0 18.0
+ 101_PV_2 13 0.0 17.8
+ 101_PV_3 13 0.0 17.7
+ 101_PV_4 13 0.0 18.4
+ 103_PV_1 13 0.0 46.1
+ 119_PV_1 13 0.0 42.1
+ 118_RTPV_1 13 6.5 6.5
+ 118_RTPV_2 13 6.5 6.5
+ 118_RTPV_3 13 6.1 6.1
+ 118_RTPV_4 13 6.1 6.1
+ 118_RTPV_5 13 6.4 6.4
+ 118_RTPV_6 13 6.2 6.2
+ 118_RTPV_7 13 8.1 8.1
+ 118_RTPV_8 13 8.6 8.6
+ 118_RTPV_9 13 7.8 7.8
+ 118_RTPV_10 13 3.5 3.5
+ 122_WIND_1 13 0.0 133.2
+ 122_HYDRO_1 14 37.3 37.3
+ 122_HYDRO_2 14 37.3 37.3
+ 122_HYDRO_3 14 37.3 37.3
+ 122_HYDRO_4 14 37.3 37.3
+ 122_HYDRO_5 14 37.3 37.3
+ 122_HYDRO_6 14 37.3 37.3
+ 113_PV_1 14 0.0 65.0
+ 102_PV_1 14 0.0 17.6
+ 101_PV_1 14 0.0 18.3
+ 102_PV_2 14 0.0 17.7
+ 104_PV_1 14 0.0 18.0
+ 101_PV_2 14 0.0 17.8
+ 101_PV_3 14 0.0 17.7
+ 101_PV_4 14 0.0 18.4
+ 103_PV_1 14 0.0 45.2
+ 119_PV_1 14 0.0 42.5
+ 118_RTPV_1 14 6.6 6.6
+ 118_RTPV_2 14 6.6 6.6
+ 118_RTPV_3 14 6.1 6.1
+ 118_RTPV_4 14 6.2 6.2
+ 118_RTPV_5 14 6.6 6.6
+ 118_RTPV_6 14 6.3 6.3
+ 118_RTPV_7 14 8.1 8.1
+ 118_RTPV_8 14 8.5 8.5
+ 118_RTPV_9 14 7.6 7.6
+ 118_RTPV_10 14 3.5 3.5
+ 122_WIND_1 14 0.0 95.0
+ 122_HYDRO_1 15 37.3 37.3
+ 122_HYDRO_2 15 37.3 37.3
+ 122_HYDRO_3 15 37.3 37.3
+ 122_HYDRO_4 15 37.3 37.3
+ 122_HYDRO_5 15 37.3 37.3
+ 122_HYDRO_6 15 37.3 37.3
+ 113_PV_1 15 0.0 63.9
+ 102_PV_1 15 0.0 17.7
+ 101_PV_1 15 0.0 17.9
+ 102_PV_2 15 0.0 17.8
+ 104_PV_1 15 0.0 17.7
+ 101_PV_2 15 0.0 17.8
+ 101_PV_3 15 0.0 17.9
+ 101_PV_4 15 0.0 17.9
+ 103_PV_1 15 0.0 41.3
+ 119_PV_1 15 0.0 40.5
+ 118_RTPV_1 15 6.3 6.3
+ 118_RTPV_2 15 6.3 6.3
+ 118_RTPV_3 15 5.8 5.8
+ 118_RTPV_4 15 5.8 5.8
+ 118_RTPV_5 15 6.3 6.3
+ 118_RTPV_6 15 6.1 6.1
+ 118_RTPV_7 15 7.8 7.8
+ 118_RTPV_8 15 7.8 7.8
+ 118_RTPV_9 15 7.0 7.0
+ 118_RTPV_10 15 3.2 3.2
+ 122_WIND_1 15 0.0 96.2
+ 122_HYDRO_1 16 37.7 37.7
+ 122_HYDRO_2 16 37.7 37.7
+ 122_HYDRO_3 16 37.7 37.7
+ 122_HYDRO_4 16 37.7 37.7
+ 122_HYDRO_5 16 37.7 37.7
+ 122_HYDRO_6 16 37.7 37.7
+ 113_PV_1 16 0.0 62.2
+ 102_PV_1 16 0.0 17.0
+ 101_PV_1 16 0.0 17.1
+ 102_PV_2 16 0.0 16.9
+ 104_PV_1 16 0.0 17.0
+ 101_PV_2 16 0.0 16.4
+ 101_PV_3 16 0.0 17.2
+ 101_PV_4 16 0.0 17.6
+ 103_PV_1 16 0.0 34.3
+ 119_PV_1 16 0.0 34.3
+ 118_RTPV_1 16 5.2 5.2
+ 118_RTPV_2 16 5.2 5.2
+ 118_RTPV_3 16 4.9 4.9
+ 118_RTPV_4 16 4.9 4.9
+ 118_RTPV_5 16 5.4 5.4
+ 118_RTPV_6 16 5.2 5.2
+ 118_RTPV_7 16 6.7 6.7
+ 118_RTPV_8 16 6.7 6.7
+ 118_RTPV_9 16 6.0 6.0
+ 118_RTPV_10 16 2.8 2.8
+ 122_WIND_1 16 0.0 142.8
+ 122_HYDRO_1 17 38.2 38.2
+ 122_HYDRO_2 17 38.2 38.2
+ 122_HYDRO_3 17 38.2 38.2
+ 122_HYDRO_4 17 38.2 38.2
+ 122_HYDRO_5 17 38.2 38.2
+ 122_HYDRO_6 17 38.2 38.2
+ 113_PV_1 17 0.0 55.6
+ 102_PV_1 17 0.0 15.1
+ 101_PV_1 17 0.0 15.5
+ 102_PV_2 17 0.0 15.2
+ 104_PV_1 17 0.0 15.5
+ 101_PV_2 17 0.0 15.3
+ 101_PV_3 17 0.0 15.5
+ 101_PV_4 17 0.0 15.1
+ 103_PV_1 17 0.0 25.0
+ 119_PV_1 17 0.0 25.4
+ 118_RTPV_1 17 4.0 4.0
+ 118_RTPV_2 17 4.0 4.0
+ 118_RTPV_3 17 4.3 4.3
+ 118_RTPV_4 17 3.9 3.9
+ 118_RTPV_5 17 4.2 4.2
+ 118_RTPV_6 17 4.0 4.0
+ 118_RTPV_7 17 5.3 5.3
+ 118_RTPV_8 17 5.2 5.2
+ 118_RTPV_9 17 4.7 4.7
+ 118_RTPV_10 17 2.2 2.2
+ 122_WIND_1 17 0.0 138.1
+ 122_HYDRO_1 18 38.2 38.2
+ 122_HYDRO_2 18 38.2 38.2
+ 122_HYDRO_3 18 38.2 38.2
+ 122_HYDRO_4 18 38.2 38.2
+ 122_HYDRO_5 18 38.2 38.2
+ 122_HYDRO_6 18 38.2 38.2
+ 113_PV_1 18 0.0 42.2
+ 102_PV_1 18 0.0 11.6
+ 101_PV_1 18 0.0 12.0
+ 102_PV_2 18 0.0 11.9
+ 104_PV_1 18 0.0 11.9
+ 101_PV_2 18 0.0 11.9
+ 101_PV_3 18 0.0 11.7
+ 101_PV_4 18 0.0 12.3
+ 103_PV_1 18 0.0 12.5
+ 119_PV_1 18 0.0 13.3
+ 118_RTPV_1 18 2.2 2.2
+ 118_RTPV_2 18 2.2 2.2
+ 118_RTPV_3 18 2.4 2.4
+ 118_RTPV_4 18 2.1 2.1
+ 118_RTPV_5 18 2.3 2.3
+ 118_RTPV_6 18 2.1 2.1
+ 118_RTPV_7 18 3.0 3.0
+ 118_RTPV_8 18 2.9 2.9
+ 118_RTPV_9 18 2.6 2.6
+ 118_RTPV_10 18 1.2 1.2
+ 122_WIND_1 18 0.0 138.2
+ 122_HYDRO_1 19 37.7 37.7
+ 122_HYDRO_2 19 37.7 37.7
+ 122_HYDRO_3 19 37.7 37.7
+ 122_HYDRO_4 19 37.7 37.7
+ 122_HYDRO_5 19 37.7 37.7
+ 122_HYDRO_6 19 37.7 37.7
+ 113_PV_1 19 0.0 17.0
+ 102_PV_1 19 0.0 4.2
+ 101_PV_1 19 0.0 4.5
+ 102_PV_2 19 0.0 4.6
+ 104_PV_1 19 0.0 4.7
+ 101_PV_2 19 0.0 4.8
+ 101_PV_3 19 0.0 5.0
+ 101_PV_4 19 0.0 5.2
+ 103_PV_1 19 0.0 0.3
+ 119_PV_1 19 0.0 0.4
+ 118_RTPV_1 19 0.1 0.1
+ 118_RTPV_2 19 0.1 0.1
+ 118_RTPV_3 19 0.2 0.2
+ 118_RTPV_4 19 0.1 0.1
+ 118_RTPV_5 19 0.2 0.2
+ 118_RTPV_6 19 0.1 0.1
+ 118_RTPV_7 19 0.4 0.4
+ 118_RTPV_8 19 0.3 0.3
+ 118_RTPV_9 19 0.3 0.3
+ 118_RTPV_10 19 0.1 0.1
+ 122_WIND_1 19 0.0 15.6
+ 122_HYDRO_1 20 38.2 38.2
+ 122_HYDRO_2 20 38.2 38.2
+ 122_HYDRO_3 20 38.2 38.2
+ 122_HYDRO_4 20 38.2 38.2
+ 122_HYDRO_5 20 38.2 38.2
+ 122_HYDRO_6 20 38.2 38.2
+ 113_PV_1 20 0.0 0.0
+ 102_PV_1 20 0.0 0.0
+ 101_PV_1 20 0.0 0.0
+ 102_PV_2 20 0.0 0.0
+ 104_PV_1 20 0.0 0.0
+ 101_PV_2 20 0.0 0.0
+ 101_PV_3 20 0.0 0.0
+ 101_PV_4 20 0.0 0.0
+ 103_PV_1 20 0.0 0.0
+ 119_PV_1 20 0.0 0.0
+ 118_RTPV_1 20 0.0 0.0
+ 118_RTPV_2 20 0.0 0.0
+ 118_RTPV_3 20 0.0 0.0
+ 118_RTPV_4 20 0.0 0.0
+ 118_RTPV_5 20 0.0 0.0
+ 118_RTPV_6 20 0.0 0.0
+ 118_RTPV_7 20 0.0 0.0
+ 118_RTPV_8 20 0.0 0.0
+ 118_RTPV_9 20 0.0 0.0
+ 118_RTPV_10 20 0.0 0.0
+ 122_WIND_1 20 0.0 10.6
+ 122_HYDRO_1 21 37.3 37.3
+ 122_HYDRO_2 21 37.3 37.3
+ 122_HYDRO_3 21 37.3 37.3
+ 122_HYDRO_4 21 37.3 37.3
+ 122_HYDRO_5 21 37.3 37.3
+ 122_HYDRO_6 21 37.3 37.3
+ 113_PV_1 21 0.0 0.0
+ 102_PV_1 21 0.0 0.0
+ 101_PV_1 21 0.0 0.0
+ 102_PV_2 21 0.0 0.0
+ 104_PV_1 21 0.0 0.0
+ 101_PV_2 21 0.0 0.0
+ 101_PV_3 21 0.0 0.0
+ 101_PV_4 21 0.0 0.0
+ 103_PV_1 21 0.0 0.0
+ 119_PV_1 21 0.0 0.0
+ 118_RTPV_1 21 0.0 0.0
+ 118_RTPV_2 21 0.0 0.0
+ 118_RTPV_3 21 0.0 0.0
+ 118_RTPV_4 21 0.0 0.0
+ 118_RTPV_5 21 0.0 0.0
+ 118_RTPV_6 21 0.0 0.0
+ 118_RTPV_7 21 0.0 0.0
+ 118_RTPV_8 21 0.0 0.0
+ 118_RTPV_9 21 0.0 0.0
+ 118_RTPV_10 21 0.0 0.0
+ 122_WIND_1 21 0.0 5.2
+ 122_HYDRO_1 22 37.7 37.7
+ 122_HYDRO_2 22 37.7 37.7
+ 122_HYDRO_3 22 37.7 37.7
+ 122_HYDRO_4 22 37.7 37.7
+ 122_HYDRO_5 22 37.7 37.7
+ 122_HYDRO_6 22 37.7 37.7
+ 113_PV_1 22 0.0 0.0
+ 102_PV_1 22 0.0 0.0
+ 101_PV_1 22 0.0 0.0
+ 102_PV_2 22 0.0 0.0
+ 104_PV_1 22 0.0 0.0
+ 101_PV_2 22 0.0 0.0
+ 101_PV_3 22 0.0 0.0
+ 101_PV_4 22 0.0 0.0
+ 103_PV_1 22 0.0 0.0
+ 119_PV_1 22 0.0 0.0
+ 118_RTPV_1 22 0.0 0.0
+ 118_RTPV_2 22 0.0 0.0
+ 118_RTPV_3 22 0.0 0.0
+ 118_RTPV_4 22 0.0 0.0
+ 118_RTPV_5 22 0.0 0.0
+ 118_RTPV_6 22 0.0 0.0
+ 118_RTPV_7 22 0.0 0.0
+ 118_RTPV_8 22 0.0 0.0
+ 118_RTPV_9 22 0.0 0.0
+ 118_RTPV_10 22 0.0 0.0
+ 122_WIND_1 22 0.0 10.4
+ 122_HYDRO_1 23 26.4 26.4
+ 122_HYDRO_2 23 26.4 26.4
+ 122_HYDRO_3 23 26.4 26.4
+ 122_HYDRO_4 23 26.4 26.4
+ 122_HYDRO_5 23 26.4 26.4
+ 122_HYDRO_6 23 26.4 26.4
+ 113_PV_1 23 0.0 0.0
+ 102_PV_1 23 0.0 0.0
+ 101_PV_1 23 0.0 0.0
+ 102_PV_2 23 0.0 0.0
+ 104_PV_1 23 0.0 0.0
+ 101_PV_2 23 0.0 0.0
+ 101_PV_3 23 0.0 0.0
+ 101_PV_4 23 0.0 0.0
+ 103_PV_1 23 0.0 0.0
+ 119_PV_1 23 0.0 0.0
+ 118_RTPV_1 23 0.0 0.0
+ 118_RTPV_2 23 0.0 0.0
+ 118_RTPV_3 23 0.0 0.0
+ 118_RTPV_4 23 0.0 0.0
+ 118_RTPV_5 23 0.0 0.0
+ 118_RTPV_6 23 0.0 0.0
+ 118_RTPV_7 23 0.0 0.0
+ 118_RTPV_8 23 0.0 0.0
+ 118_RTPV_9 23 0.0 0.0
+ 118_RTPV_10 23 0.0 0.0
+ 122_WIND_1 23 0.0 19.4
+ 122_HYDRO_1 24 25.5 25.5
+ 122_HYDRO_2 24 25.5 25.5
+ 122_HYDRO_3 24 25.5 25.5
+ 122_HYDRO_4 24 25.5 25.5
+ 122_HYDRO_5 24 25.5 25.5
+ 122_HYDRO_6 24 25.5 25.5
+ 113_PV_1 24 0.0 0.0
+ 102_PV_1 24 0.0 0.0
+ 101_PV_1 24 0.0 0.0
+ 102_PV_2 24 0.0 0.0
+ 104_PV_1 24 0.0 0.0
+ 101_PV_2 24 0.0 0.0
+ 101_PV_3 24 0.0 0.0
+ 101_PV_4 24 0.0 0.0
+ 103_PV_1 24 0.0 0.0
+ 119_PV_1 24 0.0 0.0
+ 118_RTPV_1 24 0.0 0.0
+ 118_RTPV_2 24 0.0 0.0
+ 118_RTPV_3 24 0.0 0.0
+ 118_RTPV_4 24 0.0 0.0
+ 118_RTPV_5 24 0.0 0.0
+ 118_RTPV_6 24 0.0 0.0
+ 118_RTPV_7 24 0.0 0.0
+ 118_RTPV_8 24 0.0 0.0
+ 118_RTPV_9 24 0.0 0.0
+ 118_RTPV_10 24 0.0 0.0
+ 122_WIND_1 24 0.0 22.2
+ 122_HYDRO_1 25 24.5 24.5
+ 122_HYDRO_2 25 24.5 24.5
+ 122_HYDRO_3 25 24.5 24.5
+ 122_HYDRO_4 25 24.5 24.5
+ 122_HYDRO_5 25 24.5 24.5
+ 122_HYDRO_6 25 24.5 24.5
+ 113_PV_1 25 0.0 0.0
+ 102_PV_1 25 0.0 0.0
+ 101_PV_1 25 0.0 0.0
+ 102_PV_2 25 0.0 0.0
+ 104_PV_1 25 0.0 0.0
+ 101_PV_2 25 0.0 0.0
+ 101_PV_3 25 0.0 0.0
+ 101_PV_4 25 0.0 0.0
+ 103_PV_1 25 0.0 0.0
+ 119_PV_1 25 0.0 0.0
+ 118_RTPV_1 25 0.0 0.0
+ 118_RTPV_2 25 0.0 0.0
+ 118_RTPV_3 25 0.0 0.0
+ 118_RTPV_4 25 0.0 0.0
+ 118_RTPV_5 25 0.0 0.0
+ 118_RTPV_6 25 0.0 0.0
+ 118_RTPV_7 25 0.0 0.0
+ 118_RTPV_8 25 0.0 0.0
+ 118_RTPV_9 25 0.0 0.0
+ 118_RTPV_10 25 0.0 0.0
+ 122_WIND_1 25 0.0 22.2
+ 122_HYDRO_1 26 25.0 25.0
+ 122_HYDRO_2 26 25.0 25.0
+ 122_HYDRO_3 26 25.0 25.0
+ 122_HYDRO_4 26 25.0 25.0
+ 122_HYDRO_5 26 25.0 25.0
+ 122_HYDRO_6 26 25.0 25.0
+ 113_PV_1 26 0.0 0.0
+ 102_PV_1 26 0.0 0.0
+ 101_PV_1 26 0.0 0.0
+ 102_PV_2 26 0.0 0.0
+ 104_PV_1 26 0.0 0.0
+ 101_PV_2 26 0.0 0.0
+ 101_PV_3 26 0.0 0.0
+ 101_PV_4 26 0.0 0.0
+ 103_PV_1 26 0.0 0.0
+ 119_PV_1 26 0.0 0.0
+ 118_RTPV_1 26 0.0 0.0
+ 118_RTPV_2 26 0.0 0.0
+ 118_RTPV_3 26 0.0 0.0
+ 118_RTPV_4 26 0.0 0.0
+ 118_RTPV_5 26 0.0 0.0
+ 118_RTPV_6 26 0.0 0.0
+ 118_RTPV_7 26 0.0 0.0
+ 118_RTPV_8 26 0.0 0.0
+ 118_RTPV_9 26 0.0 0.0
+ 118_RTPV_10 26 0.0 0.0
+ 122_WIND_1 26 0.0 22.2
+ 122_HYDRO_1 27 24.5 24.5
+ 122_HYDRO_2 27 24.5 24.5
+ 122_HYDRO_3 27 24.5 24.5
+ 122_HYDRO_4 27 24.5 24.5
+ 122_HYDRO_5 27 24.5 24.5
+ 122_HYDRO_6 27 24.5 24.5
+ 113_PV_1 27 0.0 0.0
+ 102_PV_1 27 0.0 0.0
+ 101_PV_1 27 0.0 0.0
+ 102_PV_2 27 0.0 0.0
+ 104_PV_1 27 0.0 0.0
+ 101_PV_2 27 0.0 0.0
+ 101_PV_3 27 0.0 0.0
+ 101_PV_4 27 0.0 0.0
+ 103_PV_1 27 0.0 0.0
+ 119_PV_1 27 0.0 0.0
+ 118_RTPV_1 27 0.0 0.0
+ 118_RTPV_2 27 0.0 0.0
+ 118_RTPV_3 27 0.0 0.0
+ 118_RTPV_4 27 0.0 0.0
+ 118_RTPV_5 27 0.0 0.0
+ 118_RTPV_6 27 0.0 0.0
+ 118_RTPV_7 27 0.0 0.0
+ 118_RTPV_8 27 0.0 0.0
+ 118_RTPV_9 27 0.0 0.0
+ 118_RTPV_10 27 0.0 0.0
+ 122_WIND_1 27 0.0 22.2
+ 122_HYDRO_1 28 27.4 27.4
+ 122_HYDRO_2 28 27.4 27.4
+ 122_HYDRO_3 28 27.4 27.4
+ 122_HYDRO_4 28 27.4 27.4
+ 122_HYDRO_5 28 27.4 27.4
+ 122_HYDRO_6 28 27.4 27.4
+ 113_PV_1 28 0.0 0.0
+ 102_PV_1 28 0.0 0.0
+ 101_PV_1 28 0.0 0.0
+ 102_PV_2 28 0.0 0.0
+ 104_PV_1 28 0.0 0.0
+ 101_PV_2 28 0.0 0.0
+ 101_PV_3 28 0.0 0.0
+ 101_PV_4 28 0.0 0.0
+ 103_PV_1 28 0.0 0.0
+ 119_PV_1 28 0.0 0.0
+ 118_RTPV_1 28 0.0 0.0
+ 118_RTPV_2 28 0.0 0.0
+ 118_RTPV_3 28 0.0 0.0
+ 118_RTPV_4 28 0.0 0.0
+ 118_RTPV_5 28 0.0 0.0
+ 118_RTPV_6 28 0.0 0.0
+ 118_RTPV_7 28 0.0 0.0
+ 118_RTPV_8 28 0.0 0.0
+ 118_RTPV_9 28 0.0 0.0
+ 118_RTPV_10 28 0.0 0.0
+ 122_WIND_1 28 0.0 22.2
+ 122_HYDRO_1 29 38.7 38.7
+ 122_HYDRO_2 29 38.7 38.7
+ 122_HYDRO_3 29 38.7 38.7
+ 122_HYDRO_4 29 38.7 38.7
+ 122_HYDRO_5 29 38.7 38.7
+ 122_HYDRO_6 29 38.7 38.7
+ 113_PV_1 29 0.0 0.0
+ 102_PV_1 29 0.0 0.0
+ 101_PV_1 29 0.0 0.0
+ 102_PV_2 29 0.0 0.0
+ 104_PV_1 29 0.0 0.0
+ 101_PV_2 29 0.0 0.0
+ 101_PV_3 29 0.0 0.0
+ 101_PV_4 29 0.0 0.0
+ 103_PV_1 29 0.0 0.0
+ 119_PV_1 29 0.0 0.0
+ 118_RTPV_1 29 0.0 0.0
+ 118_RTPV_2 29 0.0 0.0
+ 118_RTPV_3 29 0.0 0.0
+ 118_RTPV_4 29 0.0 0.0
+ 118_RTPV_5 29 0.0 0.0
+ 118_RTPV_6 29 0.0 0.0
+ 118_RTPV_7 29 0.0 0.0
+ 118_RTPV_8 29 0.0 0.0
+ 118_RTPV_9 29 0.0 0.0
+ 118_RTPV_10 29 0.0 0.0
+ 122_WIND_1 29 0.0 22.2
+ 122_HYDRO_1 30 38.7 38.7
+ 122_HYDRO_2 30 38.7 38.7
+ 122_HYDRO_3 30 38.7 38.7
+ 122_HYDRO_4 30 38.7 38.7
+ 122_HYDRO_5 30 38.7 38.7
+ 122_HYDRO_6 30 38.7 38.7
+ 113_PV_1 30 0.0 0.0
+ 102_PV_1 30 0.0 0.0
+ 101_PV_1 30 0.0 0.0
+ 102_PV_2 30 0.0 0.0
+ 104_PV_1 30 0.0 0.0
+ 101_PV_2 30 0.0 0.0
+ 101_PV_3 30 0.0 0.0
+ 101_PV_4 30 0.0 0.0
+ 103_PV_1 30 0.0 0.0
+ 119_PV_1 30 0.0 0.0
+ 118_RTPV_1 30 0.0 0.0
+ 118_RTPV_2 30 0.0 0.0
+ 118_RTPV_3 30 0.0 0.0
+ 118_RTPV_4 30 0.0 0.0
+ 118_RTPV_5 30 0.0 0.0
+ 118_RTPV_6 30 0.0 0.0
+ 118_RTPV_7 30 0.0 0.0
+ 118_RTPV_8 30 0.0 0.0
+ 118_RTPV_9 30 0.0 0.0
+ 118_RTPV_10 30 0.0 0.0
+ 122_WIND_1 30 0.0 22.2
+ 122_HYDRO_1 31 39.2 39.2
+ 122_HYDRO_2 31 39.2 39.2
+ 122_HYDRO_3 31 39.2 39.2
+ 122_HYDRO_4 31 39.2 39.2
+ 122_HYDRO_5 31 39.2 39.2
+ 122_HYDRO_6 31 39.2 39.2
+ 113_PV_1 31 0.0 28.2
+ 102_PV_1 31 0.0 8.9
+ 101_PV_1 31 0.0 9.4
+ 102_PV_2 31 0.0 8.9
+ 104_PV_1 31 0.0 9.2
+ 101_PV_2 31 0.0 9.0
+ 101_PV_3 31 0.0 9.0
+ 101_PV_4 31 0.0 9.4
+ 103_PV_1 31 0.0 0.6
+ 119_PV_1 31 0.0 0.6
+ 118_RTPV_1 31 0.1 0.1
+ 118_RTPV_2 31 0.1 0.1
+ 118_RTPV_3 31 0.0 0.0
+ 118_RTPV_4 31 0.1 0.1
+ 118_RTPV_5 31 0.1 0.1
+ 118_RTPV_6 31 0.1 0.1
+ 118_RTPV_7 31 0.1 0.1
+ 118_RTPV_8 31 0.1 0.1
+ 118_RTPV_9 31 0.1 0.1
+ 118_RTPV_10 31 0.0 0.0
+ 122_WIND_1 31 0.0 22.2
+ 122_HYDRO_1 32 38.7 38.7
+ 122_HYDRO_2 32 38.7 38.7
+ 122_HYDRO_3 32 38.7 38.7
+ 122_HYDRO_4 32 38.7 38.7
+ 122_HYDRO_5 32 38.7 38.7
+ 122_HYDRO_6 32 38.7 38.7
+ 113_PV_1 32 0.0 47.3
+ 102_PV_1 32 0.0 13.5
+ 101_PV_1 32 0.0 14.7
+ 102_PV_2 32 0.0 13.7
+ 104_PV_1 32 0.0 14.5
+ 101_PV_2 32 0.0 13.8
+ 101_PV_3 32 0.0 13.8
+ 101_PV_4 32 0.0 14.7
+ 103_PV_1 32 0.0 10.6
+ 119_PV_1 32 0.0 10.2
+ 118_RTPV_1 32 1.8 1.8
+ 118_RTPV_2 32 1.8 1.8
+ 118_RTPV_3 32 1.5 1.5
+ 118_RTPV_4 32 1.8 1.8
+ 118_RTPV_5 32 1.8 1.8
+ 118_RTPV_6 32 1.8 1.8
+ 118_RTPV_7 32 2.0 2.0
+ 118_RTPV_8 32 1.8 1.8
+ 118_RTPV_9 32 1.6 1.6
+ 118_RTPV_10 32 0.7 0.7
+ 122_WIND_1 32 0.0 22.2
+ 122_HYDRO_1 33 39.2 39.2
+ 122_HYDRO_2 33 39.2 39.2
+ 122_HYDRO_3 33 39.2 39.2
+ 122_HYDRO_4 33 39.2 39.2
+ 122_HYDRO_5 33 39.2 39.2
+ 122_HYDRO_6 33 39.2 39.2
+ 113_PV_1 33 0.0 57.7
+ 102_PV_1 33 0.0 16.2
+ 101_PV_1 33 0.0 17.5
+ 102_PV_2 33 0.0 16.3
+ 104_PV_1 33 0.0 17.3
+ 101_PV_2 33 0.0 16.4
+ 101_PV_3 33 0.0 16.5
+ 101_PV_4 33 0.0 17.4
+ 103_PV_1 33 0.0 22.6
+ 119_PV_1 33 0.0 22.7
+ 118_RTPV_1 33 3.5 3.5
+ 118_RTPV_2 33 3.5 3.5
+ 118_RTPV_3 33 3.5 3.5
+ 118_RTPV_4 33 3.5 3.5
+ 118_RTPV_5 33 3.5 3.5
+ 118_RTPV_6 33 3.5 3.5
+ 118_RTPV_7 33 4.0 4.0
+ 118_RTPV_8 33 3.9 3.9
+ 118_RTPV_9 33 3.5 3.5
+ 118_RTPV_10 33 1.6 1.6
+ 122_WIND_1 33 0.0 22.2
+ 122_HYDRO_1 34 38.7 38.7
+ 122_HYDRO_2 34 38.7 38.7
+ 122_HYDRO_3 34 38.7 38.7
+ 122_HYDRO_4 34 38.7 38.7
+ 122_HYDRO_5 34 38.7 38.7
+ 122_HYDRO_6 34 38.7 38.7
+ 113_PV_1 34 0.0 63.3
+ 102_PV_1 34 0.0 17.9
+ 101_PV_1 34 0.0 18.6
+ 102_PV_2 34 0.0 17.8
+ 104_PV_1 34 0.0 18.4
+ 101_PV_2 34 0.0 18.0
+ 101_PV_3 34 0.0 18.3
+ 101_PV_4 34 0.0 18.6
+ 103_PV_1 34 0.0 32.9
+ 119_PV_1 34 0.0 33.1
+ 118_RTPV_1 34 5.0 5.0
+ 118_RTPV_2 34 5.0 5.0
+ 118_RTPV_3 34 5.1 5.1
+ 118_RTPV_4 34 4.9 4.9
+ 118_RTPV_5 34 5.0 5.0
+ 118_RTPV_6 34 5.0 5.0
+ 118_RTPV_7 34 5.7 5.7
+ 118_RTPV_8 34 5.8 5.8
+ 118_RTPV_9 34 5.4 5.4
+ 118_RTPV_10 34 2.4 2.4
+ 122_WIND_1 34 0.0 22.2
+ 122_HYDRO_1 35 37.3 37.3
+ 122_HYDRO_2 35 37.3 37.3
+ 122_HYDRO_3 35 37.3 37.3
+ 122_HYDRO_4 35 37.3 37.3
+ 122_HYDRO_5 35 37.3 37.3
+ 122_HYDRO_6 35 37.3 37.3
+ 113_PV_1 35 0.0 65.4
+ 102_PV_1 35 0.0 18.1
+ 101_PV_1 35 0.0 18.5
+ 102_PV_2 35 0.0 17.9
+ 104_PV_1 35 0.0 18.2
+ 101_PV_2 35 0.0 17.9
+ 101_PV_3 35 0.0 18.4
+ 101_PV_4 35 0.0 18.2
+ 103_PV_1 35 0.0 38.8
+ 119_PV_1 35 0.0 38.8
+ 118_RTPV_1 35 5.9 5.9
+ 118_RTPV_2 35 5.9 5.9
+ 118_RTPV_3 35 6.0 6.0
+ 118_RTPV_4 35 5.6 5.6
+ 118_RTPV_5 35 6.1 6.1
+ 118_RTPV_6 35 5.8 5.8
+ 118_RTPV_7 35 7.1 7.1
+ 118_RTPV_8 35 7.3 7.3
+ 118_RTPV_9 35 6.6 6.6
+ 118_RTPV_10 35 3.0 3.0
+ 122_WIND_1 35 0.0 22.2
+ 122_HYDRO_1 36 36.8 36.8
+ 122_HYDRO_2 36 36.8 36.8
+ 122_HYDRO_3 36 36.8 36.8
+ 122_HYDRO_4 36 36.8 36.8
+ 122_HYDRO_5 36 36.8 36.8
+ 122_HYDRO_6 36 36.8 36.8
+ 113_PV_1 36 0.0 65.3
+ 102_PV_1 36 0.0 18.2
+ 101_PV_1 36 0.0 18.4
+ 102_PV_2 36 0.0 18.1
+ 104_PV_1 36 0.0 18.0
+ 101_PV_2 36 0.0 18.2
+ 101_PV_3 36 0.0 18.2
+ 101_PV_4 36 0.0 18.6
+ 103_PV_1 36 0.0 44.2
+ 119_PV_1 36 0.0 43.1
+ 118_RTPV_1 36 6.5 6.5
+ 118_RTPV_2 36 6.5 6.5
+ 118_RTPV_3 36 6.3 6.3
+ 118_RTPV_4 36 6.2 6.2
+ 118_RTPV_5 36 6.6 6.6
+ 118_RTPV_6 36 6.4 6.4
+ 118_RTPV_7 36 7.8 7.8
+ 118_RTPV_8 36 8.2 8.2
+ 118_RTPV_9 36 7.4 7.4
+ 118_RTPV_10 36 3.4 3.4
+ 122_WIND_1 36 0.0 22.2
+ 122_HYDRO_1 37 36.8 36.8
+ 122_HYDRO_2 37 36.8 36.8
+ 122_HYDRO_3 37 36.8 36.8
+ 122_HYDRO_4 37 36.8 36.8
+ 122_HYDRO_5 37 36.8 36.8
+ 122_HYDRO_6 37 36.8 36.8
+ 113_PV_1 37 0.0 65.4
+ 102_PV_1 37 0.0 17.6
+ 101_PV_1 37 0.0 18.2
+ 102_PV_2 37 0.0 17.7
+ 104_PV_1 37 0.0 18.0
+ 101_PV_2 37 0.0 17.8
+ 101_PV_3 37 0.0 17.7
+ 101_PV_4 37 0.0 18.4
+ 103_PV_1 37 0.0 46.1
+ 119_PV_1 37 0.0 42.1
+ 118_RTPV_1 37 6.5 6.5
+ 118_RTPV_2 37 6.5 6.5
+ 118_RTPV_3 37 6.1 6.1
+ 118_RTPV_4 37 6.1 6.1
+ 118_RTPV_5 37 6.4 6.4
+ 118_RTPV_6 37 6.2 6.2
+ 118_RTPV_7 37 8.1 8.1
+ 118_RTPV_8 37 8.6 8.6
+ 118_RTPV_9 37 7.8 7.8
+ 118_RTPV_10 37 3.5 3.5
+ 122_WIND_1 37 0.0 22.2
+ 122_HYDRO_1 38 37.3 37.3
+ 122_HYDRO_2 38 37.3 37.3
+ 122_HYDRO_3 38 37.3 37.3
+ 122_HYDRO_4 38 37.3 37.3
+ 122_HYDRO_5 38 37.3 37.3
+ 122_HYDRO_6 38 37.3 37.3
+ 113_PV_1 38 0.0 65.0
+ 102_PV_1 38 0.0 17.6
+ 101_PV_1 38 0.0 18.3
+ 102_PV_2 38 0.0 17.7
+ 104_PV_1 38 0.0 18.0
+ 101_PV_2 38 0.0 17.8
+ 101_PV_3 38 0.0 17.7
+ 101_PV_4 38 0.0 18.4
+ 103_PV_1 38 0.0 45.2
+ 119_PV_1 38 0.0 42.5
+ 118_RTPV_1 38 6.6 6.6
+ 118_RTPV_2 38 6.6 6.6
+ 118_RTPV_3 38 6.1 6.1
+ 118_RTPV_4 38 6.2 6.2
+ 118_RTPV_5 38 6.6 6.6
+ 118_RTPV_6 38 6.3 6.3
+ 118_RTPV_7 38 8.1 8.1
+ 118_RTPV_8 38 8.5 8.5
+ 118_RTPV_9 38 7.6 7.6
+ 118_RTPV_10 38 3.5 3.5
+ 122_WIND_1 38 0.0 22.2
+ 122_HYDRO_1 39 37.3 37.3
+ 122_HYDRO_2 39 37.3 37.3
+ 122_HYDRO_3 39 37.3 37.3
+ 122_HYDRO_4 39 37.3 37.3
+ 122_HYDRO_5 39 37.3 37.3
+ 122_HYDRO_6 39 37.3 37.3
+ 113_PV_1 39 0.0 63.9
+ 102_PV_1 39 0.0 17.7
+ 101_PV_1 39 0.0 17.9
+ 102_PV_2 39 0.0 17.8
+ 104_PV_1 39 0.0 17.7
+ 101_PV_2 39 0.0 17.8
+ 101_PV_3 39 0.0 17.9
+ 101_PV_4 39 0.0 17.9
+ 103_PV_1 39 0.0 41.3
+ 119_PV_1 39 0.0 40.5
+ 118_RTPV_1 39 6.3 6.3
+ 118_RTPV_2 39 6.3 6.3
+ 118_RTPV_3 39 5.8 5.8
+ 118_RTPV_4 39 5.8 5.8
+ 118_RTPV_5 39 6.3 6.3
+ 118_RTPV_6 39 6.1 6.1
+ 118_RTPV_7 39 7.8 7.8
+ 118_RTPV_8 39 7.8 7.8
+ 118_RTPV_9 39 7.0 7.0
+ 118_RTPV_10 39 3.2 3.2
+ 122_WIND_1 39 0.0 22.2
+ 122_HYDRO_1 40 37.7 37.7
+ 122_HYDRO_2 40 37.7 37.7
+ 122_HYDRO_3 40 37.7 37.7
+ 122_HYDRO_4 40 37.7 37.7
+ 122_HYDRO_5 40 37.7 37.7
+ 122_HYDRO_6 40 37.7 37.7
+ 113_PV_1 40 0.0 62.2
+ 102_PV_1 40 0.0 17.0
+ 101_PV_1 40 0.0 17.1
+ 102_PV_2 40 0.0 16.9
+ 104_PV_1 40 0.0 17.0
+ 101_PV_2 40 0.0 16.4
+ 101_PV_3 40 0.0 17.2
+ 101_PV_4 40 0.0 17.6
+ 103_PV_1 40 0.0 34.3
+ 119_PV_1 40 0.0 34.3
+ 118_RTPV_1 40 5.2 5.2
+ 118_RTPV_2 40 5.2 5.2
+ 118_RTPV_3 40 4.9 4.9
+ 118_RTPV_4 40 4.9 4.9
+ 118_RTPV_5 40 5.4 5.4
+ 118_RTPV_6 40 5.2 5.2
+ 118_RTPV_7 40 6.7 6.7
+ 118_RTPV_8 40 6.7 6.7
+ 118_RTPV_9 40 6.0 6.0
+ 118_RTPV_10 40 2.8 2.8
+ 122_WIND_1 40 0.0 22.2
+ 122_HYDRO_1 41 38.2 38.2
+ 122_HYDRO_2 41 38.2 38.2
+ 122_HYDRO_3 41 38.2 38.2
+ 122_HYDRO_4 41 38.2 38.2
+ 122_HYDRO_5 41 38.2 38.2
+ 122_HYDRO_6 41 38.2 38.2
+ 113_PV_1 41 0.0 55.6
+ 102_PV_1 41 0.0 15.1
+ 101_PV_1 41 0.0 15.5
+ 102_PV_2 41 0.0 15.2
+ 104_PV_1 41 0.0 15.5
+ 101_PV_2 41 0.0 15.3
+ 101_PV_3 41 0.0 15.5
+ 101_PV_4 41 0.0 15.1
+ 103_PV_1 41 0.0 25.0
+ 119_PV_1 41 0.0 25.4
+ 118_RTPV_1 41 4.0 4.0
+ 118_RTPV_2 41 4.0 4.0
+ 118_RTPV_3 41 4.3 4.3
+ 118_RTPV_4 41 3.9 3.9
+ 118_RTPV_5 41 4.2 4.2
+ 118_RTPV_6 41 4.0 4.0
+ 118_RTPV_7 41 5.3 5.3
+ 118_RTPV_8 41 5.2 5.2
+ 118_RTPV_9 41 4.7 4.7
+ 118_RTPV_10 41 2.2 2.2
+ 122_WIND_1 41 0.0 22.2
+ 122_HYDRO_1 42 38.2 38.2
+ 122_HYDRO_2 42 38.2 38.2
+ 122_HYDRO_3 42 38.2 38.2
+ 122_HYDRO_4 42 38.2 38.2
+ 122_HYDRO_5 42 38.2 38.2
+ 122_HYDRO_6 42 38.2 38.2
+ 113_PV_1 42 0.0 42.2
+ 102_PV_1 42 0.0 11.6
+ 101_PV_1 42 0.0 12.0
+ 102_PV_2 42 0.0 11.9
+ 104_PV_1 42 0.0 11.9
+ 101_PV_2 42 0.0 11.9
+ 101_PV_3 42 0.0 11.7
+ 101_PV_4 42 0.0 12.3
+ 103_PV_1 42 0.0 12.5
+ 119_PV_1 42 0.0 13.3
+ 118_RTPV_1 42 2.2 2.2
+ 118_RTPV_2 42 2.2 2.2
+ 118_RTPV_3 42 2.4 2.4
+ 118_RTPV_4 42 2.1 2.1
+ 118_RTPV_5 42 2.3 2.3
+ 118_RTPV_6 42 2.1 2.1
+ 118_RTPV_7 42 3.0 3.0
+ 118_RTPV_8 42 2.9 2.9
+ 118_RTPV_9 42 2.6 2.6
+ 118_RTPV_10 42 1.2 1.2
+ 122_WIND_1 42 0.0 22.2
+ 122_HYDRO_1 43 37.7 37.7
+ 122_HYDRO_2 43 37.7 37.7
+ 122_HYDRO_3 43 37.7 37.7
+ 122_HYDRO_4 43 37.7 37.7
+ 122_HYDRO_5 43 37.7 37.7
+ 122_HYDRO_6 43 37.7 37.7
+ 113_PV_1 43 0.0 17.0
+ 102_PV_1 43 0.0 4.2
+ 101_PV_1 43 0.0 4.5
+ 102_PV_2 43 0.0 4.6
+ 104_PV_1 43 0.0 4.7
+ 101_PV_2 43 0.0 4.8
+ 101_PV_3 43 0.0 5.0
+ 101_PV_4 43 0.0 5.2
+ 103_PV_1 43 0.0 0.3
+ 119_PV_1 43 0.0 0.4
+ 118_RTPV_1 43 0.1 0.1
+ 118_RTPV_2 43 0.1 0.1
+ 118_RTPV_3 43 0.2 0.2
+ 118_RTPV_4 43 0.1 0.1
+ 118_RTPV_5 43 0.2 0.2
+ 118_RTPV_6 43 0.1 0.1
+ 118_RTPV_7 43 0.4 0.4
+ 118_RTPV_8 43 0.3 0.3
+ 118_RTPV_9 43 0.3 0.3
+ 118_RTPV_10 43 0.1 0.1
+ 122_WIND_1 43 0.0 22.2
+ 122_HYDRO_1 44 38.2 38.2
+ 122_HYDRO_2 44 38.2 38.2
+ 122_HYDRO_3 44 38.2 38.2
+ 122_HYDRO_4 44 38.2 38.2
+ 122_HYDRO_5 44 38.2 38.2
+ 122_HYDRO_6 44 38.2 38.2
+ 113_PV_1 44 0.0 0.0
+ 102_PV_1 44 0.0 0.0
+ 101_PV_1 44 0.0 0.0
+ 102_PV_2 44 0.0 0.0
+ 104_PV_1 44 0.0 0.0
+ 101_PV_2 44 0.0 0.0
+ 101_PV_3 44 0.0 0.0
+ 101_PV_4 44 0.0 0.0
+ 103_PV_1 44 0.0 0.0
+ 119_PV_1 44 0.0 0.0
+ 118_RTPV_1 44 0.0 0.0
+ 118_RTPV_2 44 0.0 0.0
+ 118_RTPV_3 44 0.0 0.0
+ 118_RTPV_4 44 0.0 0.0
+ 118_RTPV_5 44 0.0 0.0
+ 118_RTPV_6 44 0.0 0.0
+ 118_RTPV_7 44 0.0 0.0
+ 118_RTPV_8 44 0.0 0.0
+ 118_RTPV_9 44 0.0 0.0
+ 118_RTPV_10 44 0.0 0.0
+ 122_WIND_1 44 0.0 22.2
+ 122_HYDRO_1 45 37.3 37.3
+ 122_HYDRO_2 45 37.3 37.3
+ 122_HYDRO_3 45 37.3 37.3
+ 122_HYDRO_4 45 37.3 37.3
+ 122_HYDRO_5 45 37.3 37.3
+ 122_HYDRO_6 45 37.3 37.3
+ 113_PV_1 45 0.0 0.0
+ 102_PV_1 45 0.0 0.0
+ 101_PV_1 45 0.0 0.0
+ 102_PV_2 45 0.0 0.0
+ 104_PV_1 45 0.0 0.0
+ 101_PV_2 45 0.0 0.0
+ 101_PV_3 45 0.0 0.0
+ 101_PV_4 45 0.0 0.0
+ 103_PV_1 45 0.0 0.0
+ 119_PV_1 45 0.0 0.0
+ 118_RTPV_1 45 0.0 0.0
+ 118_RTPV_2 45 0.0 0.0
+ 118_RTPV_3 45 0.0 0.0
+ 118_RTPV_4 45 0.0 0.0
+ 118_RTPV_5 45 0.0 0.0
+ 118_RTPV_6 45 0.0 0.0
+ 118_RTPV_7 45 0.0 0.0
+ 118_RTPV_8 45 0.0 0.0
+ 118_RTPV_9 45 0.0 0.0
+ 118_RTPV_10 45 0.0 0.0
+ 122_WIND_1 45 0.0 22.2
+ 122_HYDRO_1 46 37.7 37.7
+ 122_HYDRO_2 46 37.7 37.7
+ 122_HYDRO_3 46 37.7 37.7
+ 122_HYDRO_4 46 37.7 37.7
+ 122_HYDRO_5 46 37.7 37.7
+ 122_HYDRO_6 46 37.7 37.7
+ 113_PV_1 46 0.0 0.0
+ 102_PV_1 46 0.0 0.0
+ 101_PV_1 46 0.0 0.0
+ 102_PV_2 46 0.0 0.0
+ 104_PV_1 46 0.0 0.0
+ 101_PV_2 46 0.0 0.0
+ 101_PV_3 46 0.0 0.0
+ 101_PV_4 46 0.0 0.0
+ 103_PV_1 46 0.0 0.0
+ 119_PV_1 46 0.0 0.0
+ 118_RTPV_1 46 0.0 0.0
+ 118_RTPV_2 46 0.0 0.0
+ 118_RTPV_3 46 0.0 0.0
+ 118_RTPV_4 46 0.0 0.0
+ 118_RTPV_5 46 0.0 0.0
+ 118_RTPV_6 46 0.0 0.0
+ 118_RTPV_7 46 0.0 0.0
+ 118_RTPV_8 46 0.0 0.0
+ 118_RTPV_9 46 0.0 0.0
+ 118_RTPV_10 46 0.0 0.0
+ 122_WIND_1 46 0.0 22.2
+ 122_HYDRO_1 47 26.4 26.4
+ 122_HYDRO_2 47 26.4 26.4
+ 122_HYDRO_3 47 26.4 26.4
+ 122_HYDRO_4 47 26.4 26.4
+ 122_HYDRO_5 47 26.4 26.4
+ 122_HYDRO_6 47 26.4 26.4
+ 113_PV_1 47 0.0 0.0
+ 102_PV_1 47 0.0 0.0
+ 101_PV_1 47 0.0 0.0
+ 102_PV_2 47 0.0 0.0
+ 104_PV_1 47 0.0 0.0
+ 101_PV_2 47 0.0 0.0
+ 101_PV_3 47 0.0 0.0
+ 101_PV_4 47 0.0 0.0
+ 103_PV_1 47 0.0 0.0
+ 119_PV_1 47 0.0 0.0
+ 118_RTPV_1 47 0.0 0.0
+ 118_RTPV_2 47 0.0 0.0
+ 118_RTPV_3 47 0.0 0.0
+ 118_RTPV_4 47 0.0 0.0
+ 118_RTPV_5 47 0.0 0.0
+ 118_RTPV_6 47 0.0 0.0
+ 118_RTPV_7 47 0.0 0.0
+ 118_RTPV_8 47 0.0 0.0
+ 118_RTPV_9 47 0.0 0.0
+ 118_RTPV_10 47 0.0 0.0
+ 122_WIND_1 47 0.0 22.2
+ 122_HYDRO_1 48 25.5 25.5
+ 122_HYDRO_2 48 25.5 25.5
+ 122_HYDRO_3 48 25.5 25.5
+ 122_HYDRO_4 48 25.5 25.5
+ 122_HYDRO_5 48 25.5 25.5
+ 122_HYDRO_6 48 25.5 25.5
+ 113_PV_1 48 0.0 0.0
+ 102_PV_1 48 0.0 0.0
+ 101_PV_1 48 0.0 0.0
+ 102_PV_2 48 0.0 0.0
+ 104_PV_1 48 0.0 0.0
+ 101_PV_2 48 0.0 0.0
+ 101_PV_3 48 0.0 0.0
+ 101_PV_4 48 0.0 0.0
+ 103_PV_1 48 0.0 0.0
+ 119_PV_1 48 0.0 0.0
+ 118_RTPV_1 48 0.0 0.0
+ 118_RTPV_2 48 0.0 0.0
+ 118_RTPV_3 48 0.0 0.0
+ 118_RTPV_4 48 0.0 0.0
+ 118_RTPV_5 48 0.0 0.0
+ 118_RTPV_6 48 0.0 0.0
+ 118_RTPV_7 48 0.0 0.0
+ 118_RTPV_8 48 0.0 0.0
+ 118_RTPV_9 48 0.0 0.0
+ 118_RTPV_10 48 0.0 0.0
+ 122_WIND_1 48 0.0 22.2
+  ;
+
+param: Demand := 
+ Abel 1 65.42256308210527
+ Adams 1 58.759153879298246
+ Adler 1 109.03760513684212
+ Agricola 1 44.82657100070176
+ Aiken 1 43.00927758175439
+ Alber 1 82.38396832561403
+ Alder 1 75.72055912280702
+ Alger 1 103.58572488
+ Ali 1 106.00878277192982
+ Allen 1 118.12407223157896
+ Anna 1 0.0
+ Archer 1 0.0
+ Arne 1 160.52758534035087
+ Arnold 1 117.51830775859648
+ Arthur 1 192.02733793543857
+ Asser 1 60.57644729824561
+ Aston 1 0.0
+ Astor 1 201.7195695031579
+ Attar 1 109.64336960982456
+ Attila 1 77.53785254175438
+ Attlee 1 0.0
+ Aubrey 1 0.0
+ Austen 1 0.0
+ Avery 1 0.0
+ Abel 2 62.08263234947368
+ Adams 2 55.7594012768421
+ Adler 2 103.47105391578948
+ Agricola 2 42.538099943157896
+ Aiken 2 40.813582377894726
+ Alber 2 78.17812962526315
+ Alder 2 71.85489855263155
+ Alger 2 98.29750122
+ Ali 2 100.5968579736842
+ Allen 2 112.09364174210528
+ Anna 2 0.0
+ Archer 2 0.0
+ Arne 2 152.3323849315789
+ Arnold 2 111.5188025536842
+ Arthur 2 182.2240227294737
+ Asser 2 57.48391884210525
+ Aston 2 0.0
+ Astor 2 191.42144974421046
+ Attar 2 104.04589310421049
+ Attila 2 73.57941611789471
+ Attlee 2 0.0
+ Aubrey 2 0.0
+ Austen 2 0.0
+ Avery 2 0.0
+ Abel 3 59.26373082947369
+ Adams 3 53.2276100968421
+ Adler 3 98.77288471578949
+ Agricola 3 40.60663038315789
+ Aiken 3 38.960415637894734
+ Alber 3 74.62840178526315
+ Alder 3 68.59228105263158
+ Alger 3 93.83424048
+ Ali 3 96.0291934736842
+ Allen 3 107.00395844210527
+ Anna 3 0.0
+ Archer 3 0.0
+ Arne 3 145.41563583157895
+ Arnold 3 106.4552201936842
+ Arthur 3 173.9500247494737
+ Asser 3 54.87382484210526
+ Aston 3 0.0
+ Astor 3 182.72983672421054
+ Attar 3 99.3216229642105
+ Attila 3 70.23849579789473
+ Attlee 3 0.0
+ Aubrey 3 0.0
+ Austen 3 0.0
+ Avery 3 0.0
+ Abel 4 57.68728351578948
+ Adams 4 51.81172686140352
+ Adler 4 96.1454725263158
+ Agricola 4 39.526472038596495
+ Aiken 4 37.92404749649123
+ Alber 4 72.64324590877193
+ Alder 4 66.76768925438597
+ Alger 4 91.3381989
+ Ali 4 93.47476495614036
+ Allen 4 104.15759523684211
+ Anna 4 0.0
+ Archer 4 0.0
+ Arne 4 141.54750121929825
+ Arnold 4 103.62345372280704
+ Arthur 4 169.3228599491228
+ Asser 4 53.414151403508775
+ Aston 4 0.0
+ Astor 4 177.86912417368424
+ Attar 4 96.67961404035087
+ Attila 4 68.37011379649122
+ Attlee 4 0.0
+ Aubrey 4 0.0
+ Austen 4 0.0
+ Avery 4 0.0
+ Abel 5 57.35329044631578
+ Adams 5 51.511751604561404
+ Adler 5 95.58881741052632
+ Agricola 5 39.29762493543859
+ Aiken 5 37.70447797859649
+ Alber 5 72.22266204350878
+ Alder 5 66.38112320175438
+ Alger 5 90.80937654
+ Ali 5 92.93357248245613
+ Allen 5 103.55455219473684
+ Anna 5 0.0
+ Archer 5 0.0
+ Arne 5 140.72798118771928
+ Arnold 5 103.0235032091228
+ Arthur 5 168.34252843964907
+ Asser 5 53.1048985614035
+ Aston 5 0.0
+ Astor 5 176.8393122094737
+ Attar 5 96.11986639614035
+ Attila 5 67.97427015859648
+ Attlee 5 0.0
+ Aubrey 5 0.0
+ Austen 5 0.0
+ Avery 5 0.0
+ Abel 6 57.860959907368425
+ Adams 6 51.967713990877186
+ Adler 6 96.43493317894738
+ Agricola 6 39.64547252912281
+ Aiken 6 38.03822364280702
+ Alber 6 72.86194951298245
+ Alder 6 66.96870359649122
+ Alger 6 91.61318652
+ Ali 6 93.75618503508773
+ Allen 6 104.47117761052631
+ Anna 6 0.0
+ Archer 6 0.0
+ Arne 6 141.9736516245614
+ Arnold 6 103.9354279817544
+ Arthur 6 169.83263232070175
+ Asser 6 53.574962877192974
+ Aston 6 0.0
+ Astor 6 178.40462638105262
+ Attar 6 96.97068280771929
+ Attila 6 68.57595248280701
+ Attlee 6 0.0
+ Aubrey 6 0.0
+ Austen 6 0.0
+ Avery 6 0.0
+ Abel 7 61.20089064
+ Adams 7 54.96746659333333
+ Adler 7 102.00148440000001
+ Agricola 7 41.933943586666665
+ Aiken 7 40.233918846666654
+ Alber 7 77.06778821333333
+ Alder 7 70.83436416666666
+ Alger 7 96.90141017999998
+ Ali 7 99.16810983333332
+ Allen 7 110.5016081
+ Anna 7 0.0
+ Archer 7 0.0
+ Arne 7 150.1688520333333
+ Arnold 7 109.93493318666664
+ Arthur 7 179.63594752666665
+ Asser 7 56.66749133333333
+ Aston 7 0.0
+ Astor 7 188.70274614
+ Attar 7 102.56815931333333
+ Attila 7 72.53438890666666
+ Attlee 7 0.0
+ Aubrey 7 0.0
+ Austen 7 0.0
+ Avery 7 0.0
+ Abel 8 67.01237010947371
+ Adams 8 60.1870361168421
+ Adler 8 111.68728351578949
+ Agricola 8 45.91588322315789
+ Aiken 8 44.054428497894726
+ Alber 8 84.38594754526315
+ Alder 8 77.56061355263158
+ Alger 8 106.10291934
+ Ali 8 108.58485897368419
+ Allen 8 120.99455714210528
+ Anna 8 0.0
+ Archer 8 0.0
+ Arne 8 164.42850073157894
+ Arnold 8 120.3740722336842
+ Arthur 8 196.6937159694737
+ Asser 8 62.04849084210525
+ Aston 8 0.0
+ Astor 8 206.62147450421054
+ Attar 8 112.30776842421051
+ Attila 8 79.42206827789471
+ Attlee 8 0.0
+ Aubrey 8 0.0
+ Austen 8 0.0
+ Avery 8 0.0
+ Abel 9 72.46313704421053
+ Adams 9 65.08263234526315
+ Adler 9 120.77189507368419
+ Agricola 9 49.65066797473683
+ Aiken 9 47.637803056842095
+ Alber 9 91.24987627789473
+ Alder 9 83.86937157894737
+ Alger 9 114.73330031999998
+ Ali 9 117.41712021052629
+ Allen 9 130.8362196631579
+ Anna 9 0.0
+ Archer 9 0.0
+ Arne 9 177.8030677473684
+ Arnold 9 130.1652646905263
+ Arthur 9 212.6927263242105
+ Asser 9 67.09549726315788
+ Aston 9 0.0
+ Astor 9 223.42800588631582
+ Attar 9 121.44285004631577
+ Attila 9 85.8822364968421
+ Attlee 9 0.0
+ Aubrey 9 0.0
+ Austen 9 0.0
+ Avery 9 0.0
+ Abel 10 77.53983176842105
+ Adams 10 69.64225631052632
+ Adler 10 129.23305294736844
+ Agricola 10 53.129143989473675
+ Aiken 10 50.975259773684215
+ Alber 10 97.6427511157895
+ Alder 10 89.74517565789472
+ Alger 10 122.7714003
+ Ali 10 125.64324592105265
+ Allen 10 140.0024740263158
+ Anna 10 0.0
+ Archer 10 0.0
+ Arne 10 190.25977239473687
+ Arnold 10 139.28451262105264
+ Arthur 10 227.59376546842103
+ Asser 10 71.7961405263158
+ Aston 10 0.0
+ Astor 10 239.0811479526316
+ Attar 10 129.95101435263157
+ Attila 10 91.8990598736842
+ Attlee 10 0.0
+ Aubrey 10 0.0
+ Austen 10 0.0
+ Avery 10 0.0
+ Abel 11 83.41810984421053
+ Adams 11 74.92182087859649
+ Adler 11 139.03018307368419
+ Agricola 11 57.1568530414035
+ Aiken 11 54.83968332350878
+ Alber 11 105.04502721122809
+ Alder 11 96.54873824561405
+ Alger 11 132.07867392
+ Ali 11 135.16823354385966
+ Allen 11 150.6160316631579
+ Anna 11 0.0
+ Archer 11 0.0
+ Arne 11 204.68332508070176
+ Arnold 11 149.84364175719298
+ Arthur 11 244.8476001908772
+ Asser 11 77.23899059649122
+ Aston 11 0.0
+ Astor 11 257.2058386863158
+ Attar 11 139.80257297964909
+ Attila 11 98.86590796350876
+ Attlee 11 0.0
+ Aubrey 11 0.0
+ Austen 11 0.0
+ Avery 11 0.0
+ Abel 12 88.96239485052631
+ Adams 12 79.90141018982456
+ Adler 12 148.27065808421054
+ Agricola 12 60.95571499017544
+ Aiken 12 58.484537355438604
+ Alber 12 112.02671944140353
+ Alder 12 102.96573478070177
+ Alger 12 140.85712518
+ Ali 12 144.15202869298247
+ Allen 12 160.62654625789474
+ Anna 12 0.0
+ Archer 12 0.0
+ Arne 12 218.2873577350877
+ Arnold 12 159.80282037964912
+ Arthur 12 261.12110340385965
+ Asser 12 82.3725878245614
+ Aston 12 0.0
+ Astor 12 274.3007174557895
+ Attar 12 149.09438396245613
+ Attila 12 105.4369124154386
+ Attlee 12 0.0
+ Aubrey 12 0.0
+ Austen 12 0.0
+ Avery 12 0.0
+ Abel 13 93.95893121684212
+ Adams 13 84.38904007438597
+ Adler 13 156.5982186947369
+ Agricola 13 64.37926768561404
+ Aiken 13 61.76929737403509
+ Alber 13 118.3186541249123
+ Alder 13 108.74876298245616
+ Alger 13 148.76830776
+ Ali 13 152.2482681754386
+ Allen 13 169.64807025263158
+ Anna 13 0.0
+ Archer 13 0.0
+ Arne 13 230.54737752280704
+ Arnold 13 168.77808014877198
+ Arthur 13 275.7868629235088
+ Asser 13 86.99901038596492
+ Aston 13 0.0
+ Astor 13 289.7067045852632
+ Attar 13 157.4682087985965
+ Attila 13 111.35873329403508
+ Attlee 13 0.0
+ Aubrey 13 0.0
+ Austen 13 0.0
+ Avery 13 0.0
+ Abel 14 98.15388423157896
+ Adams 14 88.15672935614035
+ Adler 14 163.58980705263158
+ Agricola 14 67.25358734385965
+ Aiken 14 64.52709055964911
+ Alber 14 123.60118755087721
+ Alder 14 113.60403267543859
+ Alger 14 155.41031669999998
+ Ali 14 159.04564574561402
+ Allen 14 177.22229097368424
+ Anna 14 0.0
+ Archer 14 0.0
+ Arne 14 240.84054927192986
+ Arnold 14 176.3134587122807
+ Arthur 14 288.0998268649123
+ Asser 14 90.88322614035087
+ Aston 14 0.0
+ Astor 14 302.6411430473684
+ Attar 14 164.4986393140351
+ Attila 14 116.33052945964913
+ Attlee 14 0.0
+ Aubrey 14 0.0
+ Austen 14 0.0
+ Avery 14 0.0
+ Abel 15 101.3334982863158
+ Adams 15 91.01249383122808
+ Adler 15 168.88916381052633
+ Agricola 15 69.43221178877192
+ Aiken 15 66.61739239192983
+ Alber 15 127.60514599017544
+ Alder 15 117.28414153508771
+ Alger 15 160.44470561999995
+ Ali 15 164.1977981491228
+ Allen 15 182.96326079473687
+ Anna 15 0.0
+ Archer 15 0.0
+ Arne 15 248.642380054386
+ Arnold 15 182.02498766245614
+ Arthur 15 297.43258293298237
+ Asser 15 93.82731322807017
+ Aston 15 0.0
+ Astor 15 312.44495304947367
+ Attar 15 169.827436942807
+ Attila 15 120.0989609319298
+ Attlee 15 0.0
+ Aubrey 15 0.0
+ Austen 15 0.0
+ Avery 15 0.0
+ Abel 16 103.57793170105265
+ Adams 16 93.02832754631578
+ Adler 16 172.62988616842102
+ Agricola 16 70.9700643136842
+ Aiken 16 68.09289954421052
+ Alber 16 130.43146954947366
+ Alder 16 119.8818653947368
+ Alger 16 163.99839185999997
+ Ali 16 167.83461155263154
+ Allen 16 187.01571001578944
+ Anna 16 0.0
+ Archer 16 0.0
+ Arne 16 254.14955463684208
+ Arnold 16 186.05665509263162
+ Arthur 16 304.02041064105265
+ Asser 16 95.90549231578945
+ Aston 16 0.0
+ Astor 16 319.36528941157894
+ Attar 16 173.5889410915789
+ Attila 16 122.75903016421049
+ Attlee 16 0.0
+ Aubrey 16 0.0
+ Austen 16 0.0
+ Avery 16 0.0
+ Abel 17 104.05888173473684
+ Adams 17 93.46029192842104
+ Adler 17 173.4314695578947
+ Agricola 17 71.29960415157895
+ Aiken 17 68.40907965894736
+ Alber 17 131.03711033263156
+ Alder 17 120.43852052631577
+ Alger 17 164.75989607999998
+ Ali 17 168.6139287368421
+ Allen 17 187.88409202105262
+ Anna 17 0.0
+ Archer 17 0.0
+ Arne 17 255.32966351578946
+ Arnold 17 186.9205838568421
+ Arthur 17 305.4320880547368
+ Asser 17 96.35081642105258
+ Aston 17 0.0
+ Astor 17 320.84821868210526
+ Attar 17 174.39497772210527
+ Attila 17 123.32904501894735
+ Attlee 17 0.0
+ Aubrey 17 0.0
+ Austen 17 0.0
+ Avery 17 0.0
+ Abel 18 102.88322613473686
+ Adams 18 92.40437902842106
+ Adler 18 171.47204355789475
+ Agricola 18 70.49406235157895
+ Aiken 18 67.63619495894736
+ Alber 18 129.5566551326316
+ Alder 18 119.07780802631581
+ Alger 18 162.89844138
+ Ali 18 166.70893123684212
+ Allen 18 185.7613805210527
+ Anna 18 0.0
+ Archer 18 0.0
+ Arne 18 252.44495301578945
+ Arnold 18 184.80875805684207
+ Arthur 18 301.98132115473686
+ Asser 18 95.26224642105265
+ Aston 18 0.0
+ Astor 18 317.2232805821053
+ Attar 18 172.4246660221053
+ Attila 18 121.93567541894735
+ Attlee 18 0.0
+ Aubrey 18 0.0
+ Austen 18 0.0
+ Avery 18 0.0
+ Abel 19 99.14250372631581
+ Adams 19 89.0446561245614
+ Adler 19 165.2375062105263
+ Agricola 19 67.9309747754386
+ Aiken 19 65.1770163385965
+ Alber 19 124.84611580350875
+ Alder 19 114.74826820175436
+ Alger 19 156.9756309
+ Ali 19 160.64757548245612
+ Allen 19 179.00729839473686
+ Anna 19 0.0
+ Archer 19 0.0
+ Arne 19 243.2663285877193
+ Arnold 19 178.0893122491228
+ Arthur 19 291.00160815964915
+ Asser 19 91.7986145614035
+ Aston 19 0.0
+ Astor 19 305.6893864894737
+ Attar 19 166.15549235614034
+ Attila 19 117.50222663859648
+ Attlee 19 0.0
+ Aubrey 19 0.0
+ Austen 19 0.0
+ Avery 19 0.0
+ Abel 20 95.0410687831579
+ Adams 20 85.36095992561403
+ Adler 20 158.4017813052631
+ Agricola 20 65.12073231438596
+ Aiken 20 62.4807026259649
+ Alber 20 119.68134587508771
+ Alder 20 110.00123701754384
+ Alger 20 150.48169223999997
+ Ali 20 154.00173182456138
+ Allen 20 171.60192974736842
+ Anna 20 0.0
+ Archer 20 0.0
+ Arne 20 233.20262247719296
+ Arnold 20 170.72191985122802
+ Arthur 20 278.9631370764912
+ Asser 20 88.00098961403508
+ Aston 20 0.0
+ Astor 20 293.0432954147368
+ Attar 20 159.28179120140348
+ Attila 20 112.64126670596491
+ Attlee 20 0.0
+ Aubrey 20 0.0
+ Austen 20 0.0
+ Avery 20 0.0
+ Abel 21 92.75655615157896
+ Adams 21 83.30912913614034
+ Adler 21 154.59426025263156
+ Agricola 21 63.555418103859644
+ Aiken 21 60.978847099649116
+ Alber 21 116.8045521908772
+ Alder 21 107.35712517543858
+ Alger 21 146.86454723999995
+ Ali 21 150.299975245614
+ Allen 21 167.4771152736842
+ Anna 21 0.0
+ Archer 21 0.0
+ Arne 21 227.59710537192973
+ Arnold 21 166.61825827228068
+ Arthur 21 272.2576694449123
+ Asser 21 85.88570014035086
+ Aston 21 0.0
+ Astor 21 285.9993814673684
+ Attar 21 155.45311725403502
+ Attila 21 109.93369617964909
+ Attlee 21 0.0
+ Aubrey 21 0.0
+ Austen 21 0.0
+ Avery 21 0.0
+ Abel 22 88.12073232
+ Adams 22 79.14547254666667
+ Adler 22 146.86788719999998
+ Agricola 22 60.37902029333333
+ Aiken 22 57.93122217333333
+ Alber 22 110.96684810666667
+ Alder 22 101.99158833333333
+ Alger 22 139.52449284
+ Ali 22 142.78822366666662
+ Allen 22 159.1068778
+ Anna 22 0.0
+ Archer 22 0.0
+ Arne 22 216.22216726666667
+ Arnold 22 158.29094509333333
+ Arthur 22 258.6506680133333
+ Asser 22 81.59327066666667
+ Aston 22 0.0
+ Astor 22 271.70559132
+ Attar 22 147.68381990666666
+ Attila 22 104.43938645333333
+ Attlee 22 0.0
+ Aubrey 22 0.0
+ Austen 22 0.0
+ Avery 22 0.0
+ Abel 23 80.87976250105262
+ Adams 23 72.64200891298245
+ Adler 23 134.79960416842104
+ Agricola 23 55.417615047017534
+ Aiken 23 53.17095497754386
+ Alber 23 101.84858981614036
+ Alder 23 93.61083622807017
+ Alger 23 128.05962395999998
+ Ali 23 131.05517071929822
+ Allen 23 146.03290451578948
+ Anna 23 0.0
+ Archer 23 0.0
+ Arne 23 198.45497280350875
+ Arnold 23 145.2840178259649
+ Arthur 23 237.397080674386
+ Asser 23 74.88866898245612
+ Aston 23 0.0
+ Astor 23 249.3792677115789
+ Attar 23 135.5484908582456
+ Attila 23 95.85749629754385
+ Attlee 23 0.0
+ Aubrey 23 0.0
+ Austen 23 0.0
+ Avery 23 0.0
+ Abel 24 73.5987135031579
+ Adams 24 66.10254823894736
+ Adler 24 122.66452250526315
+ Agricola 24 50.42874814105264
+ Aiken 24 48.38433943263158
+ Alber 24 92.67986144842104
+ Alder 24 85.18369618421052
+ Alger 24 116.53129638
+ Ali 24 119.25717465789472
+ Allen 24 132.88656604736843
+ Anna 24 0.0
+ Archer 24 0.0
+ Arne 24 180.5894359105263
+ Arnold 24 132.20509647789473
+ Arthur 24 216.02585352315788
+ Asser 24 68.14695694736842
+ Aston 24 0.0
+ Astor 24 226.92936663473685
+ Attar 24 123.34599207473684
+ Attila 24 87.22810489263156
+ Attlee 24 0.0
+ Aubrey 24 0.0
+ Austen 24 0.0
+ Avery 24 0.0
+ Abel 25 65.42256308210527
+ Adams 25 58.759153879298246
+ Adler 25 109.03760513684212
+ Agricola 25 44.82657100070176
+ Aiken 25 43.00927758175439
+ Alber 25 82.38396832561403
+ Alder 25 75.72055912280702
+ Alger 25 103.58572488
+ Ali 25 106.00878277192982
+ Allen 25 118.12407223157896
+ Anna 25 0.0
+ Archer 25 0.0
+ Arne 25 160.52758534035087
+ Arnold 25 117.51830775859648
+ Arthur 25 192.02733793543857
+ Asser 25 60.57644729824561
+ Aston 25 0.0
+ Astor 25 201.7195695031579
+ Attar 25 109.64336960982456
+ Attila 25 77.53785254175438
+ Attlee 25 0.0
+ Aubrey 25 0.0
+ Austen 25 0.0
+ Avery 25 0.0
+ Abel 26 62.08263234947368
+ Adams 26 55.7594012768421
+ Adler 26 103.47105391578948
+ Agricola 26 42.538099943157896
+ Aiken 26 40.813582377894726
+ Alber 26 78.17812962526315
+ Alder 26 71.85489855263155
+ Alger 26 98.29750122
+ Ali 26 100.5968579736842
+ Allen 26 112.09364174210528
+ Anna 26 0.0
+ Archer 26 0.0
+ Arne 26 152.3323849315789
+ Arnold 26 111.5188025536842
+ Arthur 26 182.2240227294737
+ Asser 26 57.48391884210525
+ Aston 26 0.0
+ Astor 26 191.42144974421046
+ Attar 26 104.04589310421049
+ Attila 26 73.57941611789471
+ Attlee 26 0.0
+ Aubrey 26 0.0
+ Austen 26 0.0
+ Avery 26 0.0
+ Abel 27 59.26373082947369
+ Adams 27 53.2276100968421
+ Adler 27 98.77288471578949
+ Agricola 27 40.60663038315789
+ Aiken 27 38.960415637894734
+ Alber 27 74.62840178526315
+ Alder 27 68.59228105263158
+ Alger 27 93.83424048
+ Ali 27 96.0291934736842
+ Allen 27 107.00395844210527
+ Anna 27 0.0
+ Archer 27 0.0
+ Arne 27 145.41563583157895
+ Arnold 27 106.4552201936842
+ Arthur 27 173.9500247494737
+ Asser 27 54.87382484210526
+ Aston 27 0.0
+ Astor 27 182.72983672421054
+ Attar 27 99.3216229642105
+ Attila 27 70.23849579789473
+ Attlee 27 0.0
+ Aubrey 27 0.0
+ Austen 27 0.0
+ Avery 27 0.0
+ Abel 28 57.68728351578948
+ Adams 28 51.81172686140352
+ Adler 28 96.1454725263158
+ Agricola 28 39.526472038596495
+ Aiken 28 37.92404749649123
+ Alber 28 72.64324590877193
+ Alder 28 66.76768925438597
+ Alger 28 91.3381989
+ Ali 28 93.47476495614036
+ Allen 28 104.15759523684211
+ Anna 28 0.0
+ Archer 28 0.0
+ Arne 28 141.54750121929825
+ Arnold 28 103.62345372280704
+ Arthur 28 169.3228599491228
+ Asser 28 53.414151403508775
+ Aston 28 0.0
+ Astor 28 177.86912417368424
+ Attar 28 96.67961404035087
+ Attila 28 68.37011379649122
+ Attlee 28 0.0
+ Aubrey 28 0.0
+ Austen 28 0.0
+ Avery 28 0.0
+ Abel 29 57.35329044631578
+ Adams 29 51.511751604561404
+ Adler 29 95.58881741052632
+ Agricola 29 39.29762493543859
+ Aiken 29 37.70447797859649
+ Alber 29 72.22266204350878
+ Alder 29 66.38112320175438
+ Alger 29 90.80937654
+ Ali 29 92.93357248245613
+ Allen 29 103.55455219473684
+ Anna 29 0.0
+ Archer 29 0.0
+ Arne 29 140.72798118771928
+ Arnold 29 103.0235032091228
+ Arthur 29 168.34252843964907
+ Asser 29 53.1048985614035
+ Aston 29 0.0
+ Astor 29 176.8393122094737
+ Attar 29 96.11986639614035
+ Attila 29 67.97427015859648
+ Attlee 29 0.0
+ Aubrey 29 0.0
+ Austen 29 0.0
+ Avery 29 0.0
+ Abel 30 57.860959907368425
+ Adams 30 51.967713990877186
+ Adler 30 96.43493317894738
+ Agricola 30 39.64547252912281
+ Aiken 30 38.03822364280702
+ Alber 30 72.86194951298245
+ Alder 30 66.96870359649122
+ Alger 30 91.61318652
+ Ali 30 93.75618503508773
+ Allen 30 104.47117761052631
+ Anna 30 0.0
+ Archer 30 0.0
+ Arne 30 141.9736516245614
+ Arnold 30 103.9354279817544
+ Arthur 30 169.83263232070175
+ Asser 30 53.574962877192974
+ Aston 30 0.0
+ Astor 30 178.40462638105262
+ Attar 30 96.97068280771929
+ Attila 30 68.57595248280701
+ Attlee 30 0.0
+ Aubrey 30 0.0
+ Austen 30 0.0
+ Avery 30 0.0
+ Abel 31 61.20089064
+ Adams 31 54.96746659333333
+ Adler 31 102.00148440000001
+ Agricola 31 41.933943586666665
+ Aiken 31 40.233918846666654
+ Alber 31 77.06778821333333
+ Alder 31 70.83436416666666
+ Alger 31 96.90141017999998
+ Ali 31 99.16810983333332
+ Allen 31 110.5016081
+ Anna 31 0.0
+ Archer 31 0.0
+ Arne 31 150.1688520333333
+ Arnold 31 109.93493318666664
+ Arthur 31 179.63594752666665
+ Asser 31 56.66749133333333
+ Aston 31 0.0
+ Astor 31 188.70274614
+ Attar 31 102.56815931333333
+ Attila 31 72.53438890666666
+ Attlee 31 0.0
+ Aubrey 31 0.0
+ Austen 31 0.0
+ Avery 31 0.0
+ Abel 32 67.01237010947371
+ Adams 32 60.1870361168421
+ Adler 32 111.68728351578949
+ Agricola 32 45.91588322315789
+ Aiken 32 44.054428497894726
+ Alber 32 84.38594754526315
+ Alder 32 77.56061355263158
+ Alger 32 106.10291934
+ Ali 32 108.58485897368419
+ Allen 32 120.99455714210528
+ Anna 32 0.0
+ Archer 32 0.0
+ Arne 32 164.42850073157894
+ Arnold 32 120.3740722336842
+ Arthur 32 196.6937159694737
+ Asser 32 62.04849084210525
+ Aston 32 0.0
+ Astor 32 206.62147450421054
+ Attar 32 112.30776842421051
+ Attila 32 79.42206827789471
+ Attlee 32 0.0
+ Aubrey 32 0.0
+ Austen 32 0.0
+ Avery 32 0.0
+ Abel 33 72.46313704421053
+ Adams 33 65.08263234526315
+ Adler 33 120.77189507368419
+ Agricola 33 49.65066797473683
+ Aiken 33 47.637803056842095
+ Alber 33 91.24987627789473
+ Alder 33 83.86937157894737
+ Alger 33 114.73330031999998
+ Ali 33 117.41712021052629
+ Allen 33 130.8362196631579
+ Anna 33 0.0
+ Archer 33 0.0
+ Arne 33 177.8030677473684
+ Arnold 33 130.1652646905263
+ Arthur 33 212.6927263242105
+ Asser 33 67.09549726315788
+ Aston 33 0.0
+ Astor 33 223.42800588631582
+ Attar 33 121.44285004631577
+ Attila 33 85.8822364968421
+ Attlee 33 0.0
+ Aubrey 33 0.0
+ Austen 33 0.0
+ Avery 33 0.0
+ Abel 34 77.53983176842105
+ Adams 34 69.64225631052632
+ Adler 34 129.23305294736844
+ Agricola 34 53.129143989473675
+ Aiken 34 50.975259773684215
+ Alber 34 97.6427511157895
+ Alder 34 89.74517565789472
+ Alger 34 122.7714003
+ Ali 34 125.64324592105265
+ Allen 34 140.0024740263158
+ Anna 34 0.0
+ Archer 34 0.0
+ Arne 34 190.25977239473687
+ Arnold 34 139.28451262105264
+ Arthur 34 227.59376546842103
+ Asser 34 71.7961405263158
+ Aston 34 0.0
+ Astor 34 239.0811479526316
+ Attar 34 129.95101435263157
+ Attila 34 91.8990598736842
+ Attlee 34 0.0
+ Aubrey 34 0.0
+ Austen 34 0.0
+ Avery 34 0.0
+ Abel 35 83.41810984421053
+ Adams 35 74.92182087859649
+ Adler 35 139.03018307368419
+ Agricola 35 57.1568530414035
+ Aiken 35 54.83968332350878
+ Alber 35 105.04502721122809
+ Alder 35 96.54873824561405
+ Alger 35 132.07867392
+ Ali 35 135.16823354385966
+ Allen 35 150.6160316631579
+ Anna 35 0.0
+ Archer 35 0.0
+ Arne 35 204.68332508070176
+ Arnold 35 149.84364175719298
+ Arthur 35 244.8476001908772
+ Asser 35 77.23899059649122
+ Aston 35 0.0
+ Astor 35 257.2058386863158
+ Attar 35 139.80257297964909
+ Attila 35 98.86590796350876
+ Attlee 35 0.0
+ Aubrey 35 0.0
+ Austen 35 0.0
+ Avery 35 0.0
+ Abel 36 88.96239485052631
+ Adams 36 79.90141018982456
+ Adler 36 148.27065808421054
+ Agricola 36 60.95571499017544
+ Aiken 36 58.484537355438604
+ Alber 36 112.02671944140353
+ Alder 36 102.96573478070177
+ Alger 36 140.85712518
+ Ali 36 144.15202869298247
+ Allen 36 160.62654625789474
+ Anna 36 0.0
+ Archer 36 0.0
+ Arne 36 218.2873577350877
+ Arnold 36 159.80282037964912
+ Arthur 36 261.12110340385965
+ Asser 36 82.3725878245614
+ Aston 36 0.0
+ Astor 36 274.3007174557895
+ Attar 36 149.09438396245613
+ Attila 36 105.4369124154386
+ Attlee 36 0.0
+ Aubrey 36 0.0
+ Austen 36 0.0
+ Avery 36 0.0
+ Abel 37 93.95893121684212
+ Adams 37 84.38904007438597
+ Adler 37 156.5982186947369
+ Agricola 37 64.37926768561404
+ Aiken 37 61.76929737403509
+ Alber 37 118.3186541249123
+ Alder 37 108.74876298245616
+ Alger 37 148.76830776
+ Ali 37 152.2482681754386
+ Allen 37 169.64807025263158
+ Anna 37 0.0
+ Archer 37 0.0
+ Arne 37 230.54737752280704
+ Arnold 37 168.77808014877198
+ Arthur 37 275.7868629235088
+ Asser 37 86.99901038596492
+ Aston 37 0.0
+ Astor 37 289.7067045852632
+ Attar 37 157.4682087985965
+ Attila 37 111.35873329403508
+ Attlee 37 0.0
+ Aubrey 37 0.0
+ Austen 37 0.0
+ Avery 37 0.0
+ Abel 38 98.15388423157896
+ Adams 38 88.15672935614035
+ Adler 38 163.58980705263158
+ Agricola 38 67.25358734385965
+ Aiken 38 64.52709055964911
+ Alber 38 123.60118755087721
+ Alder 38 113.60403267543859
+ Alger 38 155.41031669999998
+ Ali 38 159.04564574561402
+ Allen 38 177.22229097368424
+ Anna 38 0.0
+ Archer 38 0.0
+ Arne 38 240.84054927192986
+ Arnold 38 176.3134587122807
+ Arthur 38 288.0998268649123
+ Asser 38 90.88322614035087
+ Aston 38 0.0
+ Astor 38 302.6411430473684
+ Attar 38 164.4986393140351
+ Attila 38 116.33052945964913
+ Attlee 38 0.0
+ Aubrey 38 0.0
+ Austen 38 0.0
+ Avery 38 0.0
+ Abel 39 101.3334982863158
+ Adams 39 91.01249383122808
+ Adler 39 168.88916381052633
+ Agricola 39 69.43221178877192
+ Aiken 39 66.61739239192983
+ Alber 39 127.60514599017544
+ Alder 39 117.28414153508771
+ Alger 39 160.44470561999995
+ Ali 39 164.1977981491228
+ Allen 39 182.96326079473687
+ Anna 39 0.0
+ Archer 39 0.0
+ Arne 39 248.642380054386
+ Arnold 39 182.02498766245614
+ Arthur 39 297.43258293298237
+ Asser 39 93.82731322807017
+ Aston 39 0.0
+ Astor 39 312.44495304947367
+ Attar 39 169.827436942807
+ Attila 39 120.0989609319298
+ Attlee 39 0.0
+ Aubrey 39 0.0
+ Austen 39 0.0
+ Avery 39 0.0
+ Abel 40 103.57793170105265
+ Adams 40 93.02832754631578
+ Adler 40 172.62988616842102
+ Agricola 40 70.9700643136842
+ Aiken 40 68.09289954421052
+ Alber 40 130.43146954947366
+ Alder 40 119.8818653947368
+ Alger 40 163.99839185999997
+ Ali 40 167.83461155263154
+ Allen 40 187.01571001578944
+ Anna 40 0.0
+ Archer 40 0.0
+ Arne 40 254.14955463684208
+ Arnold 40 186.05665509263162
+ Arthur 40 304.02041064105265
+ Asser 40 95.90549231578945
+ Aston 40 0.0
+ Astor 40 319.36528941157894
+ Attar 40 173.5889410915789
+ Attila 40 122.75903016421049
+ Attlee 40 0.0
+ Aubrey 40 0.0
+ Austen 40 0.0
+ Avery 40 0.0
+ Abel 41 104.05888173473684
+ Adams 41 93.46029192842104
+ Adler 41 173.4314695578947
+ Agricola 41 71.29960415157895
+ Aiken 41 68.40907965894736
+ Alber 41 131.03711033263156
+ Alder 41 120.43852052631577
+ Alger 41 164.75989607999998
+ Ali 41 168.6139287368421
+ Allen 41 187.88409202105262
+ Anna 41 0.0
+ Archer 41 0.0
+ Arne 41 255.32966351578946
+ Arnold 41 186.9205838568421
+ Arthur 41 305.4320880547368
+ Asser 41 96.35081642105258
+ Aston 41 0.0
+ Astor 41 320.84821868210526
+ Attar 41 174.39497772210527
+ Attila 41 123.32904501894735
+ Attlee 41 0.0
+ Aubrey 41 0.0
+ Austen 41 0.0
+ Avery 41 0.0
+ Abel 42 102.88322613473686
+ Adams 42 92.40437902842106
+ Adler 42 171.47204355789475
+ Agricola 42 70.49406235157895
+ Aiken 42 67.63619495894736
+ Alber 42 129.5566551326316
+ Alder 42 119.07780802631581
+ Alger 42 162.89844138
+ Ali 42 166.70893123684212
+ Allen 42 185.7613805210527
+ Anna 42 0.0
+ Archer 42 0.0
+ Arne 42 252.44495301578945
+ Arnold 42 184.80875805684207
+ Arthur 42 301.98132115473686
+ Asser 42 95.26224642105265
+ Aston 42 0.0
+ Astor 42 317.2232805821053
+ Attar 42 172.4246660221053
+ Attila 42 121.93567541894735
+ Attlee 42 0.0
+ Aubrey 42 0.0
+ Austen 42 0.0
+ Avery 42 0.0
+ Abel 43 99.14250372631581
+ Adams 43 89.0446561245614
+ Adler 43 165.2375062105263
+ Agricola 43 67.9309747754386
+ Aiken 43 65.1770163385965
+ Alber 43 124.84611580350875
+ Alder 43 114.74826820175436
+ Alger 43 156.9756309
+ Ali 43 160.64757548245612
+ Allen 43 179.00729839473686
+ Anna 43 0.0
+ Archer 43 0.0
+ Arne 43 243.2663285877193
+ Arnold 43 178.0893122491228
+ Arthur 43 291.00160815964915
+ Asser 43 91.7986145614035
+ Aston 43 0.0
+ Astor 43 305.6893864894737
+ Attar 43 166.15549235614034
+ Attila 43 117.50222663859648
+ Attlee 43 0.0
+ Aubrey 43 0.0
+ Austen 43 0.0
+ Avery 43 0.0
+ Abel 44 95.0410687831579
+ Adams 44 85.36095992561403
+ Adler 44 158.4017813052631
+ Agricola 44 65.12073231438596
+ Aiken 44 62.4807026259649
+ Alber 44 119.68134587508771
+ Alder 44 110.00123701754384
+ Alger 44 150.48169223999997
+ Ali 44 154.00173182456138
+ Allen 44 171.60192974736842
+ Anna 44 0.0
+ Archer 44 0.0
+ Arne 44 233.20262247719296
+ Arnold 44 170.72191985122802
+ Arthur 44 278.9631370764912
+ Asser 44 88.00098961403508
+ Aston 44 0.0
+ Astor 44 293.0432954147368
+ Attar 44 159.28179120140348
+ Attila 44 112.64126670596491
+ Attlee 44 0.0
+ Aubrey 44 0.0
+ Austen 44 0.0
+ Avery 44 0.0
+ Abel 45 92.75655615157896
+ Adams 45 83.30912913614034
+ Adler 45 154.59426025263156
+ Agricola 45 63.555418103859644
+ Aiken 45 60.978847099649116
+ Alber 45 116.8045521908772
+ Alder 45 107.35712517543858
+ Alger 45 146.86454723999995
+ Ali 45 150.299975245614
+ Allen 45 167.4771152736842
+ Anna 45 0.0
+ Archer 45 0.0
+ Arne 45 227.59710537192973
+ Arnold 45 166.61825827228068
+ Arthur 45 272.2576694449123
+ Asser 45 85.88570014035086
+ Aston 45 0.0
+ Astor 45 285.9993814673684
+ Attar 45 155.45311725403502
+ Attila 45 109.93369617964909
+ Attlee 45 0.0
+ Aubrey 45 0.0
+ Austen 45 0.0
+ Avery 45 0.0
+ Abel 46 88.12073232
+ Adams 46 79.14547254666667
+ Adler 46 146.86788719999998
+ Agricola 46 60.37902029333333
+ Aiken 46 57.93122217333333
+ Alber 46 110.96684810666667
+ Alder 46 101.99158833333333
+ Alger 46 139.52449284
+ Ali 46 142.78822366666662
+ Allen 46 159.1068778
+ Anna 46 0.0
+ Archer 46 0.0
+ Arne 46 216.22216726666667
+ Arnold 46 158.29094509333333
+ Arthur 46 258.6506680133333
+ Asser 46 81.59327066666667
+ Aston 46 0.0
+ Astor 46 271.70559132
+ Attar 46 147.68381990666666
+ Attila 46 104.43938645333333
+ Attlee 46 0.0
+ Aubrey 46 0.0
+ Austen 46 0.0
+ Avery 46 0.0
+ Abel 47 80.87976250105262
+ Adams 47 72.64200891298245
+ Adler 47 134.79960416842104
+ Agricola 47 55.417615047017534
+ Aiken 47 53.17095497754386
+ Alber 47 101.84858981614036
+ Alder 47 93.61083622807017
+ Alger 47 128.05962395999998
+ Ali 47 131.05517071929822
+ Allen 47 146.03290451578948
+ Anna 47 0.0
+ Archer 47 0.0
+ Arne 47 198.45497280350875
+ Arnold 47 145.2840178259649
+ Arthur 47 237.397080674386
+ Asser 47 74.88866898245612
+ Aston 47 0.0
+ Astor 47 249.3792677115789
+ Attar 47 135.5484908582456
+ Attila 47 95.85749629754385
+ Attlee 47 0.0
+ Aubrey 47 0.0
+ Austen 47 0.0
+ Avery 47 0.0
+ Abel 48 73.5987135031579
+ Adams 48 66.10254823894736
+ Adler 48 122.66452250526315
+ Agricola 48 50.42874814105264
+ Aiken 48 48.38433943263158
+ Alber 48 92.67986144842104
+ Alder 48 85.18369618421052
+ Alger 48 116.53129638
+ Ali 48 119.25717465789472
+ Allen 48 132.88656604736843
+ Anna 48 0.0
+ Archer 48 0.0
+ Arne 48 180.5894359105263
+ Arnold 48 132.20509647789473
+ Arthur 48 216.02585352315788
+ Asser 48 68.14695694736842
+ Aston 48 0.0
+ Astor 48 226.92936663473685
+ Attar 48 123.34599207473684
+ Attila 48 87.22810489263156
+ Attlee 48 0.0
+ Aubrey 48 0.0
+ Austen 48 0.0
+ Avery 48 0.0
+  ;
+
