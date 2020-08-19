@@ -99,6 +99,10 @@ class ScedDataExtractor(BaseScedExtractor):
         return p_max
 
     def get_max_power_available(self, sced: OperationsModel, g: G) -> float:
+        return sced.data['elements']['generator'][g]['headroom']['values'][0] \
+                + self.get_power_generated(sced, g)*int(self.is_generator_on(sced,g))
+
+    def get_thermal_headroom(self, sced: OperationsModel, g: G) -> float:
         return sced.data['elements']['generator'][g]['headroom']['values'][0]
 
     def get_min_downtime(self, sced: OperationsModel, g: G) -> float:
