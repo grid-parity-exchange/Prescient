@@ -18,13 +18,15 @@ from prescient.downloaders import rts_gmlc
 from prescient.scripts import runner
 from tests.simulator_tests import simulator_diff
 
+this_file_path = os.path.dirname(os.path.realpath(__file__))
+
 class _SimulatorModRTSGMLC:
     """Test class for running the simulator."""
     # arbitrary comparison threshold
     COMPARISON_THRESHOLD = .01
 
     def setUp(self):
-        self.this_file_path = os.path.dirname(os.path.realpath(__file__))
+        self.this_file_path = this_file_path
         self.test_cases_path = os.path.join(self.this_file_path, 'test_cases')
 
         self._set_names()
