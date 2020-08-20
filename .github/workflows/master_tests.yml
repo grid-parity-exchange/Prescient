@@ -47,6 +47,6 @@ jobs:
             run: |
               python setup.py develop
 
-          - name: Run Prescient Test
+          - name: Run Prescient Simulator Tests
             run: |
-              python tests/simulator_tests/test_pop_sim_rts-gmlc.py    
+              python tests/simulator_tests/test_sim_rts_mod.py

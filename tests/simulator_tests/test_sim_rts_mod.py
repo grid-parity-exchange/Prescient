@@ -18,15 +18,18 @@ from prescient.downloaders import rts_gmlc
 from prescient.scripts import runner
 from tests.simulator_tests import simulator_diff
 
+this_file_path = os.path.dirname(os.path.realpath(__file__))
+
 class _SimulatorModRTSGMLC:
     """Test class for running the simulator."""
     # arbitrary comparison threshold
     COMPARISON_THRESHOLD = .01
 
     def setUp(self):
-        self.this_file_path = os.path.dirname(os.path.realpath(__file__))
+        self.this_file_path = this_file_path
         self.test_cases_path = os.path.join(self.this_file_path, 'test_cases')
 
+        self._set_names()
         self._run_simulator()
 
         test_results_dir = os.path.join(self.test_cases_path, self.results_dir_name) 
@@ -126,14 +129,16 @@ class _SimulatorModRTSGMLC:
 
 
 class TestSimulatorModRTSGMLCNetwork(_SimulatorModRTSGMLC, unittest.TestCase):
-    simulator_config_filename = 'simulate_with_network_deterministic.txt'
-    results_dir_name = 'deterministic_with_network_simulation_output'
-    baseline_dir_name = 'deterministic_with_network_simulation_output_baseline'
+    def _set_names(self):
+        self.simulator_config_filename = 'simulate_with_network_deterministic.txt'
+        self.results_dir_name = 'deterministic_with_network_simulation_output'
+        self.baseline_dir_name = 'deterministic_with_network_simulation_output_baseline'
 
 class TestSimulatorModRTSGMLCCopperSheet(_SimulatorModRTSGMLC, unittest.TestCase):
-    simulator_config_filename = 'simulate_deterministic.txt'
-    results_dir_name = 'deterministic_simulation_output'
-    baseline_dir_name = 'deterministic_simulation_output_baseline'
+    def _set_names(self):
+        self.simulator_config_filename = 'simulate_deterministic.txt'
+        self.results_dir_name = 'deterministic_simulation_output'
+        self.baseline_dir_name = 'deterministic_simulation_output_baseline'
 
 if __name__ == '__main__':
     unittest.main()
