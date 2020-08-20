@@ -18,7 +18,7 @@ from prescient.downloaders import rts_gmlc
 from prescient.scripts import runner
 from tests.simulator_tests import simulator_diff
 
-class TestSimulatorModRTSGMLC(unittest.TestCase):
+class _SimulatorModRTSGMLC:
     """Test class for running the simulator."""
     # arbitrary comparison threshold
     COMPARISON_THRESHOLD = .01
@@ -29,8 +29,8 @@ class TestSimulatorModRTSGMLC(unittest.TestCase):
 
         self._run_simulator()
 
-        test_results_dir = os.path.join(self.test_cases_path, 'deterministic_with_network_simulation_output')
-        control_results_dir = os.path.join(self.test_cases_path, 'deterministic_with_network_simulation_output_baseline')
+        test_results_dir = os.path.join(self.test_cases_path, self.results_dir_name) 
+        control_results_dir = os.path.join(self.test_cases_path, self.baseline_dir_name)
 
         self.bus_detail_a = pd.read_csv(test_results_dir + "/bus_detail.csv")
         self.Daily_summary_a = pd.read_csv(test_results_dir + "/Daily_summary.csv")
@@ -56,13 +56,15 @@ class TestSimulatorModRTSGMLC(unittest.TestCase):
         """Runs the simulator for the test data set."""
         os.chdir(self.test_cases_path)
 
-        simulator_config_filename = 'simulate_with_network_deterministic.txt'
+        simulator_config_filename = self.simulator_config_filename
         script, options = runner.parse_commands(simulator_config_filename)
 
         if sys.platform.startswith('win'):
             subprocess.call([script] + options, shell=True)
         else:
             subprocess.call([script] + options)
+
+        os.chdir(self.this_file_path)
     
     def test_simulator(self):
         #test overall output
@@ -122,6 +124,16 @@ class TestSimulatorModRTSGMLC(unittest.TestCase):
             diff = df_a[column_name].equals(df_b[column_name])
             assert diff, "Column: " + column_name + " diverges."
 
+
+class TestSimulatorModRTSGMLCNetwork(_SimulatorModRTSGMLC, unittest.TestCase):
+    simulator_config_filename = 'simulate_with_network_deterministic.txt'
+    results_dir_name = 'deterministic_with_network_simulation_output'
+    baseline_dir_name = 'deterministic_with_network_simulation_output_baseline'
+
+class TestSimulatorModRTSGMLCCopperSheet(_SimulatorModRTSGMLC, unittest.TestCase):
+    simulator_config_filename = 'simulate_deterministic.txt'
+    results_dir_name = 'deterministic_simulation_output'
+    baseline_dir_name = 'deterministic_simulation_output_baseline'
 
 if __name__ == '__main__':
     unittest.main()
