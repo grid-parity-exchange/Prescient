@@ -28,6 +28,7 @@ class DataManager(_Manager):
         self.ruc_instance_to_simulate_next_period = None
         self.deterministic_ruc_instance_for_this_period = None
         self.deterministic_ruc_instance_for_next_period = None
+        self.extensions = {}
 
     def update_time(self, time):
         '''This takes a Time object and makes the appropiate updates to the data'''
@@ -141,3 +142,7 @@ class DataManager(_Manager):
     @property
     def renewables_forecast_error(self):
         return self._renewables_forecast_error
+
+    @property
+    def extensions(self):
+        return self._extensions

@@ -10,7 +10,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Dict, Sequence, TypeVar
+    from typing import Dict, Sequence, TypeVar, Any
     from prescient.engine.data_extractors import ScedDataExtractor
     from prescient.engine.abstract_types import OperationsModel, G, L, B, S
 
@@ -54,7 +54,7 @@ class HourlyStats:
 
     quick_start_additional_costs: float = 0.0
     quick_start_additional_power_generated: float = 0.0
-    used_as_quick_start: Dict[G, int]
+    used_as_quickstart: Dict[G, int]
 
     event_annotations: Sequence[str]
 
@@ -79,7 +79,8 @@ class HourlyStats:
 
     #if options.compute_market_settlements:
     #    planning_reserve_price: float = 0.0
-    
+
+    extensions: Dict[Any, Any]
 
     @property
     def total_costs(self):
@@ -91,6 +92,7 @@ class HourlyStats:
         self.date = day
         self.hour = hour
         self.event_annotations = []
+        self.extensions = {}
 
     def populate_from_sced(self, 
                            sced: OperationsModel, 
