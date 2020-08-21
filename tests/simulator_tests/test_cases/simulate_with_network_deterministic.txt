@@ -1,0 +1,16 @@
+command/exec simulator.py
+--data-directory=deterministic_with_network_scenarios
+--simulate-out-of-sample 
+--run-sced-with-persistent-forecast-errors 
+--model-directory=..|..|..|prescient|models|knueven
+--output-directory=deterministic_with_network_simulation_output
+--run-deterministic-ruc 
+--start-date=07-10-2020
+--num-days=7 
+--sced-horizon=4
+--ruc-mipgap=0.00
+--reserve-factor=0.0 
+--deterministic-ruc-solver=cbc
+--deterministic-ruc-solver-options="feas=off DivingG=on"
+--sced-solver=cbc
+--ruc-horizon=36

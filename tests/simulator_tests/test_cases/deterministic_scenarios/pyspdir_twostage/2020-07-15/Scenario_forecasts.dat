@@ -1,0 +1,528 @@
+param NumTimePeriods := 48 ;
+
+param TimePeriodLength := 1 ;
+
+set StageSet := Stage_1 Stage_2 ;
+
+set CommitmentTimeInStage[Stage_1] := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 ;
+
+set CommitmentTimeInStage[Stage_2] := ;
+
+set GenerationTimeInStage[Stage_1] := ;
+
+set GenerationTimeInStage[Stage_2] := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 ;
+
+set Buses := 
+CopperSheet
+;
+
+set TransmissionLines := 
+;
+
+param: BusFrom BusTo ThermalLimit Impedence :=
+;
+
+set ThermalGenerators := 
+101_CT_1
+101_CT_2
+101_STEAM_3
+101_STEAM_4
+102_CT_1
+102_CT_2
+102_STEAM_3
+102_STEAM_4
+107_CC_1
+113_CT_1
+113_CT_2
+113_CT_3
+113_CT_4
+115_STEAM_1
+115_STEAM_2
+115_STEAM_3
+116_STEAM_1
+118_CC_1
+123_STEAM_2
+123_STEAM_3
+123_CT_1
+123_CT_4
+123_CT_5
+121_NUCLEAR_1
+;
+
+set ThermalGeneratorsAtBus[CopperSheet] := 
+101_CT_1
+101_CT_2
+101_STEAM_3
+101_STEAM_4
+102_CT_1
+102_CT_2
+102_STEAM_3
+102_STEAM_4
+107_CC_1
+113_CT_1
+113_CT_2
+113_CT_3
+113_CT_4
+115_STEAM_1
+115_STEAM_2
+115_STEAM_3
+116_STEAM_1
+118_CC_1
+123_STEAM_2
+123_STEAM_3
+123_CT_1
+123_CT_4
+123_CT_5
+121_NUCLEAR_1
+;
+
+set NondispatchableGenerators := 
+HYDRO
+PV
+RTPV
+WIND
+;
+
+set NondispatchableGeneratorsAtBus[CopperSheet] := 
+HYDRO
+PV
+RTPV
+WIND
+;
+
+param MustRun := 
+121_NUCLEAR_1 1
+;
+
+param ThermalGeneratorType := 
+101_CT_1 O
+101_CT_2 O
+101_STEAM_3 C
+101_STEAM_4 C
+102_CT_1 O
+102_CT_2 O
+102_STEAM_3 C
+102_STEAM_4 C
+107_CC_1 G
+113_CT_1 G
+113_CT_2 G
+113_CT_3 G
+113_CT_4 G
+115_STEAM_1 O
+115_STEAM_2 O
+115_STEAM_3 C
+116_STEAM_1 C
+118_CC_1 G
+123_STEAM_2 C
+123_STEAM_3 C
+123_CT_1 G
+123_CT_4 G
+123_CT_5 G
+121_NUCLEAR_1 N
+;
+
+param NondispatchableGeneratorType := 
+HYDRO H
+PV S
+RTPV S
+WIND W
+;
+
+param: MinimumPowerOutput MaximumPowerOutput MinimumUpTime MinimumDownTime NominalRampUpLimit NominalRampDownLimit StartupRampLimit ShutdownRampLimit := 
+       101_CT_1       8.00      20.00  1  1     180.00     180.00       8.00       8.00
+       101_CT_2       8.00      20.00  1  1     180.00     180.00       8.00       8.00
+    101_STEAM_3      30.00      76.00  8  4     120.00     120.00      30.00      30.00
+    101_STEAM_4      30.00      76.00  8  4     120.00     120.00      30.00      30.00
+       102_CT_1       8.00      20.00  1  1     180.00     180.00       8.00       8.00
+       102_CT_2       8.00      20.00  1  1     180.00     180.00       8.00       8.00
+    102_STEAM_3      30.00      76.00  8  4     120.00     120.00      30.00      30.00
+    102_STEAM_4      30.00      76.00  8  4     120.00     120.00      30.00      30.00
+       107_CC_1     170.00     355.00  8  5     248.40     248.40     170.00     170.00
+       113_CT_1      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+       113_CT_2      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+       113_CT_3      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+       113_CT_4      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+    115_STEAM_1       5.00      12.00  4  2      60.00      60.00       5.00       5.00
+    115_STEAM_2       5.00      12.00  4  2      60.00      60.00       5.00       5.00
+    115_STEAM_3      62.00     155.00  8  8     180.00     180.00      62.00      62.00
+    116_STEAM_1      62.00     155.00  8  8     180.00     180.00      62.00      62.00
+       118_CC_1     170.00     355.00  8  5     248.40     248.40     170.00     170.00
+    123_STEAM_2      62.00     155.00  8  8     180.00     180.00      62.00      62.00
+    123_STEAM_3     140.00     350.00 24 48     240.00     240.00     140.00     140.00
+       123_CT_1      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+       123_CT_4      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+       123_CT_5      22.00      55.00  3  3     222.00     222.00      22.00      22.00
+  121_NUCLEAR_1     396.00     400.00 24 48    1200.00    1200.00     396.00     396.00
+;
+
+set StartupLags[101_CT_1] := 1 ;
+set StartupCosts[101_CT_1] :=        51.75 ;
+set StartupLags[101_CT_2] := 1 ;
+set StartupCosts[101_CT_2] :=       103.49 ;
+set StartupLags[101_STEAM_3] := 4 10 12 ;
+set StartupCosts[101_STEAM_3] :=      7144.02     10276.95     11172.01 ;
+set StartupLags[101_STEAM_4] := 4 10 12 ;
+set StartupCosts[101_STEAM_4] :=      7355.42     10488.35     11383.41 ;
+set StartupLags[102_CT_1] := 1 ;
+set StartupCosts[102_CT_1] :=       155.24 ;
+set StartupLags[102_CT_2] := 1 ;
+set StartupCosts[102_CT_2] :=       206.99 ;
+set StartupLags[102_STEAM_3] := 4 10 12 ;
+set StartupCosts[102_STEAM_3] :=      7566.82     10699.75     11594.81 ;
+set StartupLags[102_STEAM_4] := 4 10 12 ;
+set StartupCosts[102_STEAM_4] :=      7778.21     10911.15     11806.21 ;
+set StartupLags[107_CC_1] := 5 ;
+set StartupCosts[107_CC_1] :=     28046.68 ;
+set StartupLags[113_CT_1] := 3 ;
+set StartupCosts[113_CT_1] :=      5665.23 ;
+set StartupLags[113_CT_2] := 3 ;
+set StartupCosts[113_CT_2] :=      6053.96 ;
+set StartupLags[113_CT_3] := 3 ;
+set StartupCosts[113_CT_3] :=      6442.68 ;
+set StartupLags[113_CT_4] := 3 ;
+set StartupCosts[113_CT_4] :=      6831.40 ;
+set StartupLags[115_STEAM_1] := 2 4 12 ;
+set StartupCosts[115_STEAM_1] :=       393.28       455.37       703.76 ;
+set StartupLags[115_STEAM_2] := 2 4 12 ;
+set StartupCosts[115_STEAM_2] :=       807.25       869.35      1117.74 ;
+set StartupLags[115_STEAM_3] := 8 11 60 ;
+set StartupCosts[115_STEAM_3] :=     14569.83     15722.80     22784.80 ;
+set StartupLags[116_STEAM_1] := 8 11 60 ;
+set StartupCosts[116_STEAM_1] :=     14569.83     15722.80     22784.80 ;
+set StartupLags[118_CC_1] := 5 ;
+set StartupCosts[118_CC_1] :=     28435.40 ;
+set StartupLags[123_STEAM_2] := 8 11 60 ;
+set StartupCosts[123_STEAM_2] :=     14569.83     15722.80     22784.80 ;
+set StartupLags[123_STEAM_3] := 48 96 ;
+set StartupCosts[123_STEAM_3] :=     21381.74     36749.81 ;
+set StartupLags[123_CT_1] := 3 ;
+set StartupCosts[123_CT_1] :=      7220.12 ;
+set StartupLags[123_CT_4] := 3 ;
+set StartupCosts[123_CT_4] :=      7608.84 ;
+set StartupLags[123_CT_5] := 3 ;
+set StartupCosts[123_CT_5] :=      7997.57 ;
+set StartupLags[121_NUCLEAR_1] := 48 ;
+set StartupCosts[121_NUCLEAR_1] :=     63999.82 ;
+
+set CostPiecewisePoints[101_CT_1] :=          8.0         12.0         16.0         20.0 ;
+set CostPiecewiseValues[101_CT_1] :=      1085.78      1477.23      1869.52      2298.06 ;
+set CostPiecewisePoints[101_CT_2] :=          8.0         12.0         16.0         20.0 ;
+set CostPiecewiseValues[101_CT_2] :=      1168.57      1564.17      1960.59      2430.54 ;
+set CostPiecewisePoints[101_STEAM_3] :=         30.0         45.3         60.7         76.0 ;
+set CostPiecewiseValues[101_STEAM_3] :=       841.58      1058.71      1320.06      1596.57 ;
+set CostPiecewisePoints[101_STEAM_4] :=         30.0         45.3         60.7         76.0 ;
+set CostPiecewiseValues[101_STEAM_4] :=       905.00      1125.36      1389.97      1669.71 ;
+set CostPiecewisePoints[102_CT_1] :=          8.0         12.0         16.0         20.0 ;
+set CostPiecewiseValues[102_CT_1] :=      1212.04      1567.93      1946.60      2344.93 ;
+set CostPiecewisePoints[102_CT_2] :=          8.0         12.0         16.0         20.0 ;
+set CostPiecewiseValues[102_CT_2] :=      1294.83      1654.87      2037.67      2440.14 ;
+set CostPiecewisePoints[102_STEAM_3] :=         30.0         45.3         60.7         76.0 ;
+set CostPiecewiseValues[102_STEAM_3] :=       735.10      1017.59      1338.62      1683.12 ;
+set CostPiecewisePoints[102_STEAM_4] :=         30.0         45.3         60.7         76.0 ;
+set CostPiecewiseValues[102_STEAM_4] :=       798.52      1084.24      1408.53      1785.37 ;
+set CostPiecewisePoints[107_CC_1] :=        170.0        231.7        293.3        355.0 ;
+set CostPiecewiseValues[107_CC_1] :=      4772.50      6204.35      7854.66      9738.37 ;
+set CostPiecewisePoints[113_CT_1] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[113_CT_1] :=      1122.43      1417.43      1742.49      2075.88 ;
+set CostPiecewisePoints[113_CT_2] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[113_CT_2] :=      1207.95      1507.23      1836.56      2174.23 ;
+set CostPiecewisePoints[113_CT_3] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[113_CT_3] :=      1293.47      1597.02      1930.63      2272.58 ;
+set CostPiecewisePoints[113_CT_4] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[113_CT_4] :=      1378.99      1686.82      2024.70      2370.92 ;
+set CostPiecewisePoints[115_STEAM_1] :=          5.0          7.3          9.7         12.0 ;
+set CostPiecewiseValues[115_STEAM_1] :=       897.29      1183.65      1483.77      1791.15 ;
+set CostPiecewisePoints[115_STEAM_2] :=          5.0          7.3          9.7         12.0 ;
+set CostPiecewiseValues[115_STEAM_2] :=       949.04      1259.20      1584.16      1915.34 ;
+set CostPiecewisePoints[115_STEAM_3] :=         62.0         93.0        124.0        155.0 ;
+set CostPiecewiseValues[115_STEAM_3] :=      1500.20      2132.60      2829.88      3668.44 ;
+set CostPiecewisePoints[116_STEAM_1] :=         62.0         93.0        124.0        155.0 ;
+set CostPiecewiseValues[116_STEAM_1] :=      1735.07      2345.32      3011.01      3751.15 ;
+set CostPiecewisePoints[118_CC_1] :=        170.0        231.7        293.3        355.0 ;
+set CostPiecewiseValues[118_CC_1] :=      4795.62      6188.62      7898.32      9901.23 ;
+set CostPiecewisePoints[123_STEAM_2] :=         62.0         93.0        124.0        155.0 ;
+set CostPiecewiseValues[123_STEAM_2] :=      1437.42      2039.74      2751.76      3775.85 ;
+set CostPiecewisePoints[123_STEAM_3] :=        140.0        210.0        280.0        350.0 ;
+set CostPiecewiseValues[123_STEAM_3] :=      3582.87      4981.72      6497.03      8137.68 ;
+set CostPiecewisePoints[123_CT_1] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[123_CT_1] :=      1088.23      1377.15      1704.99      2046.98 ;
+set CostPiecewisePoints[123_CT_4] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[123_CT_4] :=      1173.75      1466.95      1799.06      2145.33 ;
+set CostPiecewisePoints[123_CT_5] :=         22.0         33.0         44.0         55.0 ;
+set CostPiecewiseValues[123_CT_5] :=      1259.26      1556.74      1893.13      2243.67 ;
+set CostPiecewisePoints[121_NUCLEAR_1] :=        396.0        400.0 ;
+set CostPiecewiseValues[121_NUCLEAR_1] :=      3208.99      3209.00 ;
+
+param: UnitOnT0State PowerGeneratedT0 :=
+       101_CT_1 -28         0.00
+       101_CT_2 -28         0.00
+    101_STEAM_3 168        30.00
+    101_STEAM_4 168        30.00
+       102_CT_1 -168         0.00
+       102_CT_2 -168         0.00
+    102_STEAM_3 168        30.00
+    102_STEAM_4 168        30.00
+       107_CC_1 168       170.00
+       113_CT_1 -168         0.00
+       113_CT_2 -168         0.00
+       113_CT_3 -168         0.00
+       113_CT_4 -168         0.00
+    115_STEAM_1 -168         0.00
+    115_STEAM_2 -168         0.00
+    115_STEAM_3 168        62.00
+    116_STEAM_1 168        62.00
+       118_CC_1 168       170.00
+    123_STEAM_2 168        62.00
+    123_STEAM_3 168       140.00
+       123_CT_1 -168         0.00
+       123_CT_4 -168         0.00
+       123_CT_5 -168         0.00
+  121_NUCLEAR_1 168       396.00
+;
+
+param: MinNondispatchablePower MaxNondispatchablePower  := 
+ HYDRO 1 181.2 181.2
+ PV 1 0.0 0.0
+ RTPV 1 0.0 0.0
+ WIND 1 0.0 2070.100000000001
+ HYDRO 2 184.2 184.2
+ PV 2 0.0 0.0
+ RTPV 2 0.0 0.0
+ WIND 2 0.0 1915.9
+ HYDRO 3 229.2 229.2
+ PV 3 0.0 0.0
+ RTPV 3 0.0 0.0
+ WIND 3 0.0 1866.5
+ HYDRO 4 226.2 226.2
+ PV 4 0.0 0.0
+ RTPV 4 0.0 0.0
+ WIND 4 0.0 1489.3
+ HYDRO 5 229.2 229.2
+ PV 5 0.0 0.0
+ RTPV 5 0.0 0.0
+ WIND 5 0.0 1593.2999999999995
+ HYDRO 6 229.2 229.2
+ PV 6 0.0 0.0
+ RTPV 6 0.0 0.0
+ WIND 6 0.0 1597.1
+ HYDRO 7 229.2 229.2
+ PV 7 94.4 94.4
+ RTPV 7 0.8 0.8
+ WIND 7 0.0 1654.9
+ HYDRO 8 226.2 226.2
+ PV 8 168.90000000000003 168.90000000000003
+ RTPV 8 16.299999999999994 16.299999999999994
+ WIND 8 0.0 1380.8000000000004
+ HYDRO 9 226.2 226.2
+ PV 9 226.1 226.1
+ RTPV 9 34.5 34.5
+ WIND 9 0.0 776.7
+ HYDRO 10 229.2 229.2
+ PV 10 259.90000000000003 259.90000000000003
+ RTPV 10 51.0 51.0
+ WIND 10 0.0 397.4
+ HYDRO 11 226.2 226.2
+ PV 11 276.0 276.0
+ RTPV 11 62.6 62.6
+ WIND 11 0.0 343.3
+ HYDRO 12 226.2 226.2
+ PV 12 286.4000000000001 286.4000000000001
+ RTPV 12 68.8 68.8
+ WIND 12 0.0 509.9
+ HYDRO 13 229.2 229.2
+ PV 13 291.6 291.6
+ RTPV 13 70.9 70.9
+ WIND 13 0.0 640.0
+ HYDRO 14 226.2 226.2
+ PV 14 284.7 284.7
+ RTPV 14 68.3 68.3
+ WIND 14 0.0 743.9
+ HYDRO 15 223.8 223.8
+ PV 15 273.2 273.2
+ RTPV 15 64.2 64.2
+ WIND 15 0.0 800.0
+ HYDRO 16 226.2 226.2
+ PV 16 253.2 253.2
+ RTPV 16 55.5 55.5
+ WIND 16 0.0 944.0
+ HYDRO 17 229.2 229.2
+ PV 17 212.7 212.7
+ RTPV 17 41.90000000000001 41.90000000000001
+ WIND 17 0.0 909.4
+ HYDRO 18 226.2 226.2
+ PV 18 148.6 148.6
+ RTPV 18 23.3 23.3
+ WIND 18 0.0 1244.3
+ HYDRO 19 232.2 232.2
+ PV 19 51.2 51.2
+ RTPV 19 2.2 2.2
+ WIND 19 0.0 1648.2999999999995
+ HYDRO 20 235.2 235.2
+ PV 20 0.0 0.0
+ RTPV 20 0.0 0.0
+ WIND 20 0.0 1289.5
+ HYDRO 21 226.2 226.2
+ PV 21 0.0 0.0
+ RTPV 21 0.0 0.0
+ WIND 21 0.0 1690.9999999999998
+ HYDRO 22 161.4 161.4
+ PV 22 0.0 0.0
+ RTPV 22 0.0 0.0
+ WIND 22 0.0 1601.2
+ HYDRO 23 141.6 141.6
+ PV 23 0.0 0.0
+ RTPV 23 0.0 0.0
+ WIND 23 0.0 1935.2
+ HYDRO 24 153.0 153.0
+ PV 24 0.0 0.0
+ RTPV 24 0.0 0.0
+ WIND 24 0.0 2104.5
+ HYDRO 25 181.2 181.2
+ PV 25 0.0 0.0
+ RTPV 25 0.0 0.0
+ WIND 25 0.0 2104.5
+ HYDRO 26 184.2 184.2
+ PV 26 0.0 0.0
+ RTPV 26 0.0 0.0
+ WIND 26 0.0 2104.5
+ HYDRO 27 229.2 229.2
+ PV 27 0.0 0.0
+ RTPV 27 0.0 0.0
+ WIND 27 0.0 2104.5
+ HYDRO 28 226.2 226.2
+ PV 28 0.0 0.0
+ RTPV 28 0.0 0.0
+ WIND 28 0.0 2104.5
+ HYDRO 29 229.2 229.2
+ PV 29 0.0 0.0
+ RTPV 29 0.0 0.0
+ WIND 29 0.0 2104.5
+ HYDRO 30 229.2 229.2
+ PV 30 0.0 0.0
+ RTPV 30 0.0 0.0
+ WIND 30 0.0 2104.5
+ HYDRO 31 229.2 229.2
+ PV 31 94.4 94.4
+ RTPV 31 0.8 0.8
+ WIND 31 0.0 2104.5
+ HYDRO 32 226.2 226.2
+ PV 32 168.90000000000003 168.90000000000003
+ RTPV 32 16.299999999999994 16.299999999999994
+ WIND 32 0.0 2104.5
+ HYDRO 33 226.2 226.2
+ PV 33 226.1 226.1
+ RTPV 33 34.5 34.5
+ WIND 33 0.0 2104.5
+ HYDRO 34 229.2 229.2
+ PV 34 259.90000000000003 259.90000000000003
+ RTPV 34 51.0 51.0
+ WIND 34 0.0 2104.5
+ HYDRO 35 226.2 226.2
+ PV 35 276.0 276.0
+ RTPV 35 62.6 62.6
+ WIND 35 0.0 2104.5
+ HYDRO 36 226.2 226.2
+ PV 36 286.4000000000001 286.4000000000001
+ RTPV 36 68.8 68.8
+ WIND 36 0.0 2104.5
+ HYDRO 37 229.2 229.2
+ PV 37 291.6 291.6
+ RTPV 37 70.9 70.9
+ WIND 37 0.0 2104.5
+ HYDRO 38 226.2 226.2
+ PV 38 284.7 284.7
+ RTPV 38 68.3 68.3
+ WIND 38 0.0 2104.5
+ HYDRO 39 223.8 223.8
+ PV 39 273.2 273.2
+ RTPV 39 64.2 64.2
+ WIND 39 0.0 2104.5
+ HYDRO 40 226.2 226.2
+ PV 40 253.2 253.2
+ RTPV 40 55.5 55.5
+ WIND 40 0.0 2104.5
+ HYDRO 41 229.2 229.2
+ PV 41 212.7 212.7
+ RTPV 41 41.90000000000001 41.90000000000001
+ WIND 41 0.0 2104.5
+ HYDRO 42 226.2 226.2
+ PV 42 148.6 148.6
+ RTPV 42 23.3 23.3
+ WIND 42 0.0 2104.5
+ HYDRO 43 232.2 232.2
+ PV 43 51.2 51.2
+ RTPV 43 2.2 2.2
+ WIND 43 0.0 2104.5
+ HYDRO 44 235.2 235.2
+ PV 44 0.0 0.0
+ RTPV 44 0.0 0.0
+ WIND 44 0.0 2104.5
+ HYDRO 45 226.2 226.2
+ PV 45 0.0 0.0
+ RTPV 45 0.0 0.0
+ WIND 45 0.0 2104.5
+ HYDRO 46 161.4 161.4
+ PV 46 0.0 0.0
+ RTPV 46 0.0 0.0
+ WIND 46 0.0 2104.5
+ HYDRO 47 141.6 141.6
+ PV 47 0.0 0.0
+ RTPV 47 0.0 0.0
+ WIND 47 0.0 2104.5
+ HYDRO 48 153.0 153.0
+ PV 48 0.0 0.0
+ RTPV 48 0.0 0.0
+ WIND 48 0.0 2104.5
+  ;
+
+param: Demand := 
+ CopperSheet 1 1650.278328
+ CopperSheet 2 1543.103662
+ CopperSheet 3 1460.254824
+ CopperSheet 4 1425.0
+ CopperSheet 5 1426.762741
+ CopperSheet 6 1451.08857
+ CopperSheet 7 1550.507175
+ CopperSheet 8 1660.149678
+ CopperSheet 9 1843.827313
+ CopperSheet 10 1966.161554
+ CopperSheet 11 2110.706333
+ CopperSheet 12 2236.9186050000008
+ CopperSheet 13 2360.663038
+ CopperSheet 14 2478.061603
+ CopperSheet 15 2570.076695
+ CopperSheet 16 2623.311479
+ CopperSheet 17 2652.925532
+ CopperSheet 18 2621.19619
+ CopperSheet 19 2542.225383
+ CopperSheet 20 2435.403266
+ CopperSheet 21 2361.720683
+ CopperSheet 22 2243.264473
+ CopperSheet 23 2045.484908
+ CopperSheet 24 1867.095497
+ CopperSheet 25 1650.278328
+ CopperSheet 26 1543.103662
+ CopperSheet 27 1460.254824
+ CopperSheet 28 1425.0
+ CopperSheet 29 1426.762741
+ CopperSheet 30 1451.08857
+ CopperSheet 31 1550.507175
+ CopperSheet 32 1660.149678
+ CopperSheet 33 1843.827313
+ CopperSheet 34 1966.161554
+ CopperSheet 35 2110.706333
+ CopperSheet 36 2236.9186050000008
+ CopperSheet 37 2360.663038
+ CopperSheet 38 2478.061603
+ CopperSheet 39 2570.076695
+ CopperSheet 40 2623.311479
+ CopperSheet 41 2652.925532
+ CopperSheet 42 2621.19619
+ CopperSheet 43 2542.225383
+ CopperSheet 44 2435.403266
+ CopperSheet 45 2361.720683
+ CopperSheet 46 2243.264473
+ CopperSheet 47 2045.484908
+ CopperSheet 48 1867.095497
+  ;
+
