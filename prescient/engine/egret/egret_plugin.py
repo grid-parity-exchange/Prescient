@@ -7,25 +7,15 @@
 #  This software is distributed under the Revised BSD License.
 #  ___________________________________________________________________________
 
-import sys
 import os
-import shutil
-import random
-import traceback
-import csv
-import subprocess
 import math
 
-from six import iterkeys, itervalues, iteritems
+from pyomo.environ import value
+
 from egret.data.model_data import ModelData
 from egret.parsers.prescient_dat_parser import get_uc_model, create_model_data_dict_params
 from egret.models.unit_commitment import _time_series_dict, _preallocated_list, _solve_unit_commitment, \
                                         _save_uc_results, create_tight_unit_commitment_model
-from pyomo.core import *
-from pyomo.opt import *
-from pyomo.pysp.phutils import find_active_objective
-from pyomo.repn.plugins.cpxlp import ProblemWriter_cpxlp
-import pyutilib
 
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values

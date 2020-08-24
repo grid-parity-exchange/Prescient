@@ -14,12 +14,7 @@ if TYPE_CHECKING:
     from prescient.engine.abstract_types import *
 
 import os
-
 import pyomo.environ as pe
-
-from pyomo.opt import SolverFactory, TerminationCondition
-from pyomo.repn.plugins.cpxlp import ProblemWriter_cpxlp
-from pyomo.core import value
 
 from prescient.engine.modeling_engine import ModelingEngine
 
@@ -353,9 +348,9 @@ class EgretEngine(ModelingEngine):
         self._ruc_solver = options.deterministic_ruc_solver_type
         self._sced_solver = options.sced_solver_type
 
-        if not SolverFactory(self._ruc_solver).available():
+        if not pe.SolverFactory(self._ruc_solver).available():
             raise RuntimeError(f"Solver {self._ruc_solver} is not available to Pyomo")
-        if not SolverFactory(self._sced_solver).available():
+        if not pe.SolverFactory(self._sced_solver).available():
             raise RuntimeError(f"Solver {self._sced_solver} is not available to Pyomo")
 
     @property
