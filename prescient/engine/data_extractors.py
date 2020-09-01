@@ -56,6 +56,16 @@ class ScedDataExtractor(ABC):
         pass
 
     @abstractmethod
+    def get_thermal_generators_at_bus(self, sced: OperationsModel, b: B) -> Iterable[G]:
+        """Get all thermal generators in the model at bus b."""
+        pass
+
+    @abstractmethod
+    def get_nondispatchable_generators_at_bus(self, sced: OperationsModel, b: B) -> Iterable[G]:
+        """Get all non-dispatchable generators (renewables) in the model at bus b."""
+        pass
+
+    @abstractmethod
     def get_quickstart_generators(self, sced) -> Iterable[G]:
         """Get all generators that are eligible to be quickstarted."""
         pass

@@ -161,11 +161,12 @@ class OracleManager(_Manager):
         self.data_manager.scenario_tree_for_this_period = ruc_plan.scenario_tree
         self.data_manager.set_forecast_errors_for_new_ruc_instance(options)
 
+        self.data_manager.ruc_market_active = ruc_plan.ruc_market
+
         return ruc_plan
 
     def call_planning_oracle(self, options, time_step):
         projected_sced_instance, sced_schedule_hour = self._get_projected_sced_instance(options, time_step)
-
 
         uc_hour, uc_date, next_uc_date = self._get_uc_activation_time(options, time_step)
 
@@ -189,6 +190,11 @@ class OracleManager(_Manager):
                )
 
 
+        if options.compute_market_settlements:
+            print("Solving day-ahead market")
+            ruc_market = self.engine.create_and_solve_day_ahead_pricing(deterministic_ruc_instance, options)
+        else:
+            ruc_market = None
         # the RUC instance to simulate only exists to store the actual demand and renewables outputs
         # to be realized during the course of a day. it also serves to provide a concrete instance,
         # from which static data and topological features of the system can be extracted.
@@ -205,7 +211,7 @@ class OracleManager(_Manager):
             next_uc_date,
            )
 
-        return RucPlan(ruc_instance_to_simulate, scenario_tree, deterministic_ruc_instance)
+        return RucPlan(ruc_instance_to_simulate, scenario_tree, deterministic_ruc_instance, ruc_market)
 
     def call_operation_oracle(self, options: Options, time_step: PrescientTime, is_first_time_step:bool):
         # if this is the first hour of the day, we might (often) want to establish initial conditions from
@@ -295,14 +301,16 @@ class OracleManager(_Manager):
                                                                     self.engine.operations_data_extractor)
 
         self._report_sced_stats(ops_stats)
+
+        if options.compute_market_settlements:
+            self.simulator.stats_manager.collect_market_settlement(current_sced_instance,
+                    self.engine.operations_data_extractor,
+                    self.simulator.data_manager.ruc_market_active,
+                    time_step.hour % options.ruc_every_hours)
+
+
         return  current_sced_instance
 
-
-
-    def _initialize_operation_oracle(self, options, time_step, is_first_time_step):
-
-
-        return current_sced_instance
 
     #####################################################################
     # utility functions for pretty-printing solutions, for SCED and RUC #
@@ -321,7 +329,7 @@ class OracleManager(_Manager):
 
         if ops_stats.reserve_shortfall != 0.0:
             print("Reserve shortfall reported at t=%2d: %12.2f" % (1, ops_stats.reserve_shortfall))
-            print("Quick start generation capacity available at t=%2d: %12.2f" % (1, ops_stats.available_quick_start))
+            print("Quick start generation capacity available at t=%2d: %12.2f" % (1, ops_stats.available_quickstart))
             print("")
 
         if ops_stats.renewables_curtailment > 0:

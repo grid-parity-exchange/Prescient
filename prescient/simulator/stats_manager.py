@@ -125,6 +125,12 @@ class StatsManager(_Manager):
         self._current_hour_stats.populate_from_sced(sced, runtime, lmp_sced, pre_quickstart_cache, extractor)
         return self._current_hour_stats
 
+    def collect_market_settlement(self, sced, extractor, ruc_market, time_index):
+        ''' Called after new operations and LMP sced has run and
+            after collect_operations
+        '''
+        self._current_hour_stats.populate_market_settlement(sced, extractor, ruc_market, time_index)
+
     def collect_quickstart_data(self, pre_quickstart_cache, sced):
         self._current_hour_stats.update_with_quickstart_data(quickstart_cache, sced)
         return self._current_hour_stats

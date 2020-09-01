@@ -10,15 +10,17 @@
 import os
 import math
 
-from pyomo.environ import value
+from pyomo.environ import value, Suffix
 
 from egret.data.model_data import ModelData
 from egret.parsers.prescient_dat_parser import get_uc_model, create_model_data_dict_params
 from egret.models.unit_commitment import _time_series_dict, _preallocated_list, _solve_unit_commitment, \
-                                        _save_uc_results, create_tight_unit_commitment_model
+                                        _save_uc_results, create_tight_unit_commitment_model, \
+                                        _get_uc_model
 
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
+from prescient.simulator.data_manager import RucMarket
 
 uc_abstract_data_model = get_uc_model()
 
@@ -1140,161 +1142,179 @@ def compute_simulation_filename_for_date(a_date, options):
                                                   "Scenario_forecasts.dat")
     return simulated_dat_filename
 
-def solve_deterministic_day_ahead_pricing_problem(solver, solve_options, deterministic_ruc_instance, options, reference_model_module):
+def create_pricing_model(model_data,
+                         network_constraints='ptdf_power_flow',
+                         relaxed=True,
+                         **kwargs):
+    '''
+    Create a model appropriate for pricing
+    '''
+    formulation_list = [
+                        'garver_3bin_vars',
+                        'garver_power_vars',
+                        'MLR_reserve_vars',
+                        'pan_guan_gentile_KOW_generation_limits',
+                        'damcikurt_ramping',
+                        'KOW_production_costs_tightened',
+                        'rajan_takriti_UT_DT',
+                        'KOW_startup_costs',
+                         network_constraints,
+                       ]
+    return _get_uc_model(model_data, formulation_list, relaxed, **kwargs)
+
+def _get_fixed_if_off(cur_commit, cur_fixed):
+    cur_commit = cur_commit['values']
+    if cur_fixed is None:
+        cur_fixed = [None for _ in cur_commit]
+    elif isinstance(cur_fixed, dict):
+        cur_fixed = cur_fixed['values']
+    else:
+        cur_fixed = [cur_fixed for _ in cur_commit]
+
+    new_fixed = [None]*len(cur_commit)
+    for idx, (fixed, committed) in enumerate(zip(cur_fixed, cur_commit)):
+        if fixed is None:
+            new_fixed[idx] = None if committed == 1 else 0
+        else:
+            new_fixed[idx] = fixed
+    return {'data_type':'time_series', 'values':new_fixed}
+
+def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options):
 
     ## create a copy because we want to maintain the solution data
-    ## in deterministic_ruc_instance
-    from pyomo.core.plugins.transform.relax_integrality import RelaxIntegrality
-    relax_integrality = RelaxIntegrality()
-
+    ## in ruc_results
     pricing_type = options.day_ahead_pricing
     print("Computing day-ahead prices using method "+pricing_type+".")
     
-    pricing_instance = relax_integrality.create_using(deterministic_ruc_instance)
+    pricing_instance = ruc_results.clone()
     if pricing_type == "LMP":
-        reference_model_module.fix_binary_variables(pricing_instance)
+        for g, g_dict in pricing_instance.elements(element_type='generator', generator_type='thermal'):
+            g_dict['fixed_commitment'] = g_dict['commitment']
+            if 'reg_provider' in g_dict:
+                g_dict['fixed_regulation'] = g_dict['reg_provider']
+        ## TODO: add fixings for storage; need hooks in EGRET
     elif pricing_type == "ELMP":
         ## for ELMP we fix all commitment binaries that were 0 in the RUC solve
-        pricing_var_generator = reference_model_module.status_var_generator(pricing_instance)
-        ruc_var_generator = reference_model_module.status_var_generator(deterministic_ruc_instance)
-        for pricing_status_var, ruc_status_var in zip(pricing_var_generator, ruc_var_generator):
-            if int(round(value(ruc_status_var))) == 0:
-                pricing_status_var.value = 0
-                pricing_status_var.fix()
+        time_periods = pricing_instance.data['system']['time_keys']
+        for g, g_dict in pricing_instance.elements(element_type='generator', generator_type='thermal'):
+            g_dict['fixed_commitment'] = _get_fixed_if_off(g_dict['commitment'], 
+                                                           g_dict.get('fixed_commitment', None))
+            if 'reg_provider' in g_dict:
+                g_dict['fixed_regulation'] = _get_fixed_if_off(g_dict['reg_provider'],
+                                                               g_dict.get('fixed_regulation', None))
+        ## TODO: add fixings for storage; need hooks in EGRET
     elif pricing_type == "aCHP":
+        # don't do anything
         pass
     else:
         raise RuntimeError("Unknown pricing type "+pricing_type+".")
 
-    reference_model_module.reconstruct_instance_for_pricing(pricing_instance)
-
-    reference_model_module.define_suffixes(pricing_instance)
-
     ## change the penalty prices to the caps, if necessary
+    reserve_requirement = ('reserve_requirement' in pricing_instance.data['system'])
 
     # In case of demand shortfall, the price skyrockets, so we threshold the value.
-    if value(pricing_instance.LoadMismatchPenalty) > options.price_threshold:
-        pricing_instance.LoadMismatchPenalty = options.price_threshold
+    if pricing_instance.data['system']['load_mismatch_cost'] > options.price_threshold:
+        pricing_instance.data['system']['load_mismatch_cost'] = options.price_threshold
 
     # In case of reserve shortfall, the price skyrockets, so we threshold the value.
-    if value(pricing_instance.ReserveShortfallPenalty) > options.reserve_price_threshold:
-        pricing_instance.ReserveShortfallPenalty = options.reserve_price_threshold
+    if reserve_requirement:
+        if pricing_instance.data['system']['reserve_shortfall_cost'] > options.reserve_price_threshold:
+            pricing_instance.data['system']['reserve_shortfall_cost'] = options.reserve_price_threshold
 
-    pricing_results = call_solver(solver,
-                                   pricing_instance, 
-                                   tee=options.output_solver_logs,
-                                   **solve_options[solver])
-                                                  
-    if pricing_results.solver.termination_condition not in safe_termination_conditions:
-        raise RuntimeError("Failed to solve day-ahead pricing problem!")
+    pyo_model = create_pricing_model(pricing_instance,
+                                     network_constraints='power_balance_constraints',
+                                     relaxed=True)
 
-    pricing_instance.solutions.load_from(pricing_results)
+    pyo_model.dual = Suffix(direction=Suffix.IMPORT)
+
+    try:
+        ## TODO: Should there be separate options for this run?
+        pricing_results, _ = call_solver(solver,
+                                         pyo_model, 
+                                         options,
+                                         options.deterministic_ruc_solver_options,
+                                         relaxed=True)
+    except:
+        print("Failed to solve pricing instance - likely because no feasible solution exists!")        
+        output_filename = "bad_pricing.json"
+        pricing_instance.write(output_filename)
+        print("Wrote failed RUC model to file=" + output_filename)
+        raise
 
     ## Debugging
-    if pricing_instance.TotalCostObjective() > deterministic_ruc_instance.TotalCostObjective()*(1.+1.e-06):
+    if pricing_results.data['system']['total_cost'] > ruc_results.data['system']['total_cost']*(1.+1.e-06):
         print("The pricing run had a higher objective value than the MIP run. This is indicative of a bug.")
-        print("Writing LP pricing_problem.lp")
-        output_filename = 'pricing_instance.lp'
-        lp_writer = ProblemWriter_cpxlp()            
-        lp_writer(pricing_instance, output_filename, 
-                  lambda x: True, {"symbolic_solver_labels" : True})
+        print("Writing LP pricing_problem.json")
+        output_filename = 'pricing_instance.json'
+        pricing_results.write(output_filename)
 
-        output_filename = 'deterministic_ruc_instance.lp'
-        lp_writer = ProblemWriter_cpxlp()            
-        lp_writer(deterministic_ruc_instance, output_filename, 
-                  lambda x: True, {"symbolic_solver_labels" : True})
+        output_filename = 'ruc_results.json'
+        ruc_results.write(output_filename)
 
         raise RuntimeError("Halting due to bug in pricing.")
-        
 
     day_ahead_prices = {}
-    for b in pricing_instance.Buses:
-        for t in pricing_instance.TimePeriods:
-            balance_price = value(pricing_instance.dual[pricing_instance.PowerBalance[b,t]])
-            day_ahead_prices[b,t-1] = balance_price
+    for b, b_dict in pricing_results.elements(element_type='bus'):
+        for t,lmp in enumerate(b_dict['lmp']['values']):
+            day_ahead_prices[b,t] = lmp
 
-    day_ahead_reserve_prices = {}
-    for t in pricing_instance.TimePeriods:
-        reserve_price = value(pricing_instance.dual[pricing_instance.EnforceReserveRequirements[t]])
-        # Thresholding the value of the reserve price to the passed in option
-        day_ahead_reserve_prices[t-1] = reserve_price
+    if reserve_requirement:
+        day_ahead_reserve_prices = {}
+        for t,price in enumerate(pricing_results.data['system']['reserve_price']['values']):
+            # Thresholding the value of the reserve price to the passed in option
+            day_ahead_reserve_prices[t] = price
 
-    print("Recalculating RUC reserve procurement")
+        print("Recalculating RUC reserve procurement")
 
-    ## scale the provided reserves by the amount over we are
-    cleared_reserves= {}
-    for t in range(0,options.ruc_every_hours):
-        reserve_provided_t = sum(value(deterministic_ruc_instance.ReserveProvided[g,t+1]) for g in deterministic_ruc_instance.ThermalGenerators) 
-        reserve_shortfall_t = value(deterministic_ruc_instance.ReserveShortfall[t+1])
-        reserve_requirement_t = value(deterministic_ruc_instance.ReserveRequirement[t+1])
+        ## scale the provided reserves by the amount over we are
+        thermal_reserve_cleared_DA = {}
 
+        g_reserve_values = { g : g_dict['rg']['values'] for g, g_dict in ruc_results.elements(element_type='generator', generator_type='thermal') }
+        reserve_shortfall = ruc_results.data['system']['reserve_shortfall']['values']
+        reserve_requirement = ruc_results.data['system']['reserve_requirement']['values']
 
-        surplus_reserves_t = reserve_provided_t + reserve_shortfall_t - reserve_requirement_t
+        for t in range(0,options.ruc_every_hours):
+            reserve_provided_t = sum(reserve_vals[t] for reserve_vals in g_reserve_values.values()) 
+            reserve_shortfall_t = reserve_shortfall[t]
+            reserve_requirement_t = reserve_requirement[t]
 
-        ## if there's a shortfall, grab the full amount from the RUC solve
-        ## or if there's no provided reserves this can safely be set to 1.
-        if round_small_values(reserve_shortfall_t) > 0 or reserve_provided_t == 0:
-            surplus_multiple_t = 1.
-        else:
-            ## scale the reserves from the RUC down by the same fraction
-            ## so that they exactly meed the needed reserves
-            surplus_multiple_t = reserve_requirement_t/reserve_provided_t
-        for g in deterministic_ruc_instance.ThermalGenerators:
-            cleared_reserves[g,t] = value(deterministic_ruc_instance.ReserveProvided[g,t+1])*surplus_multiple_t
+            surplus_reserves_t = reserve_provided_t + reserve_shortfall_t - reserve_requirement_t
+
+            ## if there's a shortfall, grab the full amount from the RUC solve
+            ## or if there's no provided reserves this can safely be set to 1.
+            if round_small_values(reserve_shortfall_t) > 0 or reserve_provided_t == 0:
+                surplus_multiple_t = 1.
+            else:
+                ## scale the reserves from the RUC down by the same fraction
+                ## so that they exactly meed the needed reserves
+                surplus_multiple_t = reserve_requirement_t/reserve_provided_t
+            for g, reserve_vals in g_reserve_values.items():
+                thermal_reserve_cleared_DA[g,t] = reserve_vals[t]*surplus_multiple_t
+    else:
+        day_ahead_reserve_prices = { t : 0. for t in enumerate(ruc_results.data['system']['time_keys']) } 
+        thermal_reserve_cleared_DA = { (g,t) : 0. \
+                for t in enumerate(ruc_results.data['system']['time_keys']) \
+                for g,_ in ruc_results.elements(element_type='generator', generator_type='thermal') }
                
     thermal_gen_cleared_DA = {}
-    thermal_reserve_cleared_DA = {}
     renewable_gen_cleared_DA = {}
 
-    for t in range(0,options.ruc_every_hours):
-        for g in deterministic_ruc_instance.ThermalGenerators:
-            thermal_gen_cleared_DA[g,t] = value(deterministic_ruc_instance.PowerGenerated[g,t+1])
-            thermal_reserve_cleared_DA[g,t] = cleared_reserves[g,t]
-        for g in deterministic_ruc_instance.AllNondispatchableGenerators:
-            renewable_gen_cleared_DA[g,t] = value(deterministic_ruc_instance.NondispatchablePowerUsed[g,t+1])
+    for g, g_dict in ruc_results.elements(element_type='generator'):
+        pg = g_dict['pg']['values']
+        if g_dict['generator_type'] == 'thermal':
+            store_dict = thermal_gen_cleared_DA
+        elif g_dict['generator_type'] == 'renewable':
+            store_dict = renewable_gen_cleared_DA
+        else:
+            raise RuntimeError(f"Unrecognized generator type {g_dict['generator_type']}")
+        for t in range(0,options.ruc_every_hours):
+            store_dict[g,t] = pg[t]
 
-    return day_ahead_prices, day_ahead_reserve_prices, thermal_gen_cleared_DA, thermal_reserve_cleared_DA, renewable_gen_cleared_DA
-
-def compute_market_settlements(ruc_instance, ## just for generators
-                               thermal_gen_cleared_DA, thermal_reserve_cleared_DA, renewable_gen_cleared_DA,
-                               day_ahead_prices, day_ahead_reserve_prices,
-                               observed_thermal_dispatch_levels, observed_thermal_headroom_levels,
-                               observed_renewables_levels, observed_bus_LMPs, reserve_RT_price_by_hour,
-                               ):
-    ## NOTE: This clears the market like ISO-NE seems to do it. We've assumed that the renewables
-    #        bid in their expectation in the DA market -- this perhaps is not realistic
-    ## TODO: Storage??
-    ## TODO: Implicity assumes hourly SCED
-
-    print("")
-    print("Computing market settlements")
-
-    thermal_gen_payment = {}
-    thermal_reserve_payment = {}
-    renewable_gen_payment = {}
-
-    for t in range(0,24):
-        for b in ruc_instance.Buses:
-            price_DA = day_ahead_prices[b,t]
-            price_RT = observed_bus_LMPs[b][t]
-            for g in ruc_instance.ThermalGeneratorsAtBus[b]:
-                thermal_gen_payment[g,t] = thermal_gen_cleared_DA[g,t]*price_DA \
-                                            + (observed_thermal_dispatch_levels[g][t] - thermal_gen_cleared_DA[g,t])*price_RT
-            for g in ruc_instance.NondispatchableGeneratorsAtBus[b]:
-                renewable_gen_payment[g,t] = renewable_gen_cleared_DA[g,t]*price_DA \
-                                            + (observed_renewables_levels[g][t] - renewable_gen_cleared_DA[g,t])*price_RT
-
-    for t in range(0,24):
-        r_price_DA = day_ahead_reserve_prices[t]
-        r_price_RT = reserve_RT_price_by_hour[t]
-        for g in ruc_instance.ThermalGenerators:
-            thermal_reserve_payment[g,t] = thermal_reserve_cleared_DA[g,t]*r_price_DA \
-                                            + (observed_thermal_headroom_levels[g][t] - thermal_reserve_cleared_DA[g,t])*r_price_RT
-
-    print("Settlements computed")
-    print("")
-    
-    return thermal_gen_cleared_DA, thermal_gen_payment, thermal_reserve_cleared_DA, thermal_reserve_payment, renewable_gen_cleared_DA, renewable_gen_payment
+    return RucMarket(day_ahead_prices=day_ahead_prices,
+                    day_ahead_reserve_prices=day_ahead_reserve_prices,
+                    thermal_gen_cleared_DA=thermal_gen_cleared_DA,
+                    thermal_reserve_cleared_DA=thermal_reserve_cleared_DA,
+                    renewable_gen_cleared_DA=renewable_gen_cleared_DA)
 
 def create_ruc_instance_to_simulate_next_period(ruc_model, options, this_date, this_hour, next_date):
 

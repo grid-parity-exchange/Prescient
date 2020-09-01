@@ -40,6 +40,14 @@ class ScedDataExtractor(BaseScedExtractor):
         return (g for g,_ in \
                 sced.elements(element_type='generator', generator_type='renewable'))
 
+    def get_thermal_generators_at_bus(self, sced: OperationsModel, b: B) -> Iterable[G]:
+        return (g for g,_ in \
+                sced.elements(element_type='generator', generator_type='thermal', bus=b))
+
+    def get_nondispatchable_generators_at_bus(self, sced: OperationsModel, b: B) -> Iterable[G]:
+        return (g for g,_ in \
+                sced.elements(element_type='generator', generator_type='renewable', bus=b))
+
     def get_quickstart_generators(self, sced: OperationsModel) -> Iterable[G]:
         return (g for g,_ in \
                 sced.elements(element_type='generator', fast_start=True))

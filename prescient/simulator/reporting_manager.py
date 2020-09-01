@@ -113,7 +113,7 @@ class ReportingManager(_Manager):
                        'Shortfall':     lambda hourly,b: hourly.observed_bus_mismatches[b] if hourly.observed_bus_mismatches[b] > 0.0 else 0.0,
                        'Overgeneration':  lambda hourly,b: -hourly.observed_bus_mismatches[b] if hourly.observed_bus_mismatches[b] < 0.0 else 0.0,
                        'LMP':   lambda hourly,b: hourly.observed_bus_LMPs[b],
-                       'LMP DA': lambda hourly,b: hourly.this_date_planning_energy_prices[b] if options.compute_market_settlements else None,
+                       'LMP DA': lambda hourly,b: hourly.planning_energy_prices[b] if options.compute_market_settlements else None,
                       }
         bus_writer = CsvMultiRowReporter.from_dict(bus_file, bus_entries_per_hour, bus_columns)
         stats_manager.register_for_hourly_stats(bus_writer.write_record)
@@ -188,15 +188,15 @@ class ReportingManager(_Manager):
                          'Sum on/off ramps': lambda daily: daily.this_date_sum_on_off_ramps,
                          'Sum nominal ramps': lambda daily: daily.this_date_sum_nominal_ramps}
         if options.compute_market_settlements:
-            summary_dict.update( {'Renewables energy payments': lambda daily: daily.this_date_renewable_energy_payments,
+            daily_columns.update( {'Renewables energy payments': lambda daily: daily.this_date_renewable_energy_payments,
                                   'Renewables uplift payments': lambda daily: daily.this_date_renewable_uplift,
                                   'Thermal energy payments': lambda daily: daily.this_date_thermal_energy_payments,
                                   'Thermal uplift payments': lambda daily: daily.this_date_thermal_uplift,
                                   'Total energy payments': lambda daily: daily.this_date_energy_payments,
                                   'Total uplift payments': lambda daily: daily.this_date_uplift_payments,
                                   'Total reserve payments': lambda daily: daily.this_date_reserve_payments,
-                                  'Total payments': lambda daily: daily.this_date_total_payout,
-                                  'Average payments': lambda daily: daily.this_date_total_payout/this_date_demand,
+                                  'Total payments': lambda daily: daily.this_date_total_payments,
+                                  'Average payments': lambda daily: daily.this_date_average_payments,
                                 } )
         daily_writer = CsvReporter.from_dict(daily_file, daily_columns)
         stats_manager.register_for_daily_stats(daily_writer.write_record)
