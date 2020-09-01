@@ -17,6 +17,14 @@ class RucPlan(NamedTuple):
    ruc_instance_to_simulate: RucModel
    scenario_tree: ScenarioTree
    deterministic_ruc_instance: RucModel
+   ruc_market: [RucMarket, None]
+
+class RucMarket(NamedTuple):
+    day_ahead_prices: Dict
+    day_ahead_reserve_prices: Dict
+    thermal_gen_cleared_DA: Dict
+    thermal_reserve_cleared_DA: Dict
+    renewable_gen_cleared_DA: Dict
 
 class DataManager(_Manager):
     def initialize(self, engine, options):
@@ -28,6 +36,8 @@ class DataManager(_Manager):
         self.ruc_instance_to_simulate_next_period = None
         self.deterministic_ruc_instance_for_this_period = None
         self.deterministic_ruc_instance_for_next_period = None
+        self.ruc_market_active = None
+        self.ruc_market_pending = None
         self._extensions = {}
 
     def update_time(self, time):
@@ -38,6 +48,7 @@ class DataManager(_Manager):
         self.ruc_instance_to_simulate_next_period = current_ruc_plan.ruc_instance_to_simulate
         self.scenario_tree_for_next_period = current_ruc_plan.scenario_tree
         self.deterministic_ruc_instance_for_next_period =current_ruc_plan.deterministic_ruc_instance
+        self.ruc_market_pending = current_ruc_plan.ruc_market
 
     def set_forecast_errors_for_new_ruc_instance(self, options) -> None:
         ''' Generate new forecast errors from current ruc instances '''

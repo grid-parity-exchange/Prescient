@@ -39,6 +39,12 @@ class ScedDataExtractor(BaseScedExtractor):
     def get_nondispatchable_generators(self, sced: OperationsModel) -> Iterable[G]:
         return sced.AllNondispatchableGenerators
 
+    def get_thermal_generators_at_bus(self, sced: OperationsModel, b: B) -> Iterable[G]:
+        return sced.ThermalGeneratorsAtBus[b]
+
+    def get_nondispatchable_generators_at_bus(self, sced: OperationsModel, b: B) -> Iterable[G]:
+        return sced.NondispatchableGeneratorsAtBus[b]
+
     def get_quickstart_generators(self, sced: OperationsModel) -> Iterable[G]:
         return sced.QuickStartGenerators
 

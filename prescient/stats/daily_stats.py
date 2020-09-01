@@ -66,7 +66,22 @@ class DailyStats:
     this_date_quick_start_additional_power_generated: float = 0.0
     this_date_average_price: float #implemented as read-only property
 
+
     # These variables are only populated if options.compute_market_settlements is True
+    this_date_thermal_energy_payments: float = 0.0
+    this_date_renewable_energy_payments: float = 0.0
+
+    this_date_energy_payments: float #implemented as read-only property
+
+    this_date_reserve_payments: float = 0.0
+
+    this_date_thermal_uplift: float = 0.0
+    this_date_renewable_uplift: float = 0.0
+
+    this_date_uplift_payments: float #implemented as read-only property
+
+    this_date_total_payments: float #implemented as read-only property
+
     # They are indexed by a (model entity, hour) tuple, and start out empty.
     ######### They are commented out for now #######################
     #this_date_planning_energy_prices: Dict[Tuple[B, int], float] = field(default_factory=dict)
@@ -89,10 +104,27 @@ class DailyStats:
     def this_date_renewables_penetration_rate(self):
         return (self.this_date_renewables_used / self.this_date_demand) * 100.0
 
+    @property
+    def this_date_energy_payments(self):
+        return self.this_date_thermal_energy_payments + self.this_date_renewable_energy_payments
+
+    @property
+    def this_date_uplift_payments(self):
+        return self.this_date_thermal_uplift + self.this_date_renewable_uplift
+
+    @property
+    def this_date_total_payments(self):
+        return self.this_date_energy_payments + self.this_date_uplift_payments + self.this_date_reserve_payments
+
+    @property
+    def this_date_average_payments(self):
+        return 0.0 if self.this_date_demand == 0.0 else self.this_date_total_payments / self.this_date_demand
+
     def __init__(self, options, day: date):
         self.date = day
         self.hourly_stats = []
         self.extensions = {}
+        self._options = options
 
     def incorporate_hour_stats(self, hourly_stats: HourlyStats):
         self.thermal_fleet_capacity = hourly_stats.thermal_fleet_capacity
@@ -113,3 +145,12 @@ class DailyStats:
         self.this_date_sum_nominal_ramps += hourly_stats.sum_nominal_ramps
         self.this_date_quick_start_additional_costs += hourly_stats.quick_start_additional_costs
         self.this_date_quick_start_additional_power_generated += hourly_stats.quick_start_additional_power_generated
+
+        if self._options.compute_market_settlements:
+            self.this_date_thermal_energy_payments += hourly_stats.thermal_energy_payments
+            self.this_date_renewable_energy_payments += hourly_stats.renewable_energy_payments
+
+            self.this_date_reserve_payments += hourly_stats.reserve_payments
+
+            self.this_date_thermal_uplift += hourly_stats.thermal_uplift_payments
+            self.this_date_renewable_uplift += hourly_stats.renewable_uplift_payments

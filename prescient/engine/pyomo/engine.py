@@ -20,6 +20,7 @@ from pyomo.repn.plugins.cpxlp import ProblemWriter_cpxlp
 from pyomo.core import value
 
 from prescient.engine.modeling_engine import ModelingEngine
+from prescient.simulator.data_manager import RucMarket
 
 from .data_extractors import ScedDataExtractor, RucDataExtractor
 
@@ -66,6 +67,18 @@ class PyomoEngine(ModelingEngine):
                                                     projected_sced_instance, 
                                                     sced_schedule_hour, ruc_horizon,
                                                     run_ruc_with_next_day_data)
+
+
+    def create_and_solve_day_ahead_pricing(self,
+            deterministic_ruc_instance: RucModel,
+            options: Options,
+            ) -> RucMarket:
+        return self._p.solve_deterministic_day_ahead_pricing_problem(self._ruc_solver,
+                                                                self._solve_options,
+                                                                deterministic_ruc_instance,
+                                                                options,
+                                                                self._reference_model_module)
+
 
 
     def create_ruc_instance_to_simulate_next_period(
@@ -357,6 +370,7 @@ class PyomoEngine(ModelingEngine):
             self.create_sced_instance = default_plugin.create_sced_instance
             self.create_and_solve_deterministic_ruc = default_plugin.create_and_solve_deterministic_ruc
             self.create_ruc_instance_to_simulate_next_period = default_plugin.create_ruc_instance_to_simulate_next_period
+            self.solve_deterministic_day_ahead_pricing_problem = default_plugin.solve_deterministic_day_ahead_pricing_problem
 
             if options.simulator_plugin != None:
                 try:
@@ -367,7 +381,8 @@ class PyomoEngine(ModelingEngine):
                 method_names = ["call_solver",
                                 "create_sced_instance",
                                 "create_and_solve_deterministic_ruc",
-                                "create_ruc_instance_to_simulate_next_period"]
+                                "create_ruc_instance_to_simulate_next_period",
+                                "solve_deterministic_day_ahead_pricing_problem"]
 
                 for method_name in method_names:
                     method = getattr(simulator_plugin_module, method_name, None)

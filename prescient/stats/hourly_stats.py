@@ -58,7 +58,7 @@ class HourlyStats:
 
     event_annotations: Sequence[str]
 
-    observered_thermal_dispatch_levels: Dict[G, float]
+    observed_thermal_dispatch_levels: Dict[G, float]
     observed_thermal_headroom_levels: Dict[G, float]
     observed_thermal_states: Dict[G, float]
     observed_costs: Dict[G, float]
@@ -77,8 +77,24 @@ class HourlyStats:
     reserve_requirement: float = 0.0
     reserve_RT_price: float = 0.0
 
-    #if options.compute_market_settlements:
-    #    planning_reserve_price: float = 0.0
+    planning_reserve_price: float = 0.0
+    planning_energy_prices: Dict[B, float]
+
+    thermal_gen_cleared_DA: Dict[G, float]
+    thermal_gen_revenue: Dict[G, float]
+    thermal_reserve_cleared_DA: Dict[G, float]
+    thermal_reserve_revenue: Dict[G, float]
+    thermal_uplift: Dict[G, float]
+
+    renewable_gen_cleared_DA: Dict[G, float]
+    renewable_gen_revenue: Dict[G, float]
+    renewable_uplift: Dict[G, float]
+
+    thermal_energy_payments: float #read-only property
+    renewable_energy_payments: float #read-only property
+    thermal_uplift_payments: float #read-only property
+    renewable_uplift_payments: float #read-only property
+    reserve_payments: float #read-only property
 
     extensions: Dict[Any, Any]
 
@@ -86,6 +102,35 @@ class HourlyStats:
     def total_costs(self):
         return self.fixed_costs + self.variable_costs
 
+    @property
+    def thermal_energy_payments(self):
+        if self._options.compute_market_settlements:
+            return sum(self.thermal_gen_revenue.values())
+        return 0.
+
+    @property
+    def renewable_energy_payments(self):
+        if self._options.compute_market_settlements:
+            return sum(self.renewable_gen_revenue.values())
+        return 0.
+
+    @property
+    def thermal_uplift_payments(self):
+        if self._options.compute_market_settlements:
+            return sum(self.thermal_uplift.values())
+        return 0.
+
+    @property
+    def renewable_uplift_payments(self):
+        if self._options.compute_market_settlements:
+            return sum(self.renewable_uplift.values())
+        return 0.
+
+    @property
+    def reserve_payments(self):
+        if self._options.compute_market_settlements:
+            return sum(self.thermal_reserve_revenue.values())
+        return 0.
 
     def __init__(self, options, day: date, hour: int):
         self._options = options
@@ -156,5 +201,54 @@ class HourlyStats:
         self.reserve_requirement = extractor.get_reserve_requirement(sced)
 
         self.reserve_RT_price = extractor.get_reserve_RT_price(lmp_sced)
-    
+
+    def populate_market_settlement(self,
+                           sced: OperationsModel,
+                           extractor: ScedDataExtractor,
+                           ruc_market: RucMarket,
+                           time_index: int):
+
+        self.planning_reserve_price = ruc_market.day_ahead_reserve_prices[time_index]
+        self.planning_energy_prices = { b : ruc_market.day_ahead_prices[b,time_index] \
+                                        for b in extractor.get_buses(sced) }
+
+        self.thermal_gen_cleared_DA = { g : ruc_market.thermal_gen_cleared_DA[g,time_index] \
+                                        for g in extractor.get_thermal_generators(sced) }
+
+        self.renewable_gen_cleared_DA = { g : ruc_market.renewable_gen_cleared_DA[g,time_index] \
+                                            for g in extractor.get_nondispatchable_generators(sced) }
+
+        self.thermal_reserve_cleared_DA = { g : ruc_market.thermal_reserve_cleared_DA[g,time_index] \
+                                              for g in extractor.get_thermal_generators(sced) }
+
+        self.thermal_gen_revenue = dict()
+        self.renewable_gen_revenue = dict()
+        for b in extractor.get_buses(sced):
+            price_DA = self.planning_energy_prices[b]
+            price_RT = self.observed_bus_LMPs[b]
+
+            for g in extractor.get_thermal_generators_at_bus(sced, b):
+                self.thermal_gen_revenue[g] = \
+                    self.thermal_gen_cleared_DA[g]*price_DA + \
+                    (self.observed_thermal_dispatch_levels[g] - self.thermal_gen_cleared_DA[g])*price_RT
+
+            for g in extractor.get_nondispatchable_generators_at_bus(sced, b):
+                self.renewable_gen_revenue[g] = \
+                    self.renewable_gen_cleared_DA[g]*price_DA + \
+                    (self.observed_renewables_levels[g] - self.renewable_gen_cleared_DA[g])*price_RT
+
+
+
+        r_price_DA = self.planning_reserve_price
+        r_price_RT = self.reserve_RT_price
+        self.thermal_reserve_revenue = { g : self.thermal_reserve_cleared_DA[g]*r_price_DA + \
+                                                ( self.observed_thermal_headroom_levels[g] - \
+                                                   self.thermal_reserve_cleared_DA[g] )*r_price_RT
+                                                for g in extractor.get_thermal_generators(sced) }
+
+        ## TODO: calculate uplift for the day
+        self.thermal_uplift = { g : 0. for g in extractor.get_thermal_generators(sced) }
+
+        ## TODO: calculate uplift for the day
+        self.renewable_uplift = { g : 0. for g in extractor.get_nondispatchable_generators(sced) }
 

@@ -27,7 +27,7 @@ from .reporting_manager import ReportingManager
 from prescient.stats.overall_stats import OverallStats
 import prescient.plugins 
 
-from prescient.engine.egret import EgretEngine
+from prescient.engine.pyomo import PyomoEngine as Engine
 
 try:
     import pstats
@@ -36,7 +36,7 @@ except ImportError:
     pstats_available=False
 
 def create_prescient(options: Options):
-    engine = EgretEngine()
+    engine = Engine()
     time_manager = TimeManager()
     data_manager = DataManager()
     oracle_manager = OracleManager()

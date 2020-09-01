@@ -27,6 +27,7 @@ import pyutilib
 
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
+from prescient.simulator.data_manager import RucMarket
 
 ## termination conditions which are acceptable
 safe_termination_conditions = [ 
@@ -2210,48 +2211,11 @@ def solve_deterministic_day_ahead_pricing_problem(solver, solve_options, determi
         for g in deterministic_ruc_instance.AllNondispatchableGenerators:
             renewable_gen_cleared_DA[g,t] = value(deterministic_ruc_instance.NondispatchablePowerUsed[g,t+1])
 
-    return day_ahead_prices, day_ahead_reserve_prices, thermal_gen_cleared_DA, thermal_reserve_cleared_DA, renewable_gen_cleared_DA
-
-def compute_market_settlements(ruc_instance, ## just for generators
-                               thermal_gen_cleared_DA, thermal_reserve_cleared_DA, renewable_gen_cleared_DA,
-                               day_ahead_prices, day_ahead_reserve_prices,
-                               observed_thermal_dispatch_levels, observed_thermal_headroom_levels,
-                               observed_renewables_levels, observed_bus_LMPs, reserve_RT_price_by_hour,
-                               ):
-    ## NOTE: This clears the market like ISO-NE seems to do it. We've assumed that the renewables
-    #        bid in their expectation in the DA market -- this perhaps is not realistic
-    ## TODO: Storage??
-    ## TODO: Implicity assumes hourly SCED
-
-    print("")
-    print("Computing market settlements")
-
-    thermal_gen_payment = {}
-    thermal_reserve_payment = {}
-    renewable_gen_payment = {}
-
-    for t in range(0,24):
-        for b in ruc_instance.Buses:
-            price_DA = day_ahead_prices[b,t]
-            price_RT = observed_bus_LMPs[b][t]
-            for g in ruc_instance.ThermalGeneratorsAtBus[b]:
-                thermal_gen_payment[g,t] = thermal_gen_cleared_DA[g,t]*price_DA \
-                                            + (observed_thermal_dispatch_levels[g][t] - thermal_gen_cleared_DA[g,t])*price_RT
-            for g in ruc_instance.NondispatchableGeneratorsAtBus[b]:
-                renewable_gen_payment[g,t] = renewable_gen_cleared_DA[g,t]*price_DA \
-                                            + (observed_renewables_levels[g][t] - renewable_gen_cleared_DA[g,t])*price_RT
-
-    for t in range(0,24):
-        r_price_DA = day_ahead_reserve_prices[t]
-        r_price_RT = reserve_RT_price_by_hour[t]
-        for g in ruc_instance.ThermalGenerators:
-            thermal_reserve_payment[g,t] = thermal_reserve_cleared_DA[g,t]*r_price_DA \
-                                            + (observed_thermal_headroom_levels[g][t] - thermal_reserve_cleared_DA[g,t])*r_price_RT
-
-    print("Settlements computed")
-    print("")
-    
-    return thermal_gen_cleared_DA, thermal_gen_payment, thermal_reserve_cleared_DA, thermal_reserve_payment, renewable_gen_cleared_DA, renewable_gen_payment
+    return RucMarket(day_ahead_prices=day_ahead_prices,
+                    day_ahead_reserve_prices=day_ahead_reserve_prices,
+                    thermal_gen_cleared_DA=thermal_gen_cleared_DA,
+                    thermal_reserve_cleared_DA=thermal_reserve_cleared_DA,
+                    renewable_gen_cleared_DA=renewable_gen_cleared_DA)
 
 def create_ruc_instance_to_simulate_next_period(ruc_model, options, this_date, this_hour, next_date):
 

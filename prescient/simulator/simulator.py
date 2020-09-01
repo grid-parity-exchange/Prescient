@@ -101,6 +101,7 @@ class Simulator:
                 data_manager.deterministic_ruc_instance_for_next_period = current_ruc_plan.deterministic_ruc_instance
                 data_manager.scenario_tree_for_next_period = current_ruc_plan.scenario_tree
                 data_manager.ruc_instance_to_simulate_next_period = current_ruc_plan.ruc_instance_to_simulate
+                data_manager.ruc_market_pending = current_ruc_plan.ruc_market
 
                 # If there is a RUC delay...
                 if options.ruc_execution_hour % options.ruc_every_hours > 0:
@@ -124,6 +125,8 @@ class Simulator:
                 data_manager.deterministic_ruc_instance_for_this_period = current_ruc_plan.deterministic_ruc_instance
                 data_manager.scenario_tree_for_this_period = current_ruc_plan.scenario_tree
                 data_manager.set_forecast_errors_for_new_ruc_instance(options)
+
+                data_manager.ruc_market_active = data_manager.ruc_market_pending
 
                 data_manager.clear_instances_for_next_period()
 

@@ -39,19 +39,18 @@ class OverallStats(object):
 
     max_hourly_demand: float = 0.0
 
-    #if options.compute_market_settlements:
-    #    total_thermal_energy_payments = 0.0
-    #    total_renewable_energy_payments = 0.0
-    #    total_energy_payments = 0.0
+    total_thermal_energy_payments: float = 0.0
+    total_renewable_energy_payments: float = 0.0
+    total_energy_payments: float # implemented as read-only property
 
-    #    total_reserve_payments = 0.0
+    total_reserve_payments: float = 0.0
 
-    #    total_thermal_uplift_payments = 0.0
-    #    total_renewable_uplift_payments = 0.0
-    #    total_uplift_payments = 0.0
+    total_thermal_uplift_payments: float = 0.0
+    total_renewable_uplift_payments: float = 0.0
+    total_uplift_payments: float # implemented as read-only property
 
-    #    total_payments = 0.0
-    #    cumulative_average_payments: float # implemented as read-only property
+    total_payments: float # implemented as read-only property
+    cumulative_average_payments: float # implemented as read-only property
 
     extensions: Dict[Any, Any]
 
@@ -71,13 +70,26 @@ class OverallStats(object):
             return 0.0
         return (self.cumulative_renewables_used / self.cumulative_demand) * 100.0
 
-    #@property
-    #def cumulative_average_payments(self):
-    #    return self.total_payments / self.cumulative_demand if self.cumulative_demand > 0.0 else 0.0
+    @property
+    def cumulative_average_payments(self):
+        return self.total_payments / self.cumulative_demand if self.cumulative_demand > 0.0 else 0.0
+
+    @property
+    def total_energy_payments(self):
+        return self.total_thermal_energy_payments + self.total_renewable_energy_payments
+
+    @property
+    def total_uplift_payments(self):
+        return self.total_thermal_uplift_payments + self.total_renewable_uplift_payments
+
+    @property
+    def total_payments(self):
+        return self.total_energy_payments + self.total_uplift_payments
 
     def __init__(self, options):
         self.daily_stats = []
         self.extensions = {}
+        self._options = options
 
     def incorporate_day_stats(self, day_stats: DailyStats):
         self.daily_stats.append(day_stats)
@@ -96,3 +108,9 @@ class OverallStats(object):
         self.total_quick_start_additional_costs += day_stats.this_date_quick_start_additional_costs
         self.total_quick_start_additional_power_generated += day_stats.this_date_quick_start_additional_power_generated
         self.max_hourly_demand = max(self.max_hourly_demand, day_stats.max_hourly_demand)
+
+        self.total_thermal_energy_payments += day_stats.this_date_thermal_energy_payments
+        self.total_renewable_energy_payments += day_stats.this_date_renewable_energy_payments
+        self.total_reserve_payments += day_stats.this_date_reserve_payments
+        self.total_thermal_uplift_payments += day_stats.this_date_thermal_uplift
+        self.total_renewable_uplift_payments += day_stats.this_date_renewable_uplift
