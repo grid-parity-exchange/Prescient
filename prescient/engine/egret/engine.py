@@ -17,6 +17,7 @@ import os
 import pyomo.environ as pe
 
 from prescient.engine.modeling_engine import ModelingEngine
+from prescient.simulator.data_manager import RucMarket
 
 from .data_extractors import ScedDataExtractor, RucDataExtractor
 
@@ -52,6 +53,13 @@ class EgretEngine(ModelingEngine):
                                                     sced_schedule_hour, ruc_horizon,
                                                     run_ruc_with_next_day_data)
 
+    def create_and_solve_day_ahead_pricing(self,
+            deterministic_ruc_instance: RucModel,
+            options: Options,
+            ) -> RucMarket:
+        return self._p.solve_deterministic_day_ahead_pricing_problem(self._ruc_solver,
+                                                                deterministic_ruc_instance,
+                                                                options)
 
     def create_ruc_instance_to_simulate_next_period(
             self,
@@ -375,6 +383,7 @@ class EgretEngine(ModelingEngine):
             self.create_sced_instance = egret_plugin.create_sced_instance
             self.create_and_solve_deterministic_ruc = egret_plugin.create_and_solve_deterministic_ruc
             self.create_ruc_instance_to_simulate_next_period = egret_plugin.create_ruc_instance_to_simulate_next_period
+            self.solve_deterministic_day_ahead_pricing_problem = egret_plugin.solve_deterministic_day_ahead_pricing_problem
             self._zero_out_costs = egret_plugin._zero_out_costs
 
             if options.simulator_plugin != None:
@@ -386,7 +395,8 @@ class EgretEngine(ModelingEngine):
                 method_names = ["call_solver",
                                 "create_sced_instance",
                                 "create_and_solve_deterministic_ruc",
-                                "create_ruc_instance_to_simulate_next_period"]
+                                "create_ruc_instance_to_simulate_next_period",
+                                "solve_deterministic_day_ahead_pricing_problem"]
 
                 for method_name in method_names:
                     method = getattr(simulator_plugin_module, method_name, None)

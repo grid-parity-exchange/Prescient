@@ -27,7 +27,7 @@ from .reporting_manager import ReportingManager
 from prescient.stats.overall_stats import OverallStats
 import prescient.plugins 
 
-from prescient.engine.pyomo import PyomoEngine as Engine
+from prescient.engine.egret import EgretEngine as Engine
 
 try:
     import pstats
