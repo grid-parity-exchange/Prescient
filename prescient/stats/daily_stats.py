@@ -30,23 +30,6 @@ class DailyStats:
     thermal_fleet_capacity: float = 0.0
     max_hourly_demand: float = 0.0
 
-    ############## These are now included in the hourly stats##########################
-    ## These are arrays of hourly values, with values appended (arrays start out empty)
-    #sced_runtimes: Sequence[float] = field(default_factory=list)
-    #event_annotations: Sequence[float] = field(default_factory=list)
-    #curtailments_by_hour: Sequence[float] = field(default_factory=list)
-    #load_shedding_by_hour: Sequence[float] = field(default_factory=list)
-    #over_generation_by_hour: Sequence[float] = field(default_factory=list)
-    #reserve_requirements_by_hour: Sequence[float] = field(default_factory=list)
-    #reserve_RT_price_by_hour: Sequence[float] = field(default_factory=list)
-    #reserve_shortfalls_by_hour: Sequence[float] = field(default_factory=list)
-    #available_reserves_by_hour: Sequence[float] = field(default_factory=list)
-    #available_quickstart_by_hour: Sequence[float] = field(default_factory=list)
-    #fixed_quick_start_generators_committed: Sequence[float] = field(default_factory=list)
-    #unfixed_quick_start_generators_committed: Sequence[float] = field(default_factory=list)
-    #quick_start_additional_costs_by_hour: Sequence[float] = field(default_factory=list)
-    #quick_start_additional_power_generated_by_hour: Sequence[float] = field(default_factory=list)
-
     # These are cumulative scalars
     this_date_demand: float = 0.0
     this_date_fixed_costs: float = 0.0

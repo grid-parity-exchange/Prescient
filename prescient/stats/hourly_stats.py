@@ -203,10 +203,10 @@ class HourlyStats:
         self.reserve_RT_price = extractor.get_reserve_RT_price(lmp_sced)
 
     def populate_market_settlement(self,
-                           sced: OperationsModel,
-                           extractor: ScedDataExtractor,
-                           ruc_market: RucMarket,
-                           time_index: int):
+                                   sced: OperationsModel,
+                                   extractor: ScedDataExtractor,
+                                   ruc_market: RucMarket,
+                                   time_index: int):
 
         self.planning_reserve_price = ruc_market.day_ahead_reserve_prices[time_index]
         self.planning_energy_prices = { b : ruc_market.day_ahead_prices[b,time_index] \
@@ -216,10 +216,10 @@ class HourlyStats:
                                         for g in extractor.get_thermal_generators(sced) }
 
         self.renewable_gen_cleared_DA = { g : ruc_market.renewable_gen_cleared_DA[g,time_index] \
-                                            for g in extractor.get_nondispatchable_generators(sced) }
+                                          for g in extractor.get_nondispatchable_generators(sced) }
 
         self.thermal_reserve_cleared_DA = { g : ruc_market.thermal_reserve_cleared_DA[g,time_index] \
-                                              for g in extractor.get_thermal_generators(sced) }
+                                            for g in extractor.get_thermal_generators(sced) }
 
         self.thermal_gen_revenue = dict()
         self.renewable_gen_revenue = dict()
@@ -244,7 +244,7 @@ class HourlyStats:
         self.thermal_reserve_revenue = { g : self.thermal_reserve_cleared_DA[g]*r_price_DA + \
                                                 ( self.observed_thermal_headroom_levels[g] - \
                                                    self.thermal_reserve_cleared_DA[g] )*r_price_RT
-                                                for g in extractor.get_thermal_generators(sced) }
+                                         for g in extractor.get_thermal_generators(sced) }
 
         ## TODO: calculate uplift for the day
         self.thermal_uplift = { g : 0. for g in extractor.get_thermal_generators(sced) }
