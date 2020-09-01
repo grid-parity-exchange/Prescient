@@ -51,11 +51,19 @@ def construct_options_parser() -> Tuple[OptionParser, Dict[str, Dict[str, bool]]
 
         # Manually check each argument against --plugin=<module>,
         # give plugins a chance to install their options.
+        stand_alone_opt = '--plugin'
         prefix = "--plugin="
+        next_arg_is_module = False
         for arg in args:
             if arg.startswith(prefix):
                 module_name = arg[len(prefix):]
                 _initialize_plugin(module_name)
+            elif arg == stand_alone_opt:
+                next_arg_is_module = True
+            elif next_arg_is_module:
+                module_name = arg
+                _initialize_plugin(module_name)
+                next_arg_is_module = False
 
         # Now parse for real, with any new options in place.
         return parser._inner_parse(args, values)
