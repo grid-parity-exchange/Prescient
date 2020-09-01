@@ -19,8 +19,51 @@ import os
 from typing import Tuple, Dict
 
 from optparse import OptionParser, OptionGroup
+import prescient.plugins
 
 def construct_options_parser() -> Tuple[OptionParser, Dict[str, Dict[str, bool]]]:
+    '''
+    Make a new parser that can parse standard and custom command line options.
+
+    Custom options are provided by plugin modules. Plugins are specified
+    as command-line arguments "--plugin=<module name>", where <module name>
+    refers to a python module. The plugin may provide new command line
+    options by calling "prescient.plugins.add_custom_commandline_option"
+    when loaded.
+    '''
+
+    # To support the ability to add new command line options to the line that
+    # is currently being parsed, we convert a standard OptionParser into a
+    # two-pass parser by replacing the parser's parse_args method with a
+    # modified version.  In the modified parse_args, a first pass through the
+    # command line finds any --plugin arguments and allows the plugin to 
+    # add new options to the parser.  The second pass does a full parse of
+    # the command line using the parser's original parse_args method.
+    parser, overrides = _construct_inner_options_parser()
+    parser._inner_parse = parser.parse_args
+
+    def outer_parse(args=None, values=None):
+        if args is None:
+            args = sys.argv[1:]
+
+        from prescient.plugins.internal import active_parser
+        prescient.plugins.internal.active_parser = parser
+
+        # Manually check each argument against --plugin=<module>,
+        # give plugins a chance to install their options.
+        prefix = "--plugin="
+        for arg in args:
+            if arg.startswith(prefix):
+                module_name = arg[len(prefix):]
+                _initialize_plugin(module_name)
+
+        # Now parse for real, with any new options in place.
+        return parser._inner_parse(args, values)
+
+    parser.parse_args = outer_parse
+    return parser, overrides
+
+def _construct_inner_options_parser():
 
     parser = OptionParser()
     guiOverride = {}  # a dictionary of dictionaries to facilitate gui creation
@@ -34,6 +77,7 @@ def construct_options_parser() -> Tuple[OptionParser, Dict[str, Dict[str, bool]]
     input_simulation_options = OptionGroup(parser, "InputSimulation Options")
     solver_simulation_options = OptionGroup(parser, "SolverSimulation Options")
     output_simulation_options = OptionGroup(parser, "OutputSimulation Options")
+    extension_options = OptionGroup(parser, "Extension Options")
     other_simulation_options = OptionGroup(parser, "OtherSimulation Options")
 
     parser.add_option_group(directory_options)
@@ -44,6 +88,7 @@ def construct_options_parser() -> Tuple[OptionParser, Dict[str, Dict[str, bool]]
     parser.add_option_group(input_simulation_options)
     parser.add_option_group(solver_simulation_options)
     parser.add_option_group(output_simulation_options)
+    parser.add_option_group(extension_options)
     parser.add_option_group(other_simulation_options)
 
 
@@ -385,6 +430,13 @@ def construct_options_parser() -> Tuple[OptionParser, Dict[str, Dict[str, bool]]
                                         default=False)
     guiOverride['--run-deterministic-ruc'] = {}
     guiOverride['--run-deterministic-ruc']['bpa'] = False
+
+    extension_options.add_option('--plugin',
+                                 help='The name of a python module that extends prescient behavior',
+                                 type="string",
+                                 action='append',
+                                 dest='plugin_modules',
+                                 default=[])
 
     input_simulation_options.add_option('--simulator-plugin',
                                         help='If the user has an alternative methods for the various simulator functions,'
@@ -988,13 +1040,13 @@ def construct_options_parser() -> Tuple[OptionParser, Dict[str, Dict[str, bool]]
     return parser, guiOverride
     # return parser
 
+from pyutilib.misc import import_file
+def _initialize_plugin(module_name):
+    '''
+    Loads a plugin, allowing it to register its plugin behaviors
+    '''
+    custom_module = import_file(module_name)
+
 if __name__ == '__main__':
-    print("MasterOptions.py cannot run from the command line.")
+    print("master_options.py cannot run from the command line.")
     sys.exit(1)
-
-###############################################
-# OUTSTANDING QUESTIONS during summer of 2015 #
-###############################################
-
-# # 1) DO WE USE THE "NOT IMPLEMENTED" STRUCTURE AND LOADFROMWEATHER OPTIONS? # #
-# # 2) HOW DO WE ENSURE PRESCIENT USES THIS OPTION BLOCK INSTEAD OF ITS OWN? # #

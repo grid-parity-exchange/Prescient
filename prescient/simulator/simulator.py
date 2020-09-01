@@ -18,8 +18,7 @@ from prescient.engine.modeling_engine import ModelingEngine
 from .oracle_manager import OracleManager
 from .reporting_manager import ReportingManager
 from .stats_manager import StatsManager
-
-
+import prescient.plugins
 
 ## simulator class
 class Simulator:
@@ -61,6 +60,8 @@ class Simulator:
         self.stats_manager = stats_manager
         self.reporting_manager = reporting_manager
 
+        self.plugin_manager = prescient.plugins.get_active_plugin_manager()
+
 
     def simulate(self, options):
 
@@ -71,12 +72,16 @@ class Simulator:
         stats_manager = self.stats_manager
         reporting_manager = self.reporting_manager
 
+        self.plugin_manager.invoke_options_preview_callbacks(options)
+
         engine.initialize(options)
         time_manager.initialize(options)
         data_manager.initialize(engine, options)
         oracle_manager.initialize(engine, data_manager, options)
         stats_manager.initialize(options)
         reporting_manager.initialize(options, stats_manager)
+
+        self.plugin_manager.invoke_initialization_callbacks(options, self)
 
         first_time_step = time_manager.get_first_time_step()
 

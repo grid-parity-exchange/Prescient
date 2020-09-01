@@ -7,7 +7,7 @@
 #  This software is distributed under the Revised BSD License.
 #  ___________________________________________________________________________
 
-from typing import Sequence
+from typing import Sequence, Dict, Any
 from dataclasses import dataclass, field
 
 from prescient.stats.daily_stats import DailyStats
@@ -53,26 +53,7 @@ class OverallStats(object):
     #    total_payments = 0.0
     #    cumulative_average_payments: float # implemented as read-only property
 
-
-
-    ########## Commented out, including in daily stats ###################
-    ## These are arrays of daily values, with one value per day appended (arrays start out empty)
-    #daily_total_costs: Sequence[float] = field(default_factory=list)
-    #daily_fixed_costs: Sequence[float] = field(default_factory=list)
-    #daily_generation_costs: Sequence[float] = field(default_factory=list)
-    #daily_load_shedding: Sequence[float] = field(default_factory=list)
-    #daily_over_generation: Sequence[float] = field(default_factory=list)
-    #daily_reserve_shortfall: Sequence[float] = field(default_factory=list)
-    #daily_renewables_available: Sequence[float] = field(default_factory=list)
-    #daily_renewables_used: Sequence[float] = field(default_factory=list)
-    #daily_renewables_curtailment: Sequence[float] = field(default_factory=list)
-    #daily_on_offs: Sequence[float] = field(default_factory=list)
-    #daily_sum_on_off_ramps: Sequence[float] = field(default_factory=list)
-    #daily_sum_nominal_ramps: Sequence[float] = field(default_factory=list)
-    #daily_quick_start_additional_costs: Sequence[float] = field(default_factory=list)
-    #daily_quick_start_additional_power_generated: Sequence[float] = field(default_factory=list)
-    #daily_average_price: Sequence[float] = field(default_factory=list)
-    #daily_demand: Sequence[float] = field(default_factory=list)
+    extensions: Dict[Any, Any]
 
     @property
     def total_overall_costs(self):
@@ -96,6 +77,7 @@ class OverallStats(object):
 
     def __init__(self, options):
         self.daily_stats = []
+        self.extensions = {}
 
     def incorporate_day_stats(self, day_stats: DailyStats):
         self.daily_stats.append(day_stats)
