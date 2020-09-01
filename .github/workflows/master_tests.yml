@@ -39,6 +39,10 @@ jobs:
             run: |
               conda install coincbc==2.10.5
 
+          - name: Install EGRET
+            run: |
+              pip install git+https://github.com/grid-parity-exchange/Egret.git
+
           - name: Install Prescient
             run: |
               python setup.py develop
