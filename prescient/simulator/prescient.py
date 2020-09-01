@@ -25,6 +25,7 @@ from .oracle_manager import OracleManager
 from .stats_manager import StatsManager
 from .reporting_manager import ReportingManager
 from prescient.stats.overall_stats import OverallStats
+import prescient.plugins 
 
 from prescient.engine.egret import EgretEngine
 

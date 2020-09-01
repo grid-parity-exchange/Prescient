@@ -8,7 +8,7 @@
 #  ___________________________________________________________________________
 
 from dataclasses import dataclass, field
-from typing import TypeVar, Dict, Sequence, Tuple
+from typing import TypeVar, Dict, Sequence, Tuple, Any
 from datetime import date
 
 from prescient.stats.hourly_stats import HourlyStats
@@ -66,28 +66,6 @@ class DailyStats:
     this_date_quick_start_additional_power_generated: float = 0.0
     this_date_average_price: float #implemented as read-only property
 
-    ############### These are included in the hourly stats #####################
-    ## These are indexed by a model entity, mapping to an array of 24 hourly values
-    #observed_thermal_dispatch_levels: Dict[G, Sequence[float]]
-    #observed_thermal_headroom_levels: Dict[G, Sequence[float]]
-    #observed_renewables_levels: Dict[G, Sequence[float]]
-    #observed_renewables_curtailment: Dict[G, Sequence[float]]
-    #observed_thermal_states: Dict[G, Sequence[int]]
-    #observed_costs: Dict[G, Sequence[float]]
-    #observed_flow_levels: Dict[L, Sequence[float]]
-    #observed_bus_mismatches: Dict[B, Sequence[float]]
-    #observed_bus_LMPs: Dict[B, Sequence[float]]
-    #storage_input_dispatchlevelsdict: Dict[S, Sequence[float]]
-    #storage_output_dispatchlevelsdict: Dict[S, Sequence[float]]
-    #storage_soc_dispatchlevelsdict: Dict[S, Sequence[float]]
-
-    # This variable only has data if options.enable_quick_start_generator_commitment is True.
-    # It is indexed by generator, mapping to an array of hourly values (which are 0 or 1).
-    # The dictionary starts out with an entry per quick start generator, but the arrays
-    # start out empty and are appended to each hour.
-    ########### Commented out because this data is found in the hourly stats ##############
-    #used_as_quick_start: Dict[G, Sequence[float]] = field(default_factory=dict)
-
     # These variables are only populated if options.compute_market_settlements is True
     # They are indexed by a (model entity, hour) tuple, and start out empty.
     ######### They are commented out for now #######################
@@ -96,6 +74,8 @@ class DailyStats:
     #this_date_planning_thermal_generation_cleared: Dict[Tuple[G, int], float] = field(default_factory=dict)
     #this_date_planning_thermal_reserve_cleared: Dict[Tuple[G, int], float] = field(default_factory=dict)
     #this_date_planning_renewable_generation_cleared: Dict[Tuple[G, int], float] = field(default_factory=dict)
+
+    extensions: Dict[Any, Any]
 
     @property
     def this_date_total_costs(self):
@@ -109,50 +89,10 @@ class DailyStats:
     def this_date_renewables_penetration_rate(self):
         return (self.this_date_renewables_used / self.this_date_demand) * 100.0
 
-    #def __init__(self, options, ruc):
     def __init__(self, options, day: date):
         self.date = day
         self.hourly_stats = []
-
-        #self.observed_thermal_dispatch_levels = {g: np.repeat(0.0, 24)
-        #                                         for g in rc.ThermalGenerators}
-
-        #self.observed_thermal_headroom_levels = {g: np.repeat(0.0, 24)
-        #                                         for g in rc.ThermalGenerators}
-
-        #observed_renewables_levels = {g: np.repeat(0.0, 24)
-        #                              for g in rc.AllNondispatchableGenerators}
-
-        #observed_renewables_curtailment = {g: np.repeat(0.0, 24)
-        #                                   for g in rc.AllNondispatchableGenerators}
-
-        #observed_thermal_states = {g: np.repeat(-1, 24)
-        #                           for g in rc.ThermalGenerators}
-
-        #observed_costs = {g: np.repeat(0.0, 24)
-        #                  for g in rc.ThermalGenerators}
-
-        #observed_flow_levels = {l: np.repeat(0.0, 24) 
-        #                        for l in ruc.TransmissionLines}
-
-        #observed_bus_mismatches = {b: np.repeat(0.0, 24) 
-        #                           for b in ruc.Buses}
-
-        #observed_bus_LMPs = {b: np.repeat(0.0, 24) 
-        #                     for b in ruc.Buses}
-
-        #storage_input_dispatchlevelsdict = {s: np.repeat(0.0, 24) 
-        #                                    for s in ruc.Storage}
-
-        #storage_output_dispatchlevelsdict = {s: np.repeat(0.0, 24) 
-        #                                     for s in ruc.Storage}
-
-        #storage_soc_dispatchlevelsdict = {s: np.repeat(0.0, 24) 
-        #                                  for s in ruc.Storage}
-
-        #if options.enable_quick_start_generator_commitment:
-        #    for g in ruc.QuickStartGenerators:
-        #        self.used_as_quick_start[g]=[]
+        self.extensions = {}
 
     def incorporate_hour_stats(self, hourly_stats: HourlyStats):
         self.thermal_fleet_capacity = hourly_stats.thermal_fleet_capacity
