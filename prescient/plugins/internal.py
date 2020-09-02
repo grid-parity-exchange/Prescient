@@ -19,8 +19,32 @@ class PluginCallbackManager():
     provides methods to invoke callbacks at appropriate times.
     '''
     def __init__(self):
+        #callbacks = ['options_preview',
+        #             'before_operations_solve']
+        callbacks = ['abc',
+                     'xyz_123',
+                     'update_operations_stats',
+                     'after_ruc_generation']
+        for cb in callbacks:
+            self._setup_callback(cb)
+
         self._options_preview_callbacks = []
         self._initialization_callbacks = []
+        self._before_operations_solve_callbacks = []
+        self._before_ruc_solve_callbacks = []
+        self._after_operations_callbacks = []
+
+    def _setup_callback(self, cb):
+        list_name = f'_{cb}_callbacks'
+        setattr(self, list_name, list())
+        def register_func(callback):
+            getattr(self, list_name).append(callback)
+        setattr(self, f'register_{cb}_callback', register_func)
+        def invoke_this(*args, **kargs):
+            for cb in getattr(self, list_name):
+                cb(*args, **kargs)
+        setattr(self, f'invoke_{cb}_callbacks', invoke_this)
+
 
     ### Registration methods ###
     def register_options_preview_callback(self, callback):
@@ -29,6 +53,14 @@ class PluginCallbackManager():
     def register_initialization_callback(self, callback):
         self._initialization_callbacks.append(callback)
 
+    def register_before_operations_solve_callback(self, callback):
+        self._before_operations_solve_callbacks.append(callback)
+
+    def register_before_ruc_solve_callback(self, callback):
+        self._before_ruc_solve_callbacks.append(callback)
+
+    def register_after_operations_callback(self, callback):
+        self._after_operations_callbacks.append(callback)
 
     ### Callback invocation methods ###
     def invoke_options_preview_callbacks(self, options):
@@ -49,3 +81,15 @@ class PluginCallbackManager():
         for s in pending_overall_subscribers:
             simulator.stats_manager.register_for_overall_stats(s)
         pending_overall_subscribers.clear()
+
+    def invoke_before_operations_solve_callbacks(self, options, simulator, sced):
+        for cb in self._before_operations_solve_callbacks:
+            cb(options, simulator, sced)
+
+    def invoke_before_ruc_solve_callbacks(self, options, simulator, sced):
+        for cb in self._before_ruc_solve_callbacks:
+            cb(options, simulator, sced)
+
+    def invoke_after_operations_callbacks(self, options, simulator, sced):
+        for cb in self._after_operations_callbacks:
+            cb(options, simulator, sced)

@@ -28,7 +28,7 @@ class ModelingEngine(ABC):
         pass
 
     @abstractmethod
-    def create_and_solve_deterministic_ruc(self,
+    def create_deterministic_ruc(self,
             options: Options,
             uc_date:str,
             uc_hour: int,
@@ -41,6 +41,15 @@ class ModelingEngine(ABC):
             ruc_horizon: int,
             run_ruc_with_next_day_data: bool
            ) -> Tuple[RucModel, ScenarioTree]:
+        pass
+
+    @abstractmethod
+    def solve_deterministic_ruc(self,
+            options: Options,
+            ruc_instance: RucModel,
+            uc_date:str,
+            uc_hour: int
+           ) -> RucModel:
         pass
 
 
@@ -56,7 +65,7 @@ class ModelingEngine(ABC):
 
 
     @abstractmethod
-    def create_and_solve_sced_instance(self,
+    def create_sced_instance(self,
             deterministic_ruc_instance_for_this_period: RucModel,
             scenario_tree_for_this_period: ScenarioTree,
             deterministic_ruc_instance_for_next_period: RucModel,
@@ -80,11 +89,33 @@ class ModelingEngine(ABC):
             write_sced_instance: bool = False,
             output_initial_conditions: bool = False,
             output_demands: bool = False
-            ) -> Tuple[OperationsModel, float]:
+            ) -> OperationsModel:
         '''
-        Create a new operations model and solve it.
+        Create a new operations model.
 
         Although the last three arguments are present in the options argument, they should not be taken 
+        directly from that object.  That is because they only apply to a "normal" sced, not a projected 
+        sced, and this method is called for both (and could conceivably be called for other purposes as
+        well).  The engine doesn't have any context to know which type of sced is being requested.
+
+        Returns
+        -------
+        The operations model, ready to be solved.
+        '''
+        pass
+
+    @abstractmethod
+    def solve_sced_instance(self, 
+                            options: Options, 
+                            sced_instance: OperationsModel, 
+                            output_initial_conditions: bool = False, 
+                            output_demands: bool = False,
+                            lp_filename: str = None
+            ) -> Tuple[OperationsModel, float]:
+        '''
+        Solves an operations model.
+
+        Although the output_* arguments are present in the options argument, they should not be taken 
         directly from that object.  That is because they only apply to a "normal" sced, not a projected 
         sced, and this method is called for both (and could conceivably be called for other purposes as
         well).  The engine doesn't have any context to know which type of sced is being requested.

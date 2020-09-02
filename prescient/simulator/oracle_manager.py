@@ -101,7 +101,7 @@ class OracleManager(_Manager):
 
         # NOTE: the projected sced probably doesn't have to be run for a full 24 hours - just enough
         #       to get you to midnight and a few hours beyond (to avoid end-of-horizon effects).
-        projected_sced_instance, solve_time = self.engine.create_and_solve_sced_instance(
+        projected_sced_instance = self.engine.create_sced_instance(
             self.data_manager.deterministic_ruc_instance_for_this_period,
             self.data_manager.scenario_tree_for_this_period,
             None, None, 
@@ -126,6 +126,8 @@ class OracleManager(_Manager):
             use_prescient_forecast_error=use_prescient_forecast_error_in_sced,
             use_persistent_forecast_error=use_persistent_forecast_error_in_sced
            )
+
+        projected_sced_instance, solve_time = self.engine.solve_sced_instance(options, projected_sced_instance)
 
         return (projected_sced_instance, ruc_delay)
 
@@ -175,7 +177,7 @@ class OracleManager(_Manager):
     def _generate_ruc(self, options, uc_hour, uc_date, next_uc_date, projected_sced_instance, sced_schedule_hour):
         '''Creates a RUC plan by calling the oracle for the long-term plan based on forecast'''
 
-        deterministic_ruc_instance, scenario_tree = self.engine.create_and_solve_deterministic_ruc(
+        deterministic_ruc_instance, scenario_tree = self.engine.create_deterministic_ruc(
                 options,
                 uc_date,
                 uc_hour,
@@ -189,6 +191,14 @@ class OracleManager(_Manager):
                 options.run_ruc_with_next_day_data,
                )
 
+        self.simulator.plugin_manager.invoke_before_ruc_solve_callbacks(options, self.simulator, deterministic_ruc_instance)
+
+        deterministic_ruc_instance = self.engine.solve_deterministic_ruc(
+                options,
+                deterministic_ruc_instance,
+                uc_date,
+                uc_hour
+               )
 
         if options.compute_market_settlements:
             print("Solving day-ahead market")
@@ -211,7 +221,9 @@ class OracleManager(_Manager):
             next_uc_date,
            )
 
-        return RucPlan(ruc_instance_to_simulate, scenario_tree, deterministic_ruc_instance, ruc_market)
+        result = RucPlan(ruc_instance_to_simulate, scenario_tree, deterministic_ruc_instance, ruc_market)
+        self.simulator.plugin_manager.invoke_after_ruc_generation_callbacks(options, self.simulator, result)
+        return result
 
     def call_operation_oracle(self, options: Options, time_step: PrescientTime, is_first_time_step:bool):
         # if this is the first hour of the day, we might (often) want to establish initial conditions from
@@ -245,7 +257,7 @@ class OracleManager(_Manager):
         print("")
         print("Solving SCED instance")
 
-        current_sced_instance, solve_time = self.engine.create_and_solve_sced_instance(
+        current_sced_instance = self.engine.create_sced_instance(
             self.data_manager.deterministic_ruc_instance_for_this_period,
             self.data_manager.scenario_tree_for_this_period,
             self.data_manager.deterministic_ruc_instance_for_next_period,
@@ -271,6 +283,13 @@ class OracleManager(_Manager):
             output_demands=options.output_sced_demands
             )
 
+        self.simulator.plugin_manager.invoke_before_operations_solve_callbacks(options, self.simulator, current_sced_instance)
+
+        current_sced_instance, solve_time = self.engine.solve_sced_instance(options, current_sced_instance, 
+                                                                            output_initial_conditions=options.output_sced_initial_conditions,
+                                                                            output_demands=options.output_sced_demands,
+                                                                            lp_filename=lp_filename)
+
         pre_quickstart_cache = None
 
         if options.enable_quick_start_generator_commitment:
@@ -288,7 +307,9 @@ class OracleManager(_Manager):
 
                 # Set up the quickstart run, allowing quickstart generators to turn on
                 print("Re-solving SCED after unfixing Quick Start Generators")
-                current_sced_instance = self.engine.enable_quickstart_and_solve(sced_instance, options)
+                current_sced_instance = self.engine.enable_quickstart_and_solve(current_sced_instance, options)
+
+        self.simulator.plugin_manager.invoke_after_operations_callbacks(options, self.simulator, current_sced_instance)
 
 
         print("Solving for LMPs")
@@ -299,7 +320,7 @@ class OracleManager(_Manager):
                                                                     lmp_sced,
                                                                     pre_quickstart_cache,
                                                                     self.engine.operations_data_extractor)
-
+        self.simulator.plugin_manager.invoke_update_operations_stats_callbacks(options, self.simulator, ops_stats)
         self._report_sced_stats(ops_stats)
 
         if options.compute_market_settlements:

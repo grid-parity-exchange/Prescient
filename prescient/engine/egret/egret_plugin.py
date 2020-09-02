@@ -602,32 +602,12 @@ def _report_curtailment_for_deterministic_ruc(deterministic_instance):
             print("%s %12.2f" % (t, quantity_curtailed_this_period))
 
 ## NOTE: in closure for deterministic_ruc_solver_plugin
-def create_create_and_solve_deterministic_ruc(deterministic_ruc_solver):
-    def create_and_solve_deterministic_ruc(solver, options,
-                                           this_date,
-                                           this_hour,
-                                           next_date,
-                                           last_ruc_instance,
-                                           last_ruc_scenario_tree,
-                                           output_initial_conditions,
-                                           projected_sced_instance,
-                                           sced_schedule_hour,
-                                           ruc_horizon,
-                                           use_next_day_in_ruc):
-        print("")
-        print("Creating and solving deterministic RUC instance for date:", this_date, " start hour:", this_hour)
-    
-        ruc_instance_for_this_period, scenario_tree_for_this_period = _create_deterministic_ruc(options,
-                                                                                                this_date,
-                                                                                                this_hour,
-                                                                                                next_date,
-                                                                                                last_ruc_instance,
-                                                                                                projected_sced_instance,
-                                                                                                output_initial_conditions,
-                                                                                                sced_schedule_hour,
-                                                                                                ruc_horizon,
-                                                                                                use_next_day_in_ruc,
-                                                                                                )
+def create_solve_deterministic_ruc(deterministic_ruc_solver):
+
+    def solve_deterministic_ruc(solver, options,
+                                ruc_instance_for_this_period,
+                                this_date,
+                                this_hour):
         ruc_instance_for_this_period = deterministic_ruc_solver(ruc_instance_for_this_period, solver, options)
 
         if options.write_deterministic_ruc_instances:
@@ -649,7 +629,7 @@ def create_create_and_solve_deterministic_ruc(deterministic_ruc_solver):
     
         if options.output_ruc_solutions:
     
-            print("")                            
+            print("")
             _output_solution_for_deterministic_ruc(ruc_instance_for_this_period, 
                                                    this_date, 
                                                    this_hour, 
@@ -665,8 +645,8 @@ def create_create_and_solve_deterministic_ruc(deterministic_ruc_solver):
         print("")
         _report_curtailment_for_deterministic_ruc(ruc_instance_for_this_period)                        
     
-        return ruc_instance_for_this_period, None
-    return create_and_solve_deterministic_ruc
+        return ruc_instance_for_this_period
+    return solve_deterministic_ruc
 
 def _solve_deterministic_ruc(deterministic_ruc_instance,
                             solver, 
@@ -690,10 +670,10 @@ def _solve_deterministic_ruc(deterministic_ruc_instance,
     return ruc_results
 
 ## create this function with default solver
-create_and_solve_deterministic_ruc = create_create_and_solve_deterministic_ruc(_solve_deterministic_ruc)
+solve_deterministic_ruc = create_solve_deterministic_ruc(_solve_deterministic_ruc)
 
 # utilities for creating a deterministic RUC instance, and a standard way to solve them.
-def _create_deterministic_ruc(options, 
+def create_deterministic_ruc(options, 
                              this_date, 
                              this_hour,
                              next_date,

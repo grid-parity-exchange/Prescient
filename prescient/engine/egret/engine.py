@@ -32,7 +32,7 @@ class EgretEngine(ModelingEngine):
         self._setup_solvers(options)
         self._p = EgretEngine._PluginMethods(options)
 
-    def create_and_solve_deterministic_ruc(self,
+    def create_deterministic_ruc(self, 
             options: Options,
             uc_date:str,
             uc_hour: int,
@@ -45,13 +45,14 @@ class EgretEngine(ModelingEngine):
             ruc_horizon: int,
             run_ruc_with_next_day_data: bool
            ) -> Tuple[RucModel, ScenarioTree]:
-        return self._p.create_and_solve_deterministic_ruc(self._ruc_solver,
-                                                    options, uc_date, uc_hour, next_uc_date,
-                                                    prior_ruc_instance, prior_scenario_tree,
-                                                    output_ruc_initial_conditions,
-                                                    projected_sced_instance, 
-                                                    sced_schedule_hour, ruc_horizon,
-                                                    run_ruc_with_next_day_data)
+        return self._p.create_deterministic_ruc(options, uc_date, uc_hour, next_uc_date,
+                                                prior_ruc_instance, projected_sced_instance,
+                                                output_ruc_initial_conditions,
+                                                sced_schedule_hour, ruc_horizon,
+                                                run_ruc_with_next_day_data)
+
+    def solve_deterministic_ruc(self, options, ruc_instance, uc_date, uc_hour):
+        return self._p.solve_deterministic_ruc(self._ruc_solver, options, ruc_instance, uc_date, uc_hour)
 
     def create_and_solve_day_ahead_pricing(self,
             deterministic_ruc_instance: RucModel,
@@ -71,7 +72,7 @@ class EgretEngine(ModelingEngine):
         return self._p.create_ruc_instance_to_simulate_next_period(self._ruc_model, options, uc_date, uc_hour, next_uc_date)
 
 
-    def create_and_solve_sced_instance(self,
+    def create_sced_instance(self,
             deterministic_ruc_instance_for_this_period: RucModel,
             scenario_tree_for_this_period: ScenarioTree,
             deterministic_ruc_instance_for_next_period: RucModel,
@@ -123,11 +124,20 @@ class EgretEngine(ModelingEngine):
             current_sced_instance.write(lp_filename)
             print("SCED instance written to file=" + lp_filename)
 
-        pyo_model = create_KOW_unit_commitment_model(current_sced_instance, network_constraints='power_balance_constraints')
         self._hours_in_objective = hours_in_objective
+
+        return current_sced_instance
+
+    def solve_sced_instance(self,
+                            options,
+                            sced_instance,
+                            output_initial_conditions = False,
+                            output_demands = False,
+                            lp_filename: str = None):
+        pyo_model = create_KOW_unit_commitment_model(sced_instance, network_constraints='power_balance_constraints')
         self._p._zero_out_costs(pyo_model, self._hours_in_objective)
 
-        self._print_sced_info(current_sced_instance, output_initial_conditions, output_demands)
+        self._print_sced_info(sced_instance, output_initial_conditions, output_demands)
         if options.output_solver_logs:
             print("")
             print("------------------------------------------------------------------------------")
@@ -148,7 +158,7 @@ class EgretEngine(ModelingEngine):
                     infeasible_sced_filename = lp_filename + ".FAILED.json"
             else:
                 infeasible_sced_filename = options.output_directory + os.sep + "FAILED_SCED.json"
-            current_sced_instance.write(infeasible_sced_filename)
+            sced_instance.write(infeasible_sced_filename)
             print("Problematic SCED instance written to file=" + infeasible_sced_filename)
             raise
 
@@ -381,7 +391,8 @@ class EgretEngine(ModelingEngine):
             from prescient.engine.egret import egret_plugin
             self.call_solver = egret_plugin.call_solver
             self.create_sced_instance = egret_plugin.create_sced_instance
-            self.create_and_solve_deterministic_ruc = egret_plugin.create_and_solve_deterministic_ruc
+            self.create_deterministic_ruc = egret_plugin.create_deterministic_ruc
+            self.solve_deterministic_ruc = egret_plugin.solve_deterministic_ruc
             self.create_ruc_instance_to_simulate_next_period = egret_plugin.create_ruc_instance_to_simulate_next_period
             self.solve_deterministic_day_ahead_pricing_problem = egret_plugin.solve_deterministic_day_ahead_pricing_problem
             self._zero_out_costs = egret_plugin._zero_out_costs
@@ -418,5 +429,5 @@ class EgretEngine(ModelingEngine):
                     raise RuntimeError("Could not find function 'solve_deterministic_ruc' in simulator plugin module=%s, using default!" % options.deterministic_ruc_solver_plugin)
                 else:
                     print("Loaded deterministic ruc solver plugin function 'solve_deterministic_ruc' from simulator plugin module=%s."% options.deterministic_ruc_solver_plugin)
-                    from prescient.engine.egret_plugin import create_create_and_solve_deterministic_ruc
-                    self.create_and_solve_deterministic_ruc = create_create_and_solve_deterministic_ruc(solve_function)
+                    from prescient.engine.egret_plugin import create_solve_deterministic_ruc
+                    self.solve_deterministic_ruc = create_solve_deterministic_ruc(solve_function)

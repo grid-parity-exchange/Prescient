@@ -108,6 +108,7 @@ class TimeManager(manager._Manager):
         # ruc_every_hours = number of hours between each ruc planning run
         self._ruc_every_hours = options.ruc_every_hours
 
+        self._current_time = None
 
 
     def time_steps(self) -> Iterable[PrescientTime]:
@@ -155,7 +156,12 @@ class TimeManager(manager._Manager):
                         planning_time = True
 
                     time = PrescientTime(date, next_date, next_next_date, h, planning_time, is_ruc_start_hour)
+                    self._current_time = time
                     yield time
+
+    @property
+    def current_time(self):
+        return self._current_time
 
     def get_first_time_step(self) -> PrescientTime:
         first_date = self._get_first_date()
