@@ -1,6 +1,8 @@
 from optparse import Option
 import prescient.plugins
 
+print("Hello from Xian's plugin")
+
 # Add command line options
 opt = Option('--track-ruc-signal',
              help='When tracking the market signal, RUC signals are used instead of the SCED signal.',
@@ -79,7 +81,6 @@ import numpy as np
 
 def initialize_plugin(options, simulator):
     # Xian: add 2 np arrays to store RUC and SCED schedules for the interested generator
-    #
     simulator.data_manager.extensions['ruc_schedule_arr'] = np.zeros((24,options.num_days))
     simulator.data_manager.extensions['sced_schedule_arr'] = np.zeros((24,options.num_days))
 
@@ -130,3 +131,57 @@ def initialize_plugin(options, simulator):
             }
 
 prescient.plugins.register_initialization_callback(initialize_plugin)
+
+
+def tweak_sced_before_solve(options, simulator, sced_instance):
+    current_time = simulator.time_manager.current_time
+    hour = current_time.hour
+    date_as_string = current_time.date
+    thermal_bid = simulator.data_manager.extensions['thermal_bid']
+    print('########')
+    print('########')
+    print('########')
+    print('########')
+    print('########')
+    print("Generator:", sced_instance.data['elements']['generator'][options.bidding_generator])
+prescient.plugins.register_before_operations_solve_callback(tweak_sced_before_solve)
+
+def tweak_ruc_before_solve(options, simulator, sced_instance):
+    current_time = simulator.time_manager.current_time
+    if current_time is not None:
+        hour = current_time.hour
+        date_as_string = current_time.date
+    thermal_bid = simulator.data_manager.extensions['thermal_bid']
+    print('########')
+    print('########')
+    print('########')
+    print('########')
+    print('########')
+    print("Generator:", sced_instance.data['elements']['generator'][options.bidding_generator])
+prescient.plugins.register_before_ruc_solve_callback(tweak_ruc_before_solve)
+
+def update_observed_thermal_dispatch(options, simulator, ops_stats):
+    #if options.track_ruc_signal:
+    #    print('Making changes in observed power output using tracking RUC model.')
+    #    g = options.bidding_generator
+    #    observed_thermal_dispatch_levels[g][h] = track_gen_pow_ruc[g][h]
+
+    #elif options.track_sced_signal:
+    #    print('Making changes in observed power output using tracking SCED model.')
+    #    g = options.bidding_generator
+    #    observed_thermal_dispatch_levels[g][h] = track_gen_pow_sced[g][0]
+
+    print('########')
+    print('########')
+    print('########')
+    print('########')
+    print('########')
+    print('Woo Hoo!!')
+prescient.plugins.register_update_operations_stats_callback(update_observed_thermal_dispatch)
+
+def after_ruc(options, simulator, ruc_plan):
+    forecasts = ruc_plan.deterministic_ruc_instance
+    print('#######')
+    print('After RUC callback')
+    print('#######')
+prescient.plugins.register_after_ruc_generation_callback(after_ruc)
