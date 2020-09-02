@@ -172,6 +172,10 @@ class TimeManager(manager._Manager):
         is_ruc_start_hour = False
         return PrescientTime(first_date, second_date, third_date, first_hour, planning_time, is_ruc_start_hour)
 
+    @property
+    def dates_to_simulate(self) -> Iterable[str]:
+        return self._dates_to_simulate
+
     def is_first_time_step(self, time: PrescientTime) -> bool:
         return time.hour == 0 and time.date == self._get_first_date()
 

@@ -153,7 +153,7 @@ class OracleManager(_Manager):
         ruc_plan = self._generate_ruc(options, time_step.hour, time_step.date, time_step.next_date, None, None)
 
         self.data_manager.prior_sced_instance = None
-        self.data_manager.set_current_ruc_plan(ruc_plan)
+        self.data_manager.set_pending_ruc_plan(ruc_plan)
         self.data_manager.ruc_instance_to_simulate_this_period = ruc_plan.ruc_instance_to_simulate
         # initialize the actual demand and renewables vectors - these will be incrementally
         # updated when new forecasts are released, e.g., when the next-day RUC is computed.
@@ -165,6 +165,7 @@ class OracleManager(_Manager):
 
         self.data_manager.ruc_market_active = ruc_plan.ruc_market
 
+        self.simulator.plugin_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
         return ruc_plan
 
     def call_planning_oracle(self, options, time_step):
@@ -191,7 +192,7 @@ class OracleManager(_Manager):
                 options.run_ruc_with_next_day_data,
                )
 
-        self.simulator.plugin_manager.invoke_before_ruc_solve_callbacks(options, self.simulator, deterministic_ruc_instance)
+        self.simulator.plugin_manager.invoke_before_ruc_solve_callbacks(options, self.simulator, deterministic_ruc_instance, uc_date, uc_hour)
 
         deterministic_ruc_instance = self.engine.solve_deterministic_ruc(
                 options,
@@ -222,8 +223,26 @@ class OracleManager(_Manager):
            )
 
         result = RucPlan(ruc_instance_to_simulate, scenario_tree, deterministic_ruc_instance, ruc_market)
-        self.simulator.plugin_manager.invoke_after_ruc_generation_callbacks(options, self.simulator, result)
+        self.simulator.plugin_manager.invoke_after_ruc_generation_callbacks(options, self.simulator, result, uc_date, uc_hour)
         return result
+
+    def activate_pending_ruc(self, options):
+        # establish the stochastic ruc instance for this_period - we use this instance to track,
+        # for better or worse, the projected and actual UnitOn states through the day.
+        self.data_manager.ruc_instance_to_simulate_this_period = current_ruc_plan.ruc_instance_to_simulate
+
+        # initialize the actual demand and renewables vectors - these will be incrementally
+        # updated when new forecasts are released, e.g., when the next RUC is computed.
+        self.data_manager.set_actuals_for_new_ruc_instance()
+
+        self.data_manager.deterministic_ruc_instance_for_this_period = current_ruc_plan.deterministic_ruc_instance
+        self.data_manager.scenario_tree_for_this_period = current_ruc_plan.scenario_tree
+        self.data_manager.set_forecast_errors_for_new_ruc_instance(options)
+
+        self.data_manager.ruc_market_active = self.data_manager.ruc_market_pending
+
+        self.data_manager.clear_instances_for_next_period()
+        self.simulator.plugin_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
 
     def call_operation_oracle(self, options: Options, time_step: PrescientTime, is_first_time_step:bool):
         # if this is the first hour of the day, we might (often) want to establish initial conditions from

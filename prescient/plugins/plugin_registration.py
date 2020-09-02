@@ -58,12 +58,30 @@ def register_initialization_callback(callback: Callable[[Options, Simulator], No
     '''
     get_active_plugin_manager().register_initialization_callback(callback)
 
-def register_before_ruc_solve_callback(callback: Callable[[Options, Simulator, RucModel], None]) -> None:
+def register_before_ruc_solve_callback(callback: Callable[[Options, Simulator, RucModel, str, int], None]) -> None:
     ''' Register a callback to be called before a ruc model is solved.
 
         Called after a ruc model is created, just before it is solved.
     '''
     get_active_plugin_manager().register_before_ruc_solve_callback(callback)
+
+def register_after_ruc_generation_callback(callback: Callable[[Options, Simulator, RucPlan, str, int], None]) -> None:
+    ''' Register a callback to be called after each new RUC pair is generated.
+
+        The callback is called after both the forecast and actuals RUCs have been 
+        generated, just before they are stored in the DataManager.
+    '''
+    get_active_plugin_manager().register_after_ruc_generation_callback(callback)
+    
+def register_after_ruc_activation_callback(callback: Callable[[Options, Simulator], None]):
+    ''' Register a callback to be called after activating a RUC.
+
+        The callback is called just after the most recently generated RUC
+        pair becomes the active RUC pair.  The new RUC instances are
+        accessible through the data manager 
+        (ex: simulator.data_manager.deterministic_ruc_instance_for_this_period).
+    '''
+    get_active_plugin_manager().register_after_ruc_activation_callback(callback)
 
 def register_before_operations_solve_callback(callback: Callable[[Options, Simulator, OperationsModel], None]) -> None:
     ''' Register a callback to be called before an operations model is solved.
@@ -84,15 +102,6 @@ def register_update_operations_stats_callback(callback: Callable[[Options, Simul
         solved operations model, but before the statistics have been published.
     '''
     get_active_plugin_manager().register_update_operations_stats_callback(callback)
-
-def register_after_ruc_generation_callback(callback: Callable[[Options, Simulator, RucPlan], None]) -> None:
-    ''' Register a callback to be called after each new RUC pair is generated.
-
-        The callback is called after both the forecast and actuals RUCs have been 
-        generated, just before they are stored in the DataManager.
-    '''
-    get_active_plugin_manager().register_after_ruc_generation_callback(callback)
-    
 
 
 

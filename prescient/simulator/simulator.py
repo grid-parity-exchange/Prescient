@@ -114,21 +114,7 @@ class Simulator:
             # so we can do this hand-over right away
             #normally we want to look at the ruc_start_hours
             if time_step.is_ruc_start_hour and not is_first_time_step:
-                # establish the stochastic ruc instance for this_period - we use this instance to track,
-                # for better or worse, the projected and actual UnitOn states through the day.
-                data_manager.ruc_instance_to_simulate_this_period = current_ruc_plan.ruc_instance_to_simulate
-
-                # initialize the actual demand and renewables vectors - these will be incrementally
-                # updated when new forecasts are released, e.g., when the next RUC is computed.
-                data_manager.set_actuals_for_new_ruc_instance()
-
-                data_manager.deterministic_ruc_instance_for_this_period = current_ruc_plan.deterministic_ruc_instance
-                data_manager.scenario_tree_for_this_period = current_ruc_plan.scenario_tree
-                data_manager.set_forecast_errors_for_new_ruc_instance(options)
-
-                data_manager.ruc_market_active = data_manager.ruc_market_pending
-
-                data_manager.clear_instances_for_next_period()
+                oracle_manager.activate_pending_ruc(options)
 
             # We call the operations oracle at all time steps
             current_sced_instance = oracle_manager.call_operation_oracle(options, time_step, is_first_time_step)

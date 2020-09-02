@@ -44,7 +44,7 @@ class DataManager(_Manager):
         '''This takes a Time object and makes the appropiate updates to the data'''
         self._current_time = time
 
-    def set_current_ruc_plan(self, current_ruc_plan: RucPlan):
+    def set_pending_ruc_plan(self, current_ruc_plan: RucPlan):
         self.ruc_instance_to_simulate_next_period = current_ruc_plan.ruc_instance_to_simulate
         self.scenario_tree_for_next_period = current_ruc_plan.scenario_tree
         self.deterministic_ruc_instance_for_next_period =current_ruc_plan.deterministic_ruc_instance
