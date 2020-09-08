@@ -50,6 +50,19 @@ class DataManager(_Manager):
         self.deterministic_ruc_instance_for_next_period =current_ruc_plan.deterministic_ruc_instance
         self.ruc_market_pending = current_ruc_plan.ruc_market
 
+    def activate_pending_ruc(self, options: Options):
+        self.ruc_instance_to_simulate_this_period = self.ruc_instance_to_simulate_next_period
+        self.scenario_tree_for_this_period = self.scenario_tree_for_next_period
+        self.deterministic_ruc_instance_for_this_period = self.deterministic_ruc_instance_for_next_period
+        self.ruc_market_active = self.ruc_market_pending
+
+        # initialize the actual demand and renewables vectors - these will be incrementally
+        # updated when new forecasts are released, e.g., when the next RUC is computed.
+        self.set_actuals_for_new_ruc_instance()
+        self.set_forecast_errors_for_new_ruc_instance(options)
+
+        self.clear_instances_for_next_period()
+
     def set_forecast_errors_for_new_ruc_instance(self, options) -> None:
         ''' Generate new forecast errors from current ruc instances '''
         forecast_ruc = self.deterministic_ruc_instance_for_this_period

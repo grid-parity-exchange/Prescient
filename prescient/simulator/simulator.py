@@ -98,10 +98,7 @@ class Simulator:
 
             if time_step.is_planning_time and not is_first_time_step:
                 current_ruc_plan = oracle_manager.call_planning_oracle(options, time_step)
-                data_manager.deterministic_ruc_instance_for_next_period = current_ruc_plan.deterministic_ruc_instance
-                data_manager.scenario_tree_for_next_period = current_ruc_plan.scenario_tree
-                data_manager.ruc_instance_to_simulate_next_period = current_ruc_plan.ruc_instance_to_simulate
-                data_manager.ruc_market_pending = current_ruc_plan.ruc_market
+                data_manager.set_pending_ruc_plan(current_ruc_plan)
 
                 # If there is a RUC delay...
                 if options.ruc_execution_hour % options.ruc_every_hours > 0:
@@ -114,7 +111,8 @@ class Simulator:
             # so we can do this hand-over right away
             #normally we want to look at the ruc_start_hours
             if time_step.is_ruc_start_hour and not is_first_time_step:
-                oracle_manager.activate_pending_ruc(options)
+                data_manager.activate_pending_ruc(options)
+                self.plugin_manager.invoke_after_ruc_activation_callbacks(options, self)
 
             # We call the operations oracle at all time steps
             current_sced_instance = oracle_manager.call_operation_oracle(options, time_step, is_first_time_step)
