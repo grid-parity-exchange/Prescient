@@ -28,7 +28,6 @@ class EgretEngine(ModelingEngine):
     def initialize(self, options:Options) -> None:
         self._sced_extractor = ScedDataExtractor()
         self._ruc_extractor = RucDataExtractor()
-        self._setup_reference_models(options)
         self._setup_solvers(options)
         self._p = EgretEngine._PluginMethods(options)
 
@@ -69,7 +68,7 @@ class EgretEngine(ModelingEngine):
             uc_hour: int,
             next_uc_date: Optional[str]
            ) -> RucModel:
-        return self._p.create_ruc_instance_to_simulate_next_period(self._ruc_model, options, uc_date, uc_hour, next_uc_date)
+        return self._p.create_ruc_instance_to_simulate_next_period(options, uc_date, uc_hour, next_uc_date)
 
 
     def create_sced_instance(self,
@@ -100,7 +99,6 @@ class EgretEngine(ModelingEngine):
            ) -> Tuple[OperationsModel, float]:
 
         current_sced_instance = self._p.create_sced_instance(
-            self._sced_model, self._reference_model_module, 
             deterministic_ruc_instance_for_this_period, None, scenario_tree_for_this_period, 
             deterministic_ruc_instance_for_next_period, None, scenario_tree_for_next_period,
             ruc_instance_to_simulate_this_period,
@@ -328,23 +326,6 @@ class EgretEngine(ModelingEngine):
             print("Minimum non-dispatachable power available:")
             for b in buses:
                 print("%-30s %12.2f" % (b, total_min_nondispatchable_power[b]))
-
-    def _setup_reference_models(self, options: Options):
-        model_filename = os.path.join(options.model_directory, "ReferenceModel.py")
-        if not os.path.exists(model_filename):
-            raise RuntimeError("The model %s either does not exist or cannot be read" % model_filename)
-        
-        from pyutilib.misc import import_file
-        self._reference_model_module = import_file(model_filename)
-
-        # validate reference model
-        required_methods = ["load_model_parameters"]
-        for method in required_methods:
-            if not hasattr(self._reference_model_module, method):
-                raise RuntimeError("Reference model module does not have required method=%s" % method)
-
-        self._ruc_model = self._reference_model_module.load_model_parameters()
-        self._sced_model = self._reference_model_module.model
 
     def _setup_solvers(self, options: Options):
         assert options.python_io is False

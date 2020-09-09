@@ -511,7 +511,7 @@ def write_pysp_files(data_sources, scenario_set):
     source_names = scenario_set.source_names
 
     check_scen_template_for_sources(gosm_options.scenario_template_file,
-        gosm_options.reference_model_file, source_names)
+                                    source_names)
 
     scentemp = basicclasses.PySP_Scenario_Template()
     try:

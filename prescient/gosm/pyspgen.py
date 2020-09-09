@@ -21,6 +21,7 @@ from copy import deepcopy
 from collections import OrderedDict, namedtuple
 
 import prescient.gosm.basicclasses as basicclasses
+import egret.parsers.prescient_dat_parser as pdp
 
 
 class CommentedRawNodeData:
@@ -172,7 +173,7 @@ def import_model_file(model_file):
     return module
 
 
-def check_scen_template_for_sources(template_file, model_file, source_names):
+def check_scen_template_for_sources(template_file, source_names):
     """
     This function will check the template file has all of the source names
     set in the 'NondispatchableGeneratorsAtBus' variable. Specifically, we must
@@ -191,15 +192,12 @@ def check_scen_template_for_sources(template_file, model_file, source_names):
         source_names (list[str]): A list of the source names to be checked
     """
     try:
-        ref_model = import_model_file(model_file)
-    except FileNotFoundError:
-        raise RuntimeError("Model File {} not found".format(model_file))
-    try:
-        instance = ref_model.model.create_instance(template_file)
+        model = pdp.get_uc_model()
+        instance = model.create_instance(template_file)
     except Exception as e:
         s = ""
-        s += "Error instantiating reference model"
-        s += "Check files {} and {}".format(template_file, model_file)
+        s += "Error reading scenario data into Egret"
+        s += "Check file {}".format(template_file)
         s += "Error reported: {}".format(','.join(map(str, e.args)))
         raise RuntimeError(s)
 

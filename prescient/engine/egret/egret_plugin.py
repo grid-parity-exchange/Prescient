@@ -193,8 +193,7 @@ def _zero_out_costs(sced_model, hours_in_objective):
 #    that is presently not conducted.
 
 ## TODO: propogate relax_t0_ramping_initial_day into this function
-def create_sced_instance(sced_model, reference_model_module, 
-                         today_ruc_instance, today_stochastic_scenario_instances, today_scenario_tree,
+def create_sced_instance(today_ruc_instance, today_stochastic_scenario_instances, today_scenario_tree,
                          tomorrow_ruc_instance, tomorrow_stochastic_scenario_instances, tomorrow_scenario_tree,
                          ruc_instance_to_simulate,  # providies actuals and an instance to query
                          prior_sced_instance,  # used for initial conditions if initial_from_ruc=False
@@ -216,7 +215,6 @@ def create_sced_instance(sced_model, reference_model_module,
                          use_persistent_forecast_error=False,
                          ):
 
-    assert sced_model != None
     assert ruc_instance_to_simulate != None
     assert hour_to_simulate >= 0
     assert reserve_factor >= 0.0
@@ -1296,7 +1294,7 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options):
                     thermal_reserve_cleared_DA=thermal_reserve_cleared_DA,
                     renewable_gen_cleared_DA=renewable_gen_cleared_DA)
 
-def create_ruc_instance_to_simulate_next_period(ruc_model, options, this_date, this_hour, next_date):
+def create_ruc_instance_to_simulate_next_period(options, this_date, this_hour, next_date):
 
     simulated_dat_filename_this = compute_simulation_filename_for_date(this_date, options)
     print("")
