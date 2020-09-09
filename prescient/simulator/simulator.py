@@ -85,34 +85,21 @@ class Simulator:
 
         first_time_step = time_manager.get_first_time_step()
 
-        current_ruc_plan = oracle_manager.call_initialization_oracle(options, first_time_step)
+        oracle_manager.call_initialization_oracle(options, first_time_step)
 
         for time_step in time_manager.time_steps():
             print("Simulating time_step " + time_step.date + " " + str(time_step.hour+1))
 
             stats_manager.begin_timestep(time_step)
+            data_manager.update_time(time_step)
 
             is_first_time_step = time_manager.is_first_time_step(time_step)
 
-            data_manager.update_time(time_step)
-
             if time_step.is_planning_time and not is_first_time_step:
-                current_ruc_plan = oracle_manager.call_planning_oracle(options, time_step)
-                data_manager.set_pending_ruc_plan(current_ruc_plan)
+                oracle_manager.call_planning_oracle(options, time_step)
 
-                # If there is a RUC delay...
-                if options.ruc_execution_hour % options.ruc_every_hours > 0:
-                    data_manager.update_actuals_for_delayed_ruc(options)
-                    data_manager.update_forecast_errors_for_delayed_ruc(options)
-
-
-            #normally, we want to wait for the ruc execution hour
-            # but for now, we're running with ruc_execution hour = 0
-            # so we can do this hand-over right away
-            #normally we want to look at the ruc_start_hours
             if time_step.is_ruc_start_hour and not is_first_time_step:
-                data_manager.activate_pending_ruc(options)
-                self.plugin_manager.invoke_after_ruc_activation_callbacks(options, self)
+                oracle_manager.activate_pending_ruc(options)
 
             # We call the operations oracle at all time steps
             current_sced_instance = oracle_manager.call_operation_oracle(options, time_step, is_first_time_step)
