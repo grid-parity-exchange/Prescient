@@ -168,12 +168,21 @@ class OracleManager(_Manager):
         self.simulator.plugin_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
         return ruc_plan
 
-    def call_planning_oracle(self, options, time_step):
+    def call_planning_oracle(self, options: Options, time_step: PrescientTime):
+        ''' Create a new RUC and make it the pending RUC
+        '''
         projected_sced_instance, sced_schedule_hour = self._get_projected_sced_instance(options, time_step)
 
         uc_hour, uc_date, next_uc_date = self._get_uc_activation_time(options, time_step)
 
-        return self._generate_ruc(options, uc_hour, uc_date, next_uc_date, projected_sced_instance, sced_schedule_hour)
+        ruc = self._generate_ruc(options, uc_hour, uc_date, next_uc_date, projected_sced_instance, sced_schedule_hour)
+        self.data_manager.set_pending_ruc_plan(ruc)
+        # If there is a RUC delay...
+        if options.ruc_execution_hour % options.ruc_every_hours > 0:
+            self.data_manager.update_actuals_for_delayed_ruc(options)
+            self.data_manager.update_forecast_errors_for_delayed_ruc(options)
+
+        return ruc
 
     def _generate_ruc(self, options, uc_hour, uc_date, next_uc_date, projected_sced_instance, sced_schedule_hour):
         '''Creates a RUC plan by calling the oracle for the long-term plan based on forecast'''
@@ -226,22 +235,8 @@ class OracleManager(_Manager):
         self.simulator.plugin_manager.invoke_after_ruc_generation_callbacks(options, self.simulator, result, uc_date, uc_hour)
         return result
 
-    def activate_pending_ruc(self, options):
-        # establish the stochastic ruc instance for this_period - we use this instance to track,
-        # for better or worse, the projected and actual UnitOn states through the day.
-        self.data_manager.ruc_instance_to_simulate_this_period = current_ruc_plan.ruc_instance_to_simulate
-
-        # initialize the actual demand and renewables vectors - these will be incrementally
-        # updated when new forecasts are released, e.g., when the next RUC is computed.
-        self.data_manager.set_actuals_for_new_ruc_instance()
-
-        self.data_manager.deterministic_ruc_instance_for_this_period = current_ruc_plan.deterministic_ruc_instance
-        self.data_manager.scenario_tree_for_this_period = current_ruc_plan.scenario_tree
-        self.data_manager.set_forecast_errors_for_new_ruc_instance(options)
-
-        self.data_manager.ruc_market_active = self.data_manager.ruc_market_pending
-
-        self.data_manager.clear_instances_for_next_period()
+    def activate_pending_ruc(self, options: Options):
+        self.data_manager.activate_pending_ruc(options)
         self.simulator.plugin_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
 
     def call_operation_oracle(self, options: Options, time_step: PrescientTime, is_first_time_step:bool):
