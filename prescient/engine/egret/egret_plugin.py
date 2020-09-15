@@ -80,7 +80,7 @@ def _get_data_dict( data_model, time_horizon, demand_dict, reserve_dict, reserve
     calculate_reserve_factor = reserve_factor > 0
 
     if calculate_reserve_factor:
-        total_demand = [0. for _ in time_horizon]
+        total_demand = [0. for _ in range(time_horizon)]
 
     for l, l_dict in load.items():
         l_values = l_dict['p_load']['values']
