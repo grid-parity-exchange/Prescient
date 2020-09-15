@@ -2,7 +2,6 @@ command/exec simulator.py
 --data-directory=deterministic_with_network_scenarios_year
 --simulate-out-of-sample 
 --run-sced-with-persistent-forecast-errors 
---model-directory=..|..|prescient|models|tight
 --output-directory=deterministic_with_network_simulation_output_year
 --run-deterministic-ruc 
 --start-date=01-02-2020

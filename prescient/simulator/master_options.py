@@ -505,8 +505,7 @@ def _construct_inner_options_parser():
     guiOverride['--disable-sced']['bpa'] = False
 
     input_simulation_options.add_option("-m", '--model-directory',
-                                        help="The directory in which the reference models are stored. "
-                                             "Default is \".\".",
+                                        help="DEPRECATED; no need to set.",
                                         action="store",
                                         dest="model_directory",
                                         type="string",
@@ -624,19 +623,6 @@ def _construct_inner_options_parser():
     guiOverride['--reserve-price-threshold']['bpa'] = False
                              
 # # PRESCIENT_SOLVER_OPTIONS
-
-    solver_simulation_options.add_option('--pyro-host',
-                                         help="Host on which pyro name server can be located",
-                                         action="store",
-                                         dest="pyro_host",
-                                         default="127.0.0.1")
-
-    solver_simulation_options.add_option('--pyro-port',
-                                         help="Port on which pyro name server can be located",
-                                         action="store",
-                                         dest="pyro_port",
-                                         type="int",
-                                         default=None)
 
     solver_simulation_options.add_option('--solve-with-ph',
                                          help="Indicate that stochastic optimization models should be solved with PH, "

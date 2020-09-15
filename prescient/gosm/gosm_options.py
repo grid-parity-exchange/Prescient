@@ -93,10 +93,10 @@ def set_globals(options_file=None, args=None):
                         dest='dps_file')
 
     parser.add_argument('--reference-model-file',
-                        help='The path to the file with the pyomo model to be '
-                             'used for the optimization problem to be solved.',
+                        help='DEPRECATED, this option is ignored',
                         action='store',
                         type=str,
+                        default='',
                         dest='reference_model_file')
 
     # ----------------------------------------------------------
