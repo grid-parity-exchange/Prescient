@@ -120,7 +120,6 @@ def generate_stack_graph(thermal_fleet_capacity,
     # maps generator types to the number of generators of that type.
     gentype_counts = {}
 
-    
     gentype_counts['N'] = 0
     gentype_counts['C'] = 0
     gentype_counts['G'] = 0
@@ -148,6 +147,19 @@ def generate_stack_graph(thermal_fleet_capacity,
         if gentype in dispatch_levels_by_gentype:
             base_dispatch_level = generic_generator_function(dispatch_levels_by_gentype, gentype,  base_dispatch_level, ax1)
 
+    if sum(quick_start_additional_power_generated_by_hour) > 0.0:
+        ax1.bar(hours_in_day,
+                quick_start_additional_power_generated_by_hour,
+                width,
+                color="#0061ff",
+                hatch='xxx',
+                bottom=base_dispatch_level,
+                label="Quick-Start Generator Output")
+        mpl.rcParams['hatch.color'] = 'red'
+        mpl.rcParams['hatch.linewidth'] = 1.0
+        for i in range(0, len(base_dispatch_level)):
+            base_dispatch_level[i] += quick_start_additional_power_generated_by_hour[i]
+
     # plot any load shedding above the dispatch level.
     if sum(load_shedding) > 0.0:
         ax1.bar(hours_in_day, load_shedding, width,
@@ -173,6 +185,16 @@ def generate_stack_graph(thermal_fleet_capacity,
         demand.insert(0,demand[0])
         ax1.step(list(range(0, 25)), demand, linewidth=3, color='#000000', where='mid')
 
+    # plot wind curtailments above the base dispatch level, if they exist.
+    if sum(renewables_curtailments) > 0.0:
+        ax1.bar(hours_in_day,
+                renewables_curtailments,
+                width,
+                color="red",
+                bottom=base_dispatch_level,
+                label="Renewables Curtailed")
+        for i in range(0, len(base_dispatch_level)):
+            base_dispatch_level[i] += renewables_curtailments[i]
 
     # plot any reseve shortfall immediately above the demand level.
     if sum(reserve_shortfalls) > 0.0:
@@ -221,24 +243,6 @@ def generate_stack_graph(thermal_fleet_capacity,
         
         for i in range(0, len(base_dispatch_level)):
             base_dispatch_level[i] += available_quickstart[i]
-
-
-    if sum(quick_start_additional_power_generated_by_hour) > 0.0:
-        ax1.bar(hours_in_day,
-                quick_start_additional_power_generated_by_hour,
-                width,
-                color="#0061ff",
-                hatch='xxx',
-                bottom=base_dispatch_level,
-                label="Quick-Start Generator Output")
-        mpl.rcParams['hatch.color'] = 'red'
-        mpl.rcParams['hatch.linewidth'] = 1.0
-        for i in range(0, len(base_dispatch_level)):
-            base_dispatch_level[i] += available_quickstart[i]
-
-    # plot wind curtailments above the base dispatch level, if they exist.
-    
-    
 
     ax1.set_title("Power Generation for "+str(the_date), fontsize=25)
     ax1.axis([1,24,0,thermal_fleet_capacity*1.2]) # the 1.2 factor is to allow for headroom, for annotations.
