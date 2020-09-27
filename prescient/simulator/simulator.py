@@ -111,4 +111,5 @@ class Simulator:
 
         print("Simulation Complete")
         import time
-        self.simulation_start_time = time.time()
+        self.simulation_end_time = time.time()
+        print(f"Total simulation time: {self.simulation_end_time - self.simulation_start_time:.2f} seconds")
