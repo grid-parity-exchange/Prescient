@@ -35,7 +35,7 @@ HighConfidenceOptions = PTDFOptions(ruc = {'pre_lp_iteration_limit':0, 'lp_itera
 class PTDFManager:
     ''' helper for managing the initial set of active
         constraints handed to EGRET '''
-    def __init__(self, inactive_limit=100):
+    def __init__(self, inactive_limit=5):
         # stored PTDF_matrix_dict for Egret
         self.PTDF_matrix_dict = None
 
@@ -87,24 +87,24 @@ class PTDFManager:
         _del_inactive(self._active_branch_constraints, self._inactive_limit)
         _del_inactive(self._active_interface_constraints, self._inactive_limit)
 
-        print(f"Current set of activite lines: {self._active_branch_constraints.keys()}")
+        #print(f"Current set of activite lines: {self._active_branch_constraints.keys()}")
 
     def _update_confidence(self, misses):
         if misses == 0:
             self._calls_since_last_miss += 1
-            if self._calls_since_last_miss > 10:
-                print("SETTING HIGH CONFIDENCE")
+            if self._calls_since_last_miss > 100:
+                #print("SETTING HIGH CONFIDENCE")
                 self._ptdf_options = HighConfidenceOptions
             else:
-                print("SETTING MEDIUM CONFIDENCE")
+                #print("SETTING MEDIUM CONFIDENCE")
                 self._ptdf_options = MediumConfidenceOptions
         elif misses < 5:
             self._calls_since_last_miss = 0
-            print("SETTING MEDIUM CONFIDENCE")
+            #print("SETTING MEDIUM CONFIDENCE")
             self._ptdf_options = MediumConfidenceOptions
         else:
             self._calls_since_last_miss = 0
-            print("SETTING LOW CONFIDENCE")
+            #print("SETTING LOW CONFIDENCE")
             self._ptdf_options = LowConfidenceOptions
 
     @property
