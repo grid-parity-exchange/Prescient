@@ -9,9 +9,11 @@
 
 import os
 import math
+import logging
 
 from pyomo.environ import value, Suffix
 
+from egret.common.log import logger as egret_logger
 from egret.data.model_data import ModelData
 from egret.parsers.prescient_dat_parser import get_uc_model, create_model_data_dict_params
 from egret.models.unit_commitment import _time_series_dict, _preallocated_list, _solve_unit_commitment, \
@@ -32,6 +34,8 @@ uc_abstract_data_model = get_uc_model()
 
 def call_solver(solver,instance,options,solver_options,relaxed=False):
     tee = options.output_solver_logs
+    if not tee:
+        egret_logger.setLevel(logging.WARNING)
     symbolic_solver_labels = options.symbolic_solver_labels
     mipgap = options.ruc_mipgap
 
