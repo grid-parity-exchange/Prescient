@@ -20,6 +20,7 @@ from prescient.engine.modeling_engine import ModelingEngine
 from prescient.simulator.data_manager import RucMarket
 
 from .data_extractors import ScedDataExtractor, RucDataExtractor
+from .ptdf_manager import PTDFManager
 
 from egret.models.unit_commitment import create_KOW_unit_commitment_model
 
@@ -30,6 +31,7 @@ class EgretEngine(ModelingEngine):
         self._ruc_extractor = RucDataExtractor()
         self._setup_solvers(options)
         self._p = EgretEngine._PluginMethods(options)
+        self._ptdf_manager = PTDFManager()
 
     def create_deterministic_ruc(self, 
             options: Options,
@@ -51,7 +53,7 @@ class EgretEngine(ModelingEngine):
                                                 run_ruc_with_next_day_data)
 
     def solve_deterministic_ruc(self, options, ruc_instance, uc_date, uc_hour):
-        return self._p.solve_deterministic_ruc(self._ruc_solver, options, ruc_instance, uc_date, uc_hour)
+        return self._p.solve_deterministic_ruc(self._ruc_solver, options, ruc_instance, uc_date, uc_hour, self._ptdf_manager)
 
     def create_and_solve_day_ahead_pricing(self,
             deterministic_ruc_instance: RucModel,
@@ -59,7 +61,8 @@ class EgretEngine(ModelingEngine):
             ) -> RucMarket:
         return self._p.solve_deterministic_day_ahead_pricing_problem(self._ruc_solver,
                                                                 deterministic_ruc_instance,
-                                                                options)
+                                                                options,
+                                                                self._ptdf_manager)
 
     def create_ruc_instance_to_simulate_next_period(
             self,
@@ -132,7 +135,21 @@ class EgretEngine(ModelingEngine):
                             output_initial_conditions = False,
                             output_demands = False,
                             lp_filename: str = None):
-        pyo_model = create_KOW_unit_commitment_model(sced_instance, network_constraints='power_balance_constraints')
+
+        ptdf_manager = self._ptdf_manager
+        if self._hours_in_objective > 10:
+            ptdf_options = ptdf_manager.look_ahead_sced_ptdf_options
+        else:
+            ptdf_options = ptdf_manager.sced_ptdf_options
+
+        ptdf_manager.mark_active(sced_instance)
+        pyo_model = create_KOW_unit_commitment_model(sced_instance,
+                                                     ptdf_options = ptdf_options,
+                                                     PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict)
+
+        # update in case lines were taken out
+        ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
+
         self._p._zero_out_costs(pyo_model, self._hours_in_objective)
 
         self._print_sced_info(sced_instance, output_initial_conditions, output_demands)
@@ -160,6 +177,7 @@ class EgretEngine(ModelingEngine):
             print("Problematic SCED instance written to file=" + infeasible_sced_filename)
             raise
 
+        ptdf_manager.update_active(sced_results)
         self._attach_fake_pyomo_objects(sced_results)
 
         return sced_results, sced_time
@@ -173,7 +191,10 @@ class EgretEngine(ModelingEngine):
         for g, g_dict in sced_instance.elements(element_type='generator', fast_start=True):
             del g_dict['fixed_commitment']
 
-        pyo_model = create_tight_unit_commitment_model(sced_instance, network_constraints='power_balance_constraints')
+        self._ptdf_manager.mark_active(sced_instance)
+        pyo_model = create_tight_unit_commitment_model(sced_instance,
+                                                       ptdf_options = self._ptdf_manager.sced_ptdf_options,
+                                                       PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict)
 
         try:
             sced_results, _ = self._p.call_solver(self._sced_solver,
@@ -187,6 +208,7 @@ class EgretEngine(ModelingEngine):
             print(f"Problematic quickstart UC written to {quickstart_uc_filename}")
             raise
 
+        self._ptdf_manager.update_active(sced_results)
         self._attach_fake_pyomo_objects(sced_results)
 
         return sced_results
@@ -211,7 +233,10 @@ class EgretEngine(ModelingEngine):
             lmp_sced_instance.data['system']['reserve_shortfall_cost'] = \
                     options.reserve_price_threshold
 
-        pyo_model = create_KOW_unit_commitment_model(lmp_sced_instance, network_constraints='power_balance_constraints', relaxed=True)
+        self._ptdf_manager.mark_active(lmp_sced_instance)
+        pyo_model = create_KOW_unit_commitment_model(lmp_sced_instance, relaxed=True,
+                                                     ptdf_options = self._ptdf_manager.lmpsced_ptdf_options,
+                                                     PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict)
 
         self._p._zero_out_costs(pyo_model, self._hours_in_objective)
 
@@ -230,6 +255,7 @@ class EgretEngine(ModelingEngine):
             print(f"Problematic LMP SCED written to {quickstart_uc_filename}")
             raise
 
+        self._ptdf_manager.update_active(lmp_sced_results)
         self._attach_fake_pyomo_objects(lmp_sced_results)
 
         return lmp_sced_results
