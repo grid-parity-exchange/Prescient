@@ -19,9 +19,16 @@ from .stats_manager import StatsManager
 from prescient.stats.overall_stats import OverallStats
 from prescient.stats.daily_stats import DailyStats
 from prescient.reporting.csv import CsvReporter, CsvMultiRowReporter
-from prescient.util import graphutils
 
-
+# If appropriate back-ends for Matplotlib are not installed
+# (e.g, gtk), then graphing will not be available.
+try:
+    from prescient.util import graphutils
+    graphutils_functional = True
+except ValueError:
+    print("***Unable to load Gtk back-end for matplotlib - graphics generation is disabled")
+    graphutils_functional = False    
+    
 class ReportingManager(_Manager):
 
     def initialize(self, options, stats_manager: StatsManager):
@@ -52,8 +59,10 @@ class ReportingManager(_Manager):
         self.setup_hourly_summary(options, stats_manager)
         self.setup_daily_summary(options, stats_manager)
         self.setup_overall_simulation_output(options, stats_manager)
-        self.setup_daily_stack_graph(options, stats_manager)
-        self.setup_cost_summary_graph(options, stats_manager)
+
+        if graphutils_functional:
+            self.setup_daily_stack_graph(options, stats_manager)
+            self.setup_cost_summary_graph(options, stats_manager)
 
     def setup_runtimes(self, options, stats_manager: StatsManager):
         runtime_path = os.path.join(options.output_directory, 'runtimes.csv')
