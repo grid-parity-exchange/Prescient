@@ -9,9 +9,13 @@
 
 import os.path
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
+
 import matplotlib as mpl
+# no support (nor present need for) interactive graphics - we just write PNG files.
+mpl.use('AGG') 
+
+import matplotlib.pyplot as plt
+
 import csv
 import scipy.stats
 
@@ -100,8 +104,6 @@ def generate_stack_graph(thermal_fleet_capacity,
                          annotations=[], 
                          plot_individual_generators=False, 
                          show_plot_legend=True, 
-                         display_plot=True, 
-                         savetofile=False, 
                          output_directory=".", 
                          renewables_penetration_rate=None, 
                          fixed_costs=None, 
@@ -304,30 +306,13 @@ def generate_stack_graph(thermal_fleet_capacity,
                 color="0.5",
                 label="Excess Generation")
             
-        
-
-
     # NOTE: we should eventually option-drive the figure size
-
 
     fig.set_size_inches(11.0,14.0)
 
-    if savetofile:
-        plt.savefig(os.path.join(output_directory, "stackgraph_"+str(the_date)+".png"))
-
-    if display_plot:
-        plt.show()
+    plt.savefig(os.path.join(output_directory, "stackgraph_"+str(the_date)+".png"))
 
     plt.close()
-
-
-
-
-
-
-
-
-
 
 #Function for plotting a comparison graph
 def generate_comparison_dict(dispatchlevelsdict, dispatchlevelsdict_day2):
@@ -347,7 +332,7 @@ def generate_cost_summary_graph(daily_fixed_costs, daily_generation_costs,
                                 daily_load_shedding, daily_over_generation,
                                 daily_reserve_shortfall, 
                                 daily_curtailments,
-                                display_plot=True, save_to_file=False, output_directory="."):
+                                output_directory="."):
 
     max_cost = max(daily_fixed_costs) + max(daily_generation_costs)
 
@@ -392,11 +377,6 @@ def generate_cost_summary_graph(daily_fixed_costs, daily_generation_costs,
             plt.annotate("Renewables Curtailment", xy=(event_day+0.5, daily_fixed_costs[i-1] + daily_generation_costs[i-1]), arrowprops=dict(arrowstyle='->'), xytext=(event_day, max_cost * label_height_factor))
             label_height_factor += 0.05
 
-    if save_to_file:
-        plt.savefig(os.path.join(output_directory, "daily_costs.png"))
-
-    if display_plot:
-        plt.show()
-
+    plt.savefig(os.path.join(output_directory, "daily_costs.png"))
 
     plt.close()

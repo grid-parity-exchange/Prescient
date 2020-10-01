@@ -384,15 +384,6 @@ def _construct_inner_options_parser():
     guiOverride['--data-directory'] = {}
     guiOverride['--data-directory']['bpa'] = False
 
-    input_simulation_options.add_option("--display-plots",
-                                        help="Display summary plots of aggregate system behavior, day-by-day. "
-                                             "Defaults to False.",
-                                        action="store_true",
-                                        dest="display_plots",
-                                        default=False)
-    guiOverride["--display-plots"] = {}
-    guiOverride["--display-plots"]["--display-plots"] = False
-
     input_simulation_options.add_option("--plot-individual-generators",
                                         help="Display stack graph plots showing individual generators, "
                                              "as opposed to by-type generator behavior. Defaults to False.",

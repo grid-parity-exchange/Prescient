@@ -284,9 +284,7 @@ class ReportingManager(_Manager):
                                         daily_stats.max_hourly_demand,
                                         quick_start_additional_power_generated_by_hour,
                                         annotations=event_annotations, 
-                                        display_plot=options.display_plots, 
                                         show_plot_legend=(not options.disable_plot_legend),
-                                        savetofile=True, 
                                         output_directory=os.path.join(options.output_directory, "plots"),
                                         plot_individual_generators=options.plot_individual_generators,
                                         renewables_penetration_rate=daily_stats.this_date_renewables_penetration_rate,
@@ -311,7 +309,5 @@ class ReportingManager(_Manager):
                                                daily_load_shedding, daily_over_generation,
                                                daily_reserve_shortfall,
                                                daily_renewables_curtailment,
-                                               display_plot=options.display_plots,
-                                               save_to_file=True,
                                                output_directory=os.path.join(options.output_directory, "plots"))
 
