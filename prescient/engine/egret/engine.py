@@ -22,7 +22,27 @@ from prescient.simulator.data_manager import RucMarket
 from .data_extractors import ScedDataExtractor, RucDataExtractor
 from .ptdf_manager import PTDFManager
 
-from egret.models.unit_commitment import create_KOW_unit_commitment_model
+from egret.models.unit_commitment import _get_uc_model, create_tight_unit_commitment_model
+
+def create_sced_uc_model(model_data,
+                         network_constraints='ptdf_power_flow',
+                         relaxed=False,
+                         **kwargs):
+    '''
+    Create a model appropriate for the SCED and pricing
+    '''
+    formulation_list = [
+                        'garver_3bin_vars',
+                        'garver_power_vars',
+                        'MLR_reserve_vars',
+                        'MLR_generation_limits',
+                        'damcikurt_ramping',
+                        'CA_production_costs',
+                        'rajan_takriti_UT_DT',
+                        'MLR_startup_costs',
+                         network_constraints,
+                       ]
+    return _get_uc_model(model_data, formulation_list, relaxed, **kwargs)
 
 class EgretEngine(ModelingEngine):
 
@@ -143,9 +163,9 @@ class EgretEngine(ModelingEngine):
             ptdf_options = ptdf_manager.sced_ptdf_options
 
         ptdf_manager.mark_active(sced_instance)
-        pyo_model = create_KOW_unit_commitment_model(sced_instance,
-                                                     ptdf_options = ptdf_options,
-                                                     PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict)
+        pyo_model = create_sced_uc_model(sced_instance,
+                                         ptdf_options = ptdf_options,
+                                         PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict)
 
         # update in case lines were taken out
         ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
@@ -234,9 +254,9 @@ class EgretEngine(ModelingEngine):
                     options.reserve_price_threshold
 
         self._ptdf_manager.mark_active(lmp_sced_instance)
-        pyo_model = create_KOW_unit_commitment_model(lmp_sced_instance, relaxed=True,
-                                                     ptdf_options = self._ptdf_manager.lmpsced_ptdf_options,
-                                                     PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict)
+        pyo_model = create_sced_uc_model(lmp_sced_instance, relaxed=True,
+                                         ptdf_options = self._ptdf_manager.lmpsced_ptdf_options,
+                                         PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict)
 
         self._p._zero_out_costs(pyo_model, self._hours_in_objective)
 
