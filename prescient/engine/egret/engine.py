@@ -23,6 +23,7 @@ from .data_extractors import ScedDataExtractor, RucDataExtractor
 from .ptdf_manager import PTDFManager
 
 from egret.models.unit_commitment import _get_uc_model, create_tight_unit_commitment_model
+from egret.common.lazy_ptdf_utils import uc_instance_binary_relaxer
 
 def create_sced_uc_model(model_data,
                          network_constraints='ptdf_power_flow',
@@ -52,6 +53,8 @@ class EgretEngine(ModelingEngine):
         self._setup_solvers(options)
         self._p = EgretEngine._PluginMethods(options)
         self._ptdf_manager = PTDFManager()
+        self._last_sced_pyo_model = None
+        self._last_sced_pyo_solver = None
 
     def create_deterministic_ruc(self, 
             options: Options,
@@ -178,10 +181,10 @@ class EgretEngine(ModelingEngine):
             print("------------------------------------------------------------------------------")
 
         try:
-            sced_results, sced_time = self._p.call_solver(self._sced_solver,
-                                                            pyo_model,
-                                                            options,
-                                                            options.sced_solver_options)
+            sced_results, sced_time, pyo_solver = self._p.call_solver(self._sced_solver,
+                                                          pyo_model,
+                                                          options,
+                                                          options.sced_solver_options)
         except:
             print("Some isssue with SCED, writing instance")
             print("Problematic SCED from to file")
@@ -199,6 +202,8 @@ class EgretEngine(ModelingEngine):
 
         ptdf_manager.update_active(sced_results)
         self._attach_fake_pyomo_objects(sced_results)
+        self._last_sced_pyo_model = pyo_model
+        self._last_sced_pyo_solver = pyo_solver
 
         return sced_results, sced_time
 
@@ -217,7 +222,7 @@ class EgretEngine(ModelingEngine):
                                                        PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict)
 
         try:
-            sced_results, _ = self._p.call_solver(self._sced_solver,
+            sced_results, _ , pyo_solver = self._p.call_solver(self._sced_solver,
                                                             pyo_model,
                                                             options,
                                                             options.sced_solver_options)
@@ -230,6 +235,8 @@ class EgretEngine(ModelingEngine):
 
         self._ptdf_manager.update_active(sced_results)
         self._attach_fake_pyomo_objects(sced_results)
+        self._last_sced_pyo_model = pyo_model
+        self._last_sced_pyo_solver = pyo_solver
 
         return sced_results
 
@@ -253,21 +260,27 @@ class EgretEngine(ModelingEngine):
             lmp_sced_instance.data['system']['reserve_shortfall_cost'] = \
                     options.reserve_price_threshold
 
-        self._ptdf_manager.mark_active(lmp_sced_instance)
-        pyo_model = create_sced_uc_model(lmp_sced_instance, relaxed=True,
-                                         ptdf_options = self._ptdf_manager.lmpsced_ptdf_options,
-                                         PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict)
-
-        self._p._zero_out_costs(pyo_model, self._hours_in_objective)
+        if self._last_sced_pyo_model is None:
+            self._ptdf_manager.mark_active(lmp_sced_instance)
+            pyo_model = create_sced_uc_model(lmp_sced_instance, relaxed=True,
+                                             ptdf_options = self._ptdf_manager.lmpsced_ptdf_options,
+                                             PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict)
+            pyo_solver = self._sced_solver
+            self._p._zero_out_costs(pyo_model, self._hours_in_objective)
+        else:
+            pyo_model = self._last_sced_pyo_model
+            pyo_solver = self._last_sced_pyo_solver
+            self._transform_for_lmp(pyo_model, pyo_solver, lmp_sced_instance)
 
         pyo_model.dual = pe.Suffix(direction=pe.Suffix.IMPORT)
 
         try:
-            lmp_sced_results, _ = self._p.call_solver(self._sced_solver, 
+            lmp_sced_results, _, _ = self._p.call_solver(pyo_solver,
                                                    pyo_model,
                                                    options,
                                                    options.sced_solver_options,
-                                                   relaxed=True)
+                                                   relaxed=True,
+                                                   set_instance=(self._last_sced_pyo_model is None))
         except:
             print("Some issue with LMP SCED, writing instance")
             quickstart_uc_filename = options.output_directory+os.sep+"FAILED_LMP_SCED.json"
@@ -275,10 +288,33 @@ class EgretEngine(ModelingEngine):
             print(f"Problematic LMP SCED written to {quickstart_uc_filename}")
             raise
 
-        self._ptdf_manager.update_active(lmp_sced_results)
         self._attach_fake_pyomo_objects(lmp_sced_results)
 
         return lmp_sced_results
+
+    def _transform_for_lmp(self, pyo_model, pyo_solver, lmp_sced_instance):
+        from pyomo.solvers.plugins.solvers.persistent_solver import PersistentSolver
+        import math
+
+        uc_instance_binary_relaxer(pyo_model, pyo_solver)
+
+        ## reset the penalites
+        system = lmp_sced_instance.data['system']
+
+        update_obj = False
+
+        new_load_penalty = system['baseMVA'] * system['load_mismatch_cost']
+        if not math.isclose(new_load_penalty, pyo_model.LoadMismatchPenalty.value):
+            pyo_model.LoadMismatchPenalty.value = new_load_penalty
+            update_obj = True
+
+        new_reserve_penalty =  system['baseMVA'] * system['reserve_shortfall_cost']
+        if not math.isclose(new_reserve_penalty, pyo_model.ReserveShortfallPenalty.value):
+            pyo_model.ReserveShortfallPenalty.value = new_reserve_penalty
+            update_obj = True
+
+        if update_obj and isinstance(pyo_solver, PersistentSolver):
+            pyo_solver.set_objective(pyo_model.TotalCostObjective)
 
     def _attach_fake_pyomo_objects(self,md):
 
