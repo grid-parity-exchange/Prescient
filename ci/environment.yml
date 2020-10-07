@@ -13,6 +13,6 @@ dependencies:
 - ply
 - python-dateutil
 - pytz
-- pyomo
+- pyomo>=5.7
 - scipy
 - six
