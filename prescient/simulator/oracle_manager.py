@@ -323,17 +323,17 @@ class OracleManager(_Manager):
                 print("Re-solving SCED after unfixing Quick Start Generators")
                 current_sced_instance = self.engine.enable_quickstart_and_solve(current_sced_instance, options)
 
-        self.simulator.plugin_manager.invoke_after_operations_callbacks(options, self.simulator, current_sced_instance)
-
-
         print("Solving for LMPs")
         lmp_sced = self.engine.create_and_solve_lmp(current_sced_instance, options)
+
+        self.simulator.plugin_manager.invoke_after_operations_callbacks(options, self.simulator, current_sced_instance)
 
         ops_stats = self.simulator.stats_manager.collect_operations(current_sced_instance,
                                                                     solve_time,
                                                                     lmp_sced,
                                                                     pre_quickstart_cache,
                                                                     self.engine.operations_data_extractor)
+
         self.simulator.plugin_manager.invoke_update_operations_stats_callbacks(options, self.simulator, ops_stats)
         self._report_sced_stats(ops_stats)
 

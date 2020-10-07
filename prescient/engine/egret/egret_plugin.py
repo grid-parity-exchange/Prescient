@@ -666,9 +666,9 @@ def _solve_deterministic_ruc(deterministic_ruc_instance,
 
     try:
         ruc_results, pyo_results, _  = call_solver(solver,
-                                            pyo_model, 
-                                            options,
-                                            options.deterministic_ruc_solver_options)
+                                                   pyo_model,
+                                                   options,
+                                                   options.deterministic_ruc_solver_options)
     except:
         print("Failed to solve deterministic RUC instance - likely because no feasible solution exists!")        
         output_filename = "bad_ruc.json"
@@ -1221,10 +1221,10 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
     try:
         ## TODO: Should there be separate options for this run?
         pricing_results, _, _ = call_solver(solver,
-                                         pyo_model, 
-                                         options,
-                                         options.deterministic_ruc_solver_options,
-                                         relaxed=True)
+                                            pyo_model,
+                                            options,
+                                            options.deterministic_ruc_solver_options,
+                                            relaxed=True)
     except:
         print("Failed to solve pricing instance - likely because no feasible solution exists!")        
         output_filename = "bad_pricing.json"

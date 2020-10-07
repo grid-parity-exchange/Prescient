@@ -182,9 +182,9 @@ class EgretEngine(ModelingEngine):
 
         try:
             sced_results, sced_time, pyo_solver = self._p.call_solver(self._sced_solver,
-                                                          pyo_model,
-                                                          options,
-                                                          options.sced_solver_options)
+                                                                      pyo_model,
+                                                                      options,
+                                                                      options.sced_solver_options)
         except:
             print("Some isssue with SCED, writing instance")
             print("Problematic SCED from to file")
@@ -223,9 +223,9 @@ class EgretEngine(ModelingEngine):
 
         try:
             sced_results, _ , pyo_solver = self._p.call_solver(self._sced_solver,
-                                                            pyo_model,
-                                                            options,
-                                                            options.sced_solver_options)
+                                                               pyo_model,
+                                                               options,
+                                                               options.sced_solver_options)
         except:
             print("Some issue with quickstart UC, writing instance")
             quickstart_uc_filename = options.output_directory+os.sep+"FAILED_QS.json"
@@ -276,11 +276,11 @@ class EgretEngine(ModelingEngine):
 
         try:
             lmp_sced_results, _, _ = self._p.call_solver(pyo_solver,
-                                                   pyo_model,
-                                                   options,
-                                                   options.sced_solver_options,
-                                                   relaxed=True,
-                                                   set_instance=(self._last_sced_pyo_model is None))
+                                                         pyo_model,
+                                                         options,
+                                                         options.sced_solver_options,
+                                                         relaxed=True,
+                                                         set_instance=(self._last_sced_pyo_model is None))
         except:
             print("Some issue with LMP SCED, writing instance")
             quickstart_uc_filename = options.output_directory+os.sep+"FAILED_LMP_SCED.json"
@@ -312,6 +312,8 @@ class EgretEngine(ModelingEngine):
         if not math.isclose(new_reserve_penalty, pyo_model.ReserveShortfallPenalty.value):
             pyo_model.ReserveShortfallPenalty.value = new_reserve_penalty
             update_obj = True
+
+        pyo_model.model_data = lmp_sced_instance
 
         if update_obj and isinstance(pyo_solver, PersistentSolver):
             pyo_solver.set_objective(pyo_model.TotalCostObjective)
@@ -420,6 +422,7 @@ class EgretEngine(ModelingEngine):
                             _get_solver_list('cplex') + \
                             ['cbc', 'glpk']
 
+        supported_persistent_solvers = ('xpress', 'gurobi', 'cplex')
 
         if options.deterministic_ruc_solver_type not in supported_solvers:
             raise RuntimeError("Unknown solver type=%s specified" % options.deterministic_ruc_solver_type)
@@ -429,10 +432,37 @@ class EgretEngine(ModelingEngine):
         self._ruc_solver = options.deterministic_ruc_solver_type
         self._sced_solver = options.sced_solver_type
 
+        if self._ruc_solver in supported_persistent_solvers:
+            try:
+                available = pe.SolverFactory(self._ruc_solver+'_persistent').available()
+                if not available:
+                    self._print_persistence_warning(self._ruc_solver)
+                else:
+                    self._ruc_solver = self._ruc_solver+'_persistent'
+            except:
+                self._print_persistence_warning(self._ruc_solver)
+
         if not pe.SolverFactory(self._ruc_solver).available():
             raise RuntimeError(f"Solver {self._ruc_solver} is not available to Pyomo")
+
+        if self._sced_solver in supported_persistent_solvers:
+            try:
+                available = pe.SolverFactory(self._sced_solver+'_persistent').available()
+                if not available:
+                    self._print_persistence_warning(self._sced_solver)
+                else:
+                    self._sced_solver = self._sced_solver+'_persistent'
+            except:
+                self._print_persistence_warning(self._sced_solver)
+
         if not pe.SolverFactory(self._sced_solver).available():
             raise RuntimeError(f"Solver {self._sced_solver} is not available to Pyomo")
+
+
+    def _print_persistence_warning(self, solver):
+        print(f"WARNING: Solver {solver} supports persistence, which "
+               "improves the performance of Prescient. Consider installing the "
+              f"python bindings for {solver}.")
 
     @property
     def ruc_data_extractor(self) -> RucDataExtractor:

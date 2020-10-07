@@ -598,7 +598,7 @@ def _construct_inner_options_parser():
                                         action='store',
                                         type='float',
                                         dest='price_threshold',
-                                        default=sys.float_info.max)
+                                        default=10000.)
     guiOverride['--price-threshold'] = {}
     guiOverride['--price-threshold']['bpa'] = False
 
@@ -609,7 +609,7 @@ def _construct_inner_options_parser():
                                         action='store',
                                         type='float',
                                         dest='reserve_price_threshold',
-                                        default=sys.float_info.max)
+                                        default=1000.)
     guiOverride['--reserve-price-threshold'] = {}
     guiOverride['--reserve-price-threshold']['bpa'] = False
                              
