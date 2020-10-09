@@ -32,7 +32,7 @@ uc_abstract_data_model = get_uc_model()
 # specified simulation hour.                                                           #
 ########################################################################################
 
-def call_solver(solver,instance,options,solver_options,relaxed=False):
+def call_solver(solver,instance,options,solver_options,relaxed=False, set_instance=True):
     tee = options.output_solver_logs
     if not tee:
         egret_logger.setLevel(logging.WARNING)
@@ -52,7 +52,7 @@ def call_solver(solver,instance,options,solver_options,relaxed=False):
 
     m, results, solver = _solve_unit_commitment(instance, solver, mipgap, None,
                                                 tee, symbolic_solver_labels, 
-                                                solver_options_dict, None, relaxed) 
+                                                solver_options_dict, None, relaxed, set_instance=set_instance)
 
     md = _save_uc_results(m, relaxed)
 
@@ -61,7 +61,7 @@ def call_solver(solver,instance,options,solver_options,relaxed=False):
     else:
         time = results.solver.wallclock_time
 
-    return md,time
+    return md, time, solver
 
 
 ## utility for constructing pyomo data dictionary from the passed in parameters to use
@@ -665,10 +665,10 @@ def _solve_deterministic_ruc(deterministic_ruc_instance,
     ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
 
     try:
-        ruc_results, pyo_results = call_solver(solver,
-                                            pyo_model, 
-                                            options,
-                                            options.deterministic_ruc_solver_options)
+        ruc_results, pyo_results, _  = call_solver(solver,
+                                                   pyo_model,
+                                                   options,
+                                                   options.deterministic_ruc_solver_options)
     except:
         print("Failed to solve deterministic RUC instance - likely because no feasible solution exists!")        
         output_filename = "bad_ruc.json"
@@ -1220,11 +1220,11 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
 
     try:
         ## TODO: Should there be separate options for this run?
-        pricing_results, _ = call_solver(solver,
-                                         pyo_model, 
-                                         options,
-                                         options.deterministic_ruc_solver_options,
-                                         relaxed=True)
+        pricing_results, _, _ = call_solver(solver,
+                                            pyo_model,
+                                            options,
+                                            options.deterministic_ruc_solver_options,
+                                            relaxed=True)
     except:
         print("Failed to solve pricing instance - likely because no feasible solution exists!")        
         output_filename = "bad_pricing.json"
