@@ -16,7 +16,11 @@ if TYPE_CHECKING:
     from .data_extractors import ScedDataExtractor, RucDataExtractor
 
 from abc import ABC, abstractmethod
+from enum import Enum, auto
 
+class ForecastErrorMethod(Enum):
+    PRESCIENT = auto()
+    PERSISTENT = auto()
 
 class ModelingEngine(ABC):
     '''
@@ -34,13 +38,12 @@ class ModelingEngine(ABC):
             uc_hour: int,
             next_uc_date: Optional[str],
             prior_ruc_instance: RucModel,
-            prior_scenario_tree: ScenarioTree,
             output_ruc_initial_conditions: bool,
             projected_sced_instance: OperationsModel,
             sced_schedule_hour: int,
             ruc_horizon: int,
             run_ruc_with_next_day_data: bool
-           ) -> Tuple[RucModel, ScenarioTree]:
+           ) -> RucModel:
         pass
 
     @abstractmethod
@@ -54,7 +57,7 @@ class ModelingEngine(ABC):
 
 
     @abstractmethod
-    def create_ruc_instance_to_simulate_next_period(
+    def create_simulation_actuals(
             self,
             options: Options,
             uc_date: str,
@@ -67,9 +70,7 @@ class ModelingEngine(ABC):
     @abstractmethod
     def create_sced_instance(self,
             deterministic_ruc_instance_for_this_period: RucModel,
-            scenario_tree_for_this_period: ScenarioTree,
             deterministic_ruc_instance_for_next_period: RucModel,
-            scenario_tree_for_next_period: ScenarioTree,
             ruc_instance_to_simulate_this_period: RucModel,
             prior_sced_instance: OperationsModel,
             actual_demand: Mapping[Tuple[Bus, int], float],
@@ -84,8 +85,7 @@ class ModelingEngine(ABC):
             sced_horizon: int=24,
             ruc_every_hours: int=24,
             initialize_from_ruc: bool=True,
-            use_prescient_forecast_error: bool=True,
-            use_persistent_forecast_error: bool=False,
+            forecast_error_method: ForecastErrorMethod=ForecastErrorMethod.PRESCIENT,
             write_sced_instance: bool = False,
             output_initial_conditions: bool = False,
             output_demands: bool = False

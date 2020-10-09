@@ -14,5 +14,6 @@ B = TypeVar('B') # Bus
 L = TypeVar('L') # Line
 S = TypeVar('S') # Storage
 OperationsModel = TypeVar('OperationsModel')
-RucModel = TypeVar('TypeVar')
+RucModel = TypeVar('RucModel')
 ScenarioTree = TypeVar('ScenarioTree')
+EgretModel = TypeVar('EgretModel')
