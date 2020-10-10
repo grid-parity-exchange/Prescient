@@ -40,22 +40,20 @@ class OracleManager(_Manager):
         return -(options.ruc_execution_hour % (-options.ruc_every_hours))
 
     def _get_uc_activation_time(self, options, time_step):
-        ''' Get the hour, date, and next_date that a RUC generated at the given time will be activated '''
+        ''' Get the hour and date that a RUC generated at the given time will be activated '''
         ruc_delay = self._get_ruc_delay(options)
         activation_hour = time_step.hour + ruc_delay
 
         if (activation_hour < 24):
             # the RUC will go into effect the same day it is generated.
             uc_date = time_step.date
-            next_uc_date = time_step.next_date
         else:
             # This is the final RUC of the day, which will go into effect at the beginning of the next day
             uc_date = time_step.next_date
-            next_uc_date = time_step.next_next_date
 
         uc_hour = activation_hour % 24
 
-        return (uc_hour, uc_date, next_uc_date)
+        return (uc_hour, uc_date)
 
 
     def _get_projected_sced_instance(self, options: Options, time_step: PrescientTime) -> Tuple[OperationsModel, int]:
@@ -69,7 +67,7 @@ class OracleManager(_Manager):
             print("Drawing UC initial conditions for date:", time_step.date, "hour:", time_step.hour, "from prior SCED instance.")
             return (self.data_manager.prior_sced_instance, 1)
 
-        uc_hour, uc_date, uc_next_date = self._get_uc_activation_time(options, time_step)
+        uc_hour, uc_date = self._get_uc_activation_time(options, time_step)
 
         # if this is the first hour of the day, we might (often) want to establish initial conditions from
         # something other than the prior sced instance. these reasons are not for purposes of realism, but
@@ -147,7 +145,7 @@ class OracleManager(_Manager):
         # construct the simulation data associated with the first date #
         #################################################################
 
-        ruc_plan = self._generate_ruc(options, time_step.hour, time_step.date, time_step.next_date, None, None)
+        ruc_plan = self._generate_ruc(options, time_step.hour, time_step.date, None, None)
 
         self.data_manager.prior_sced_instance = None
         self.data_manager.set_pending_ruc_plan(ruc_plan)
@@ -161,9 +159,9 @@ class OracleManager(_Manager):
         '''
         projected_sced_instance, sced_schedule_hour = self._get_projected_sced_instance(options, time_step)
 
-        uc_hour, uc_date, next_uc_date = self._get_uc_activation_time(options, time_step)
+        uc_hour, uc_date = self._get_uc_activation_time(options, time_step)
 
-        ruc = self._generate_ruc(options, uc_hour, uc_date, next_uc_date, projected_sced_instance, sced_schedule_hour)
+        ruc = self._generate_ruc(options, uc_hour, uc_date, projected_sced_instance, sced_schedule_hour)
         self.data_manager.set_pending_ruc_plan(ruc)
         # If there is a RUC delay...
         if options.ruc_execution_hour % options.ruc_every_hours > 0:
@@ -172,14 +170,13 @@ class OracleManager(_Manager):
 
         return ruc
 
-    def _generate_ruc(self, options, uc_hour, uc_date, next_uc_date, projected_sced_instance, sced_schedule_hour):
+    def _generate_ruc(self, options, uc_hour, uc_date, projected_sced_instance, sced_schedule_hour):
         '''Creates a RUC plan by calling the oracle for the long-term plan based on forecast'''
 
         deterministic_ruc_instance = self.engine.create_deterministic_ruc(
                 options,
                 uc_date,
                 uc_hour,
-                next_uc_date,
                 self.data_manager.active_ruc,
                 options.output_ruc_initial_conditions,
                 projected_sced_instance,
@@ -215,7 +212,6 @@ class OracleManager(_Manager):
             options,
             uc_date,
             uc_hour,
-            next_uc_date,
            )
 
         result = RucPlan(simulation_actuals, deterministic_ruc_instance, ruc_market)

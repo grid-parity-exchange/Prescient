@@ -18,6 +18,7 @@ import pyomo.environ as pe
 
 from prescient.engine.modeling_engine import ModelingEngine, ForecastErrorMethod
 from prescient.simulator.data_manager import RucMarket
+from prescient.data.providers.dat_data_provider import DatDataProvider
 
 from .data_extractors import ScedDataExtractor, RucDataExtractor
 from .ptdf_manager import PTDFManager
@@ -55,12 +56,14 @@ class EgretEngine(ModelingEngine):
         self._ptdf_manager = PTDFManager()
         self._last_sced_pyo_model = None
         self._last_sced_pyo_solver = None
+        self._data_provider = DatDataProvider()
+        self._data_provider.initialize(options)
+
 
     def create_deterministic_ruc(self, 
             options: Options,
             uc_date:str,
             uc_hour: int,
-            next_uc_date: Optional[str],
             prior_ruc_instance: RucModel,
             output_ruc_initial_conditions: bool,
             projected_sced_instance: OperationsModel,
@@ -68,7 +71,7 @@ class EgretEngine(ModelingEngine):
             ruc_horizon: int,
             run_ruc_with_next_day_data: bool
            ) -> RucModel:
-        return self._p.create_deterministic_ruc(options, uc_date, uc_hour, next_uc_date,
+        return self._p.create_deterministic_ruc(options, self._data_provider, uc_date, uc_hour,
                                                 prior_ruc_instance, projected_sced_instance,
                                                 output_ruc_initial_conditions,
                                                 sced_schedule_hour, ruc_horizon,
@@ -90,10 +93,10 @@ class EgretEngine(ModelingEngine):
             self,
             options: Options,
             uc_date: str,
-            uc_hour: int,
-            next_uc_date: Optional[str]
+            uc_hour: int
            ) -> RucModel:
-        return self._p.create_simulation_actuals(options, uc_date, uc_hour, next_uc_date)
+        return self._p.create_simulation_actuals(options, self._data_provider, 
+                                                 uc_date, uc_hour)
 
 
     def create_sced_instance(self,

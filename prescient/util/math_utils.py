@@ -17,6 +17,3 @@ def round_small_values(x, p=1e-6):
         return x
     except:
         raise RuntimeError("Utility function round_small_values failed on input=%s, p=%f" % (str(x), p))
-
-def within_tolerance(v1, v2, tol=1e-5):
-    return math.fabs(v1 - v2) <= tol

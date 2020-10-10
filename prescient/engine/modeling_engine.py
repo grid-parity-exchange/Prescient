@@ -36,7 +36,6 @@ class ModelingEngine(ABC):
             options: Options,
             uc_date:str,
             uc_hour: int,
-            next_uc_date: Optional[str],
             prior_ruc_instance: RucModel,
             output_ruc_initial_conditions: bool,
             projected_sced_instance: OperationsModel,
@@ -61,9 +60,21 @@ class ModelingEngine(ABC):
             self,
             options: Options,
             uc_date: str,
-            uc_hour: int,
-            next_uc_date: Optional[str]
+            uc_hour: int
            ) -> RucModel:
+        ''' Get a new model holding data to be treated as actuals, starting at a given time.
+
+        Parameters
+        ----------
+        options:Options
+            Global option values
+        data_provider: DataProvider
+            An object that can provide actual and/or forecast data for the requested days
+        this_date: string
+            A string that can be parsed as a date
+        this_hour: int
+            0-based index of the first hour of the day for which data should be retrieved
+        ''' 
         pass
 
 
