@@ -326,7 +326,7 @@ def _construct_inner_options_parser():
                                    action="store",
                                    dest="L1Linf_solver",
                                    type="string",
-                                   default="gurobi")
+                                   default="cbc")
 
     populator_options.add_option("--start-date",
                                  help="The start date for the simulation - specified in MM-DD-YYYY format. "
@@ -477,7 +477,7 @@ def _construct_inner_options_parser():
 
     input_simulation_options.add_option('--ruc-prescience-hour',
                                         help='Hour before which linear blending of forecast and actuals '
-                                             'takes place when running determinisitc ruc. A value of '
+                                             'takes place when running deterministic ruc. A value of '
                                              '0 indicates we always take the forecast. Default is 0.',
                                         action='store',
                                         dest='ruc_prescience_hour',
@@ -497,10 +497,9 @@ def _construct_inner_options_parser():
 
     input_simulation_options.add_option("-m", '--model-directory',
                                         help="DEPRECATED; no need to set.",
-                                        action="store",
-                                        dest="model_directory",
+                                        action="callback",
                                         type="string",
-                                        default=".")
+                                        callback=lambda a,b,c,d: None)
     guiOverride["-m"] = {}
     guiOverride["-m"]["-m"] = False
 
@@ -657,7 +656,7 @@ def _construct_inner_options_parser():
                                          action='store',
                                          dest='sced_solver_type',
                                          type='string',
-                                         default='cplex')
+                                         default='cbc')
     guiOverride['--sced-solver'] = {}
     guiOverride['--sced-solver']['bpa'] = False
 
@@ -666,7 +665,7 @@ def _construct_inner_options_parser():
                                          action='store',
                                          dest='deterministic_ruc_solver_type',
                                          type='string',
-                                         default='cplex')
+                                         default='cbc')
     guiOverride['--deterministic-ruc-solver'] = {}
     guiOverride['--deterministic-ruc-solver']['bpa'] = False
 
@@ -675,7 +674,7 @@ def _construct_inner_options_parser():
                                          action='store',
                                          dest='ef_ruc_solver_type',
                                          type='string',
-                                         default='cplex')
+                                         default='cbc')
     guiOverride['--ef-ruc-solver'] = {}
     guiOverride['--ef-ruc-solver']['bpa'] = False
 
@@ -685,7 +684,7 @@ def _construct_inner_options_parser():
                                          action='store',
                                          dest='ph_ruc_subproblem_solver_type',
                                          type='string',
-                                         default='cplex')
+                                         default='cbc')
     guiOverride['--ph-ruc-subproblem-solver'] = {}
     guiOverride['--ph-ruc-subproblem-solver']['bpa'] = False
 

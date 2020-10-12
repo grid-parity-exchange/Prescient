@@ -14,8 +14,7 @@ import os.path
 from typing import NamedTuple
 
 class RucPlan(NamedTuple):
-   ruc_instance_to_simulate: RucModel
-   scenario_tree: ScenarioTree
+   simulation_actuals: RucModel
    deterministic_ruc_instance: RucModel
    ruc_market: [RucMarket, None]
 
@@ -30,12 +29,10 @@ class DataManager(_Manager):
     def initialize(self, engine, options):
         self._ruc_stats_extractor = engine.ruc_data_extractor
         self.prior_sced_instance = None
-        self.scenario_tree_for_this_period = None
-        self.scenario_tree_for_next_period = None
-        self.ruc_instance_to_simulate_this_period = None
-        self.ruc_instance_to_simulate_next_period = None
-        self.deterministic_ruc_instance_for_this_period = None
-        self.deterministic_ruc_instance_for_next_period = None
+        self.active_simulation_actuals = None
+        self.pending_simulation_actuals = None
+        self.active_ruc = None
+        self.pending_ruc = None
         self.ruc_market_active = None
         self.ruc_market_pending = None
         self._extensions = {}
@@ -45,15 +42,13 @@ class DataManager(_Manager):
         self._current_time = time
 
     def set_pending_ruc_plan(self, current_ruc_plan: RucPlan):
-        self.ruc_instance_to_simulate_next_period = current_ruc_plan.ruc_instance_to_simulate
-        self.scenario_tree_for_next_period = current_ruc_plan.scenario_tree
-        self.deterministic_ruc_instance_for_next_period =current_ruc_plan.deterministic_ruc_instance
+        self.pending_simulation_actuals = current_ruc_plan.simulation_actuals
+        self.pending_ruc =current_ruc_plan.deterministic_ruc_instance
         self.ruc_market_pending = current_ruc_plan.ruc_market
 
     def activate_pending_ruc(self, options: Options):
-        self.ruc_instance_to_simulate_this_period = self.ruc_instance_to_simulate_next_period
-        self.scenario_tree_for_this_period = self.scenario_tree_for_next_period
-        self.deterministic_ruc_instance_for_this_period = self.deterministic_ruc_instance_for_next_period
+        self.active_simulation_actuals = self.pending_simulation_actuals
+        self.active_ruc = self.pending_ruc
         self.ruc_market_active = self.ruc_market_pending
 
         # initialize the actual demand and renewables vectors - these will be incrementally
@@ -61,12 +56,15 @@ class DataManager(_Manager):
         self.set_actuals_for_new_ruc_instance()
         self.set_forecast_errors_for_new_ruc_instance(options)
 
-        self.clear_instances_for_next_period()
+        self.pending_simulation_actuals = None
+        self.pending_ruc = None
+        self.ruc_market_pending = None
+
 
     def set_forecast_errors_for_new_ruc_instance(self, options) -> None:
         ''' Generate new forecast errors from current ruc instances '''
-        forecast_ruc = self.deterministic_ruc_instance_for_this_period
-        actuals_ruc = self.ruc_instance_to_simulate_this_period
+        forecast_ruc = self.active_ruc
+        actuals_ruc = self.active_simulation_actuals
         extractor = self._ruc_stats_extractor
 
         # print("NOTE: Positive forecast errors indicate projected values higher than actuals")
@@ -87,8 +85,8 @@ class DataManager(_Manager):
 
     def update_forecast_errors_for_delayed_ruc(self, options):
         ''' update the demand and renewables forecast error dictionaries, using recently released forecasts '''
-        actuals_ruc = self.ruc_instance_to_simulate_next_period
-        forecast_ruc = self.deterministic_ruc_instance_for_next_period
+        actuals_ruc = self.pending_simulation_actuals
+        forecast_ruc = self.pending_ruc
         extractor = self._ruc_stats_extractor
 
         for b in extractor.get_buses(forecast_ruc):
@@ -107,7 +105,7 @@ class DataManager(_Manager):
     def set_actuals_for_new_ruc_instance(self) -> None:
         # initialize the actual demand and renewables vectors - these will be incrementally
         # updated when new forecasts are released, e.g., when the next-day RUC is computed.
-        ruc = self.ruc_instance_to_simulate_this_period
+        ruc = self.active_simulation_actuals
         extractor = self._ruc_stats_extractor
         times = range(1, extractor.get_num_time_periods(ruc) + 1)
 
@@ -125,7 +123,7 @@ class DataManager(_Manager):
     def update_actuals_for_delayed_ruc(self, options):
         # update the second 'ruc_every_hours' hours of the current actual demand/renewables vectors
         extractor = self._ruc_stats_extractor
-        actuals_ruc = self.ruc_instance_to_simulate_next_period
+        actuals_ruc = self.pending_simulation_actuals
 
         for t in range(1, options.ruc_every_hours+1):
             for b in extractor.get_buses(actuals_ruc):
@@ -133,11 +131,6 @@ class DataManager(_Manager):
             for g in extractor.get_nondispatchable_generators(actuals_ruc):
                 self._actual_min_renewables[g, t+options.ruc_every_hours] = extractor.get_min_nondispatchable_power(actuals_ruc, g, t)
                 self._actual_max_renewables[g, t+options.ruc_every_hours] = extractor.get_max_nondispatchable_power(actuals_ruc, g, t)
-
-    def clear_instances_for_next_period(self):
-        self.ruc_instance_to_simulate_next_period = None
-        self.scenario_tree_for_next_period = None
-        self.deterministic_ruc_instance_for_next_period = None
 
 
     ##########

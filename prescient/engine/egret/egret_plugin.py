@@ -7,9 +7,12 @@
 #  This software is distributed under the Revised BSD License.
 #  ___________________________________________________________________________
 
+from __future__ import annotations
 import os
 import math
 import logging
+import datetime
+import dateutil
 
 from pyomo.environ import value, Suffix
 
@@ -22,7 +25,14 @@ from egret.models.unit_commitment import _time_series_dict, _preallocated_list, 
 
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
+from prescient.engine.modeling_engine import ForecastErrorMethod
 from prescient.simulator.data_manager import RucMarket
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from prescient.data.data_provider import DataProvider
+    from typing import Optional
+    from egret.data.model_data import ModelData as EgretModel
 
 uc_abstract_data_model = get_uc_model()
 
@@ -197,9 +207,9 @@ def _zero_out_costs(sced_model, hours_in_objective):
 #    that is presently not conducted.
 
 ## TODO: propogate relax_t0_ramping_initial_day into this function
-def create_sced_instance(today_ruc_instance, today_stochastic_scenario_instances, today_scenario_tree,
-                         tomorrow_ruc_instance, tomorrow_stochastic_scenario_instances, tomorrow_scenario_tree,
-                         ruc_instance_to_simulate,  # providies actuals and an instance to query
+def create_sced_instance(today_ruc_instance, 
+                         tomorrow_ruc_instance,
+                         ruc_instance_to_simulate,  # provides actuals and an instance to query
                          prior_sced_instance,  # used for initial conditions if initial_from_ruc=False
                          actual_demand,  # native Python dictionary containing the actuals
                          demand_forecast_error, 
@@ -209,14 +219,11 @@ def create_sced_instance(today_ruc_instance, today_stochastic_scenario_instances
                          hour_to_simulate,
                          reserve_factor, 
                          options,
-                         hours_in_objective=1,
-                         # by default, just worry about cost minimization for the hour to simulate.
-                         sced_horizon=24,
-                         # by default simulate a SCED for 24 hours, to pass through the midnight boundary successfully
+                         hours_in_objective=1, # by default, just worry about cost minimization for the hour to simulate.
+                         sced_horizon=24, # by default simulate a SCED for 24 hours, to pass through the midnight boundary successfully
                          ruc_every_hours=24,
                          initialize_from_ruc=True,
-                         use_prescient_forecast_error=True,
-                         use_persistent_forecast_error=False,
+                         forecast_error_method = ForecastErrorMethod.PRESCIENT
                          ):
 
     assert ruc_instance_to_simulate != None
@@ -247,13 +254,11 @@ def create_sced_instance(today_ruc_instance, today_stochastic_scenario_instances
 
     if initialize_from_ruc:
         # the simplest initialization method is to set the initial conditions 
-        # to those found in the RUC (deterministic or stochastic) instance. this has 
+        # to those found in the RUC instance. this has 
         # the advantage that simulating from an in-sample scenario will yield
         # a feasible sced at each simulated hour.
 
-        # if there isn't a set of stochastic scenario instances, then 
-        # we're dealing with a deterministic RUC - use it directly.
-        assert today_stochastic_scenario_instances is None
+        # Use the deterministic RUC directly.
         print("")
         print("Drawing initial conditions from deterministic RUC initial conditions")
         for g, g_dict in today_ruc_instance.elements(element_type='generator', generator_type='thermal'):
@@ -269,7 +274,6 @@ def create_sced_instance(today_ruc_instance, today_stochastic_scenario_instances
         #for g in sorted(ruc_instance_to_simulate.ThermalGenerators):
         for g, g_dict in prior_sced_instance.elements(element_type='generator', generator_type='thermal'):
 
-            #unit_on = int(round(value(prior_sced_instance.UnitOn[g, 1])))
             unit_on = int(round(g_dict['commitment']['values'][0]))
             UnitOnT0Dict[g] = unit_on
 
@@ -303,24 +307,22 @@ def create_sced_instance(today_ruc_instance, today_stochastic_scenario_instances
 
                 
             # TBD: Eventually make the 1e-5 an user-settable option.
-            if math.fabs(min_power_output - candidate_power_generated) <= 1e-5: 
+            if unit_on == 0:
+                # if the unit is off, then the power generated at t0 must be equal to 0 -
+                # no tolerances allowed.
+                PowerGeneratedT0Dict[g] = 0.0
+            elif math.fabs(min_power_output - candidate_power_generated) <= 1e-5: 
                 PowerGeneratedT0Dict[g] = min_power_output
             elif math.fabs(max_power_output - candidate_power_generated) <= 1e-5: 
                 PowerGeneratedT0Dict[g] = max_power_output
             else:
                 PowerGeneratedT0Dict[g] = candidate_power_generated
             
-            # related to the above (and this is a case that is not caught by the above),
-            # if the unit is off, then the power generated at t0 must be equal to 0 -
-            # no tolerances allowed.
-            if unit_on == 0:
-                PowerGeneratedT0Dict[g] = 0.0
-
     ################################################################################
     # initialize the demand and renewables data, based on the forecast error model #
     ################################################################################
 
-    if use_prescient_forecast_error:
+    if forecast_error_method is ForecastErrorMethod.PRESCIENT:
 
         demand_dict = dict(((b, t+1), actual_demand[b, hour_to_simulate + t])
                            for b,_ in ruc_instance_to_simulate.elements(element_type='bus') for t in range(0, sced_horizon))
@@ -331,11 +333,7 @@ def create_sced_instance(today_ruc_instance, today_stochastic_scenario_instances
                                     for g,_ in ruc_instance_to_simulate.elements(element_type='generator', generator_type='renewable')
                                     for t in range(0, sced_horizon))
 
-    else:  # use_persistent_forecast_error:
-
-        # there is redundancy between the code for processing the two cases below. 
-        # for now, leaving this alone for clarity / debug.
-        assert today_stochastic_scenario_instances is None
+    else:  # persistent forecast error:
 
         demand_dict = {}
         min_nondispatch_dict = {}
@@ -683,111 +681,42 @@ def _solve_deterministic_ruc(deterministic_ruc_instance,
 solve_deterministic_ruc = create_solve_deterministic_ruc(_solve_deterministic_ruc)
 
 # utilities for creating a deterministic RUC instance, and a standard way to solve them.
-def create_deterministic_ruc(options, 
+def create_deterministic_ruc(options,
+                             data_provider:DataProvider,
                              this_date, 
                              this_hour,
-                             next_date,
                              prior_deterministic_ruc, # UnitOn T0 state should come from here
                              projected_sced, # PowerGenerated T0 state should come from here
                              output_initial_conditions,
                              sced_schedule_hour=4,
                              ruc_horizon=48,
-                             use_next_day_in_ruc=False,
-                             max_thermal_generator_label_length=DEFAULT_MAX_LABEL_LENGTH,
-                             max_bus_label_length=DEFAULT_MAX_LABEL_LENGTH,
-                             scenario=None,
-                             prior_root_node=None):
+                             use_next_day_in_ruc=False):
 
     ruc_every_hours = options.ruc_every_hours
 
-    # the (1-based) time period in the sced corresponding to midnight
+    start_day = dateutil.parser.parse(this_date).date()
+    start_time = datetime.datetime.combine(start_day, datetime.time(hour=this_hour))
 
-    instance_directory_name = os.path.join(options.data_directory, "pyspdir_twostage")
+    # Create a new model
+    md = data_provider.get_initial_model(options, ruc_horizon)
 
-    # next, construct the RUC instance. for data, we always look in the pysp directory
-    # for the forecasted value instance.
-    reference_model_filename = os.path.expanduser(options.model_directory) + os.sep + "ReferenceModel.py"
-
-    if (options.ruc_prescience_hour > abs(-options.ruc_execution_hour%options.ruc_every_hours)) and \
-            (options.ruc_prescience_hour > 0) and \
-            (options.run_deterministic_ruc):
-        print("NOTE: Loading actuals data to blend into first hours of deterministic RUC.")
-        load_actuals = True
+    # Populate the T0 data
+    if prior_deterministic_ruc is None or projected_sced is None:
+        data_provider.populate_initial_state_data(options, start_day, md)
     else:
-        load_actuals = False
+        for s, sdict in md.elements('storage'):
+            s_dict['initial_state_of_charge'] = projected_sced['elements']['storage'][s]['state_of_charge']['values'][sced_schedule_hour-1]
 
-    if scenario is None:
-        scenario_filename = "Scenario_forecasts.dat"
-        actuals_filename = "Scenario_actuals.dat"
-    else:
-        scenario_filename = scenario+".dat"
-
-    today_data = uc_abstract_data_model.create_instance(os.path.join(os.path.expanduser(instance_directory_name),
-                                                                     this_date,
-                                                                     scenario_filename)
-                                                       )
-    if load_actuals:
-        today_actuals = uc_abstract_data_model.create_instance(os.path.join(os.path.expanduser(instance_directory_name),
-                                                                            this_date,
-                                                                            actuals_filename)
-                                                              )
-    else:
-        today_actuals = None
-
-    if (next_date is None) or ((this_hour == 0) and (not use_next_day_in_ruc)):
-        next_day_data = None
-        next_day_actuals = None
-    else:
-        next_day_data = uc_abstract_data_model.create_instance(os.path.join(os.path.expanduser(instance_directory_name),
-                                                                             next_date,
-                                                                             scenario_filename )
-                                                              )
-        if load_actuals:
-            next_day_actuals = uc_abstract_data_model.create_instance(os.path.join(os.path.expanduser(instance_directory_name),
-                                                                                   next_date,
-                                                                                   actuals_filename)
-                                                                     )
-        else:
-            next_day_actuals = None
-
-
-    if max_thermal_generator_label_length == DEFAULT_MAX_LABEL_LENGTH:
-        if len(today_data.ThermalGenerators) == 0:
-            max_thermal_generator_label_length = None
-        else:
-            max_thermal_generator_label_length = max((len(this_generator) for this_generator in today_data.ThermalGenerators))
-
-    if max_bus_label_length == DEFAULT_MAX_LABEL_LENGTH:
-        max_bus_label_length = max((len(this_bus) for this_bus in today_data.Buses))
-
-    # set up the initial conditions for the deterministic RUC, based on all information
-    # available as to the conditions at the initial day. if this is the first simulation
-    # day, then we have nothing to go on other than the initial conditions already
-    # specified in the forecasted value instance. however, if this is not the first simulation
-    # day, use the projected solution state embodied (either explicitly or implicitly)
-    # in the prior date RUC to establish the initial conditions.
-    if (prior_deterministic_ruc is not None) and (projected_sced is not None):
-        UnitOnT0Dict = {}
-        UnitOnT0StateDict = {}
-        PowerGeneratedT0Dict = {}
-
-        #for g in sorted(today_data.ThermalGenerators):
         for g, g_dict in prior_deterministic_ruc.elements(element_type='generator', generator_type='thermal'):
-
             # this generator's commitments
             g_commit = g_dict['commitment']['values']
-            # no stochastic
-            assert prior_root_node is None
-            #final_unit_on_state = int(round(value(prior_deterministic_ruc.UnitOn[g, ruc_every_hours])))
             final_unit_on_state = int(round(g_commit[ruc_every_hours-1]))
 
             state_duration = 1
 
-            #hours = list(range(1, ruc_every_hours))
             hours = list(range(ruc_every_hours-1))
             hours.reverse()
             for i in hours:
-                #this_unit_on_state = int(round(value(prior_deterministic_ruc.UnitOn[g, i])))
                 this_unit_on_state = int(round(g_commit[i]))
                 if this_unit_on_state != final_unit_on_state:
                     break
@@ -795,17 +724,15 @@ def create_deterministic_ruc(options,
             if final_unit_on_state == 0:
                 state_duration = -state_duration
             ## get hours before prior_deterministic_ruc
-            #prior_UnitOnT0State = int(value(prior_deterministic_ruc.UnitOnT0State[g]))
             prior_UnitOnT0State = int(g_dict['initial_status'])
             # if we have the same state at the beginning and the end of the horizon,
             # AND it agrees with the state from the previous, we can add the prior state.
             # Important for doing more than daily commitments, and long horizon generators
             # like nuclear and some coal units.
-            if abs(state_duration) == ruc_every_hours and (\
-                    ( prior_UnitOnT0State < 0 and state_duration < 0 ) or \
-                    ( prior_UnitOnT0State > 0 and state_duration > 0 )
-                    ):
+            if abs(state_duration) == ruc_every_hours and \
+               ((prior_UnitOnT0State < 0) == (state_duration < 0)):
                 state_duration += prior_UnitOnT0State
+            md.data['elements']['generator'][g]['initial_status'] = state_duration
 
             # power generated is the projected output at t0
             #power_generated_at_t0 = value(projected_sced.PowerGenerated[g, sced_schedule_hour])
@@ -821,220 +748,51 @@ def create_deterministic_ruc(options,
             elif final_unit_on_state == 0:
                 power_generated_at_t0 = 0.0
 
-            # propagate the initial conditions to the deterministic ruc being constructed.
-
-            UnitOnT0Dict[g] = final_unit_on_state
-            UnitOnT0StateDict[g] = state_duration
-
             # the validators are rather picky, in that tolerances are not acceptable.
             # given that the average power generated comes from an optimization 
             # problem solve, the average power generated can wind up being less
             # than or greater than the bounds by a small epsilon. touch-up in this
             # case.
             if isinstance(g_dict['p_min'], dict):
-                min_power_output = g_dict['p_min']['values'][sced_schedule_hour]
+                min_power_output = g_dict['p_min']['values'][sced_schedule_hour-1]
             else:
                 min_power_output = g_dict['p_min']
             if isinstance(g_dict['p_max'], dict):
-                max_power_output = g_dict['p_max']['values'][sced_schedule_hour]
+                max_power_output = g_dict['p_max']['values'][sced_schedule_hour-1]
             else:
                 max_power_output = g_dict['p_max']
 
+            # Ensure power generated is within limits
             # TBD: Eventually make the 1e-5 an user-settable option.
-            if math.fabs(min_power_output - power_generated_at_t0) <= 1e-5:
-                PowerGeneratedT0Dict[g] = min_power_output
-            elif math.fabs(max_power_output - power_generated_at_t0) <= 1e-5:
-                PowerGeneratedT0Dict[g] = max_power_output
-            else:
-                PowerGeneratedT0Dict[g] = power_generated_at_t0
+            if math.isclose(min_power_output, power_generated_at_t0, rel_tol=0, abs_tol=1e-5):
+                power_generated_at_t0 = min_power_output
+            elif math.isclose(max_power_output, power_generated_at_t0, rel_tol=0, abs_tol=1e-5):
+                power_generated_at_t0 = max_power_output
 
-    else:
-        UnitOnT0Dict = dict((gen, today_data.UnitOnT0[gen]) for gen in sorted(today_data.ThermalGenerators))
-        UnitOnT0StateDict = dict((gen, today_data.UnitOnT0State[gen]) for gen in sorted(today_data.ThermalGenerators))
-        PowerGeneratedT0Dict = dict((gen, today_data.PowerGeneratedT0[gen]) for gen in sorted(today_data.ThermalGenerators))
+            md.data['elements']['generator'][g]['initial_p_output'] = power_generated_at_t0
 
-    new_ruc_md = _get_ruc_data(options, today_data, this_hour, next_day_data, UnitOnT0Dict, UnitOnT0StateDict, PowerGeneratedT0Dict, projected_sced, ruc_horizon, use_next_day_in_ruc, today_actuals, next_day_actuals)
+    # Populate forecasts
+    copy_first_day = (not use_next_day_in_ruc) and (this_hour != 0)
+    forecast_request_count = 24 if copy_first_day else ruc_horizon 
+    data_provider.populate_with_forecast_data(options, start_time, forecast_request_count, 
+                                              60, md)
 
-    ## if relaxing the initial ramping, set this in module
-    #if (prior_deterministic_ruc is None) and options.relax_t0_ramping_initial_day:
-    #    reference_model.enforce_t1_ramp_rates = False
-    assert options.relax_t0_ramping_initial_day is False
+    # Ensure the reserve requirement is satisfied
+    if options.reserve_factor > 0:
+        reserve_factor = options.reserve_factor
+        reserve_reqs = md.data['system']['reserve_requirement']['values']
+        for t in range(0, forecast_request_count):
+            total_load = sum(bdata['p_load']['values'][t]
+                             for bus, bdata in md.elements('load'))
+            min_reserve = reserve_factor*total_demand
+            if reserve_reqs[t] < min_reserve:
+                reserve_reqs[t] = min_reserve
 
-    ## reset this value for all subsequent runs
-    #if (prior_deterministic_ruc is None) and options.relax_t0_ramping_initial_day:
-    #    reference_model.enforce_t1_ramp_rates = True
+    # Copy from first 24 to second 24, if necessary
+    if copy_first_day:
+        _copy_time_period_data(options, range(0,24), range(24, ruc_horizon-24), md)
 
-    if output_initial_conditions:
-        _report_initial_conditions_for_deterministic_ruc(new_ruc_md,
-                                                         max_thermal_generator_label_length=max_thermal_generator_label_length)
-
-        _report_demand_for_deterministic_ruc(new_ruc_md,
-                                             options.ruc_every_hours,
-                                             max_bus_label_length=max_bus_label_length)
-
-    return new_ruc_md, None
-
-    
-def _get_ruc_data(options,
-                  today_data, this_hour, next_day_data,
-                  UnitOnT0Dict=None, UnitOnT0StateDict=None, PowerGeneratedT0Dict=None,
-                  projected_sced = None,
-                  ruc_horizon = 48,
-                  use_next_day_in_ruc=False,
-                  today_actuals=None, next_day_actuals=None):
-
-    max_ruc_horizon = ruc_horizon
-
-    def _load_from_whole_day(day_data):
-        day_data_Buses = sorted(day_data.Buses)
-        day_data_AllNondispatchableGenerators = sorted(day_data.AllNondispatchableGenerators)
-
-        ruc_horizon = min(max_ruc_horizon,value(day_data.NumTimePeriods)-this_hour)
-        data_time_periods = range(this_hour+1,this_hour+ruc_horizon+1)
-        
-        demand_dict = dict(((b, t-this_hour), value(day_data.Demand[b,t])) for b in day_data_Buses for t in data_time_periods)
-        reserve_dict = dict((t-this_hour, value(day_data.ReserveRequirement[t])) for t in data_time_periods)
-
-        min_nondispatch_dict = dict(((n,t-this_hour), value(day_data.MinNondispatchablePower[n,t])) for n in day_data_AllNondispatchableGenerators for t in data_time_periods)
-        max_nondispatch_dict = dict(((n,t-this_hour), value(day_data.MaxNondispatchablePower[n,t])) for n in day_data_AllNondispatchableGenerators for t in data_time_periods)
-        return ruc_horizon, demand_dict, reserve_dict, min_nondispatch_dict, max_nondispatch_dict
-
-    def _load_from_partial_days(day_data, day_data_next, ruc_horizon, day_data_time_periods, day_data_next_time_periods):
-        day_data_Buses = sorted(day_data.Buses)
-       	day_data_AllNondispatchableGenerators = sorted(day_data.AllNondispatchableGenerators)
-
-        day_data_next_Buses = sorted(day_data_next.Buses)
-        day_data_next_AllNondispatchableGenerators = sorted(day_data_next.AllNondispatchableGenerators)
-
-        ## add for the rest of this file's data
-        demand_dict = dict(((b, t-this_hour), value(day_data.Demand[b,t])) for b in day_data_Buses for t in day_data_time_periods)
-        reserve_dict = dict((t-this_hour, value(day_data.ReserveRequirement[t])) for t in day_data_time_periods)
-
-        min_nondispatch_dict = dict(((n,t-this_hour), value(day_data.MinNondispatchablePower[n,t])) for n in day_data_AllNondispatchableGenerators for t in day_data_time_periods)
-        max_nondispatch_dict = dict(((n,t-this_hour), value(day_data.MaxNondispatchablePower[n,t])) for n in day_data_AllNondispatchableGenerators for t in day_data_time_periods)
-        ## get the next hours from the next day, up to 24
-        demand_dict.update(dict(((b, t+24-this_hour), value(day_data_next.Demand[b,t])) for b in day_data_next_Buses for t in day_data_next_time_periods))
-        reserve_dict.update(dict((t+24-this_hour, value(day_data_next.ReserveRequirement[t])) for t in day_data_next_time_periods))
-
-        min_nondispatch_dict.update(dict(((n,t+24-this_hour), value(day_data_next.MinNondispatchablePower[n,t])) for n in day_data_next_AllNondispatchableGenerators for t in day_data_next_time_periods))
-        max_nondispatch_dict.update(dict(((n,t+24-this_hour), value(day_data_next.MaxNondispatchablePower[n,t])) for n in day_data_next_AllNondispatchableGenerators for t in day_data_next_time_periods))
-
-        return demand_dict, reserve_dict, min_nondispatch_dict, max_nondispatch_dict
-
-    if use_next_day_in_ruc:
-        if next_day_data is None:
-            ruc_horizon, demand_dict, reserve_dict, min_nondispatch_dict, max_nondispatch_dict = _load_from_whole_day(today_data)
-            if today_actuals is not None:
-                _, actual_demand_dict, actual_reserve_dict, actual_min_nondispatch_dict, actual_max_nondispatch_dict = \
-                        _load_from_whole_day(today_actuals)
-        else:
-            ruc_horizon = min(value(today_data.NumTimePeriods), max_ruc_horizon)
-            today_data_time_periods = range(this_hour+1,24+1)
-            next_day_data_time_periods = range(1, 1+this_hour+(ruc_horizon-24))
-
-            demand_dict, reserve_dict, min_nondispatch_dict, max_nondispatch_dict = \
-                    _load_from_partial_days(today_data, next_day_data, ruc_horizon, today_data_time_periods, next_day_data_time_periods)
-            if today_actuals is not None:
-                actual_demand_dict, actual_reserve_dict, actual_min_nondispatch_dict, actual_max_nondispatch_dict = \
-                    _load_from_partial_days(today_actuals, next_day_actuals, ruc_horizon, today_data_time_periods, next_day_data_time_periods)
-
-    else:
-        ## In both cases we'll just get all the data from the current
-        ## day, because that covers the next 24 hours or we do not have
-        ## better data
-        if (next_day_data is None) or (this_hour == 0):
-            ruc_horizon, demand_dict, reserve_dict, min_nondispatch_dict, max_nondispatch_dict = _load_from_whole_day(today_data)
-            if today_actuals is not None:
-                _, actual_demand_dict, actual_reserve_dict, actual_min_nondispatch_dict, actual_max_nondispatch_dict = \
-                        _load_from_whole_day(today_actuals)
-        else:
-            ## NOTE: this will get the next few hours from tomorrow, and 
-            ##       the repeat that for the next 24 to mirror what the 
-            ##       current populator does
-            ruc_horizon = min(value(today_data.NumTimePeriods), max_ruc_horizon)
-            today_data_time_periods = range(this_hour+1,24+1)
-                                               ## in case ruc_hozizon != 48 
-            next_day_data_time_periods = range(1, 1+this_hour)
-
-            demand_dict, reserve_dict, min_nondispatch_dict, max_nondispatch_dict = \
-                    _load_from_partial_days(today_data, next_day_data, ruc_horizon, today_data_time_periods, next_day_data_time_periods)
-            ## get the next 24 hours as a copy of the first
-            for t in range(1,ruc_horizon-24+1):
-                for b in sorted(today_data.Buses):
-                    demand_dict[b,t+24] = demand_dict[b,t]
-                reserve_dict[t+24] = reserve_dict[t]
-                for n in sorted(today_data.AllNondispatchableGenerators):
-                    min_nondispatch_dict[n,t+24] = min_nondispatch_dict[n,t]
-                    max_nondispatch_dict[n,t+24] = max_nondispatch_dict[n,t]
-
-            if today_actuals is not None:
-                actual_demand_dict, actual_reserve_dict, actual_min_nondispatch_dict, actual_max_nondispatch_dict = \
-                    _load_from_partial_days(today_actuals, next_day_actuals, ruc_horizon, today_data_time_periods, next_day_data_time_periods)
-                ## get the next 24 hours as a copy of the first
-                for t in range(1,ruc_horizon-24+1):
-                    for b in sorted(today_data.Buses):
-                        actual_demand_dict[b,t+24] = actual_demand_dict[b,t]
-                    actual_reserve_dict[t+24] = actual_reserve_dict[t]
-                    for n in sorted(today_data.AllNondispatchableGenerators):
-                        actual_min_nondispatch_dict[n,t+24] = actual_min_nondispatch_dict[n,t]
-                        actual_max_nondispatch_dict[n,t+24] = actual_max_nondispatch_dict[n,t]
-
-    if today_actuals is not None:
-        print("NOTE: Computing linear interpolation using actuals data!")
-
-        ## We make a few assumptions here.
-        ## 1. The RUC is run before the SCED for a given hour, so even having
-        ##    a RUC run hour of 0 doesn't give perfect information for that hour
-        ## 2. Consquently, we add "1" to the distance between the RUC run and the 0
-        ##    hour, so as to be consistent and somewhat conservative
-        ## 3. Note that the time indexing for the dictionaries starts a "1", so 2. 
-        ##    is essentially done for us already 
-        ## 4. This is a simple linear interpolation with a receeding time horizon.
-        ##    Something smarter should be done!
-
-        before_ruc_hour = -(options.ruc_execution_hour%(-options.ruc_every_hours))
-        ruc_prescience_hour = options.ruc_prescience_hour
-
-        for t in range(1,ruc_prescience_hour-before_ruc_hour):
-            forecast_portion = (before_ruc_hour+t)/float(ruc_prescience_hour)
-            actuals_portion = (ruc_prescience_hour-(before_ruc_hour+t))/float(ruc_prescience_hour)
-            for b in sorted(today_data.Buses):
-                demand_dict[b,t] = forecast_portion*demand_dict[b,t] + \
-                                   actuals_portion*actual_demand_dict[b,t]
-            reserve_dict[t] = forecast_portion*reserve_dict[t] + actuals_portion*actual_reserve_dict[t]
-            for n in sorted(today_data.AllNondispatchableGenerators):
-                min_nondispatch_dict[n,t] = forecast_portion*min_nondispatch_dict[n,t] + \
-                                            actuals_portion*actual_min_nondispatch_dict[n,t]
-
-                max_nondispatch_dict[n,t] = forecast_portion*max_nondispatch_dict[n,t] + \
-                                            actuals_portion*actual_max_nondispatch_dict[n,t]
-
-    ## assume this don't matter if they're not passed in
-    if UnitOnT0Dict is None:
-        UnitOnT0Dict = dict((g, today_data.UnitOnT0[g]) for g in sorted(today_data.ThermalGenerators))
-    if UnitOnT0StateDict is None:
-        UnitOnT0StateDict = dict((g, today_data.UnitOnT0State[g]) for g in sorted(today_data.ThermalGenerators))
-    if PowerGeneratedT0Dict is None:
-        PowerGeneratedT0Dict = dict((g, today_data.PowerGeneratedT0[g]) for g in sorted(today_data.ThermalGenerators))
-
-    ##########################################################################
-    # construct the data dictionary for instance initialization from scratch #
-    ##########################################################################
-
-    if projected_sced is not None:
-        StorageSocOnT0Dict = dict((s, value(projected_sced.SocStorage[s, sced_schedule_hour]))
-                                             for s in sorted(today_data.Storage))
-    else:
-        StorageSocOnT0Dict = dict((s, value(today_data.StorageSocOnT0[s])) for s in sorted(today_data.Storage))
-
-    today_data_md = ModelData(create_model_data_dict_params(today_data, keep_names=True))
-
-    ## preprocess the data coming from *.dat files
-    ruc_data = _get_data_dict(today_data_md, ruc_horizon, demand_dict, reserve_dict, options.reserve_factor, \
-                              min_nondispatch_dict, max_nondispatch_dict, \
-                              UnitOnT0Dict, UnitOnT0StateDict, PowerGeneratedT0Dict, StorageSocOnT0Dict)
-
-    return ruc_data
+    return md
 
 def _report_initial_conditions_for_deterministic_ruc(deterministic_instance,
                                                     max_thermal_generator_label_length=DEFAULT_MAX_LABEL_LENGTH):
@@ -1109,28 +867,6 @@ def _report_demand_for_deterministic_ruc(ruc_instance,
 
 ###### END Deterministic RUC solvers and helper functions #########
 
-
-#######################################################################
-# a utility to determine the name of the file in which simulated data #
-# is to be drawn, given a specific input date and run-time options.   #
-#######################################################################
-
-
-def compute_simulation_filename_for_date(a_date, options):
-
-    simulated_dat_filename = ""
-
-    if options.simulate_out_of_sample > 0:
-        # assume the input directories have been set up with a Scenario_actuals.dat file in each day.
-        simulated_dat_filename = os.path.join(options.data_directory, "pyspdir_twostage", str(a_date), "Scenario_actuals.dat")
-    else:
-        if options.run_deterministic_ruc:
-            print("")
-            print("***WARNING: Simulating the forecast scenario when running deterministic RUC - "
-                  "time consistency across midnight boundaries is not guaranteed, and may lead to threshold events.")
-            simulated_dat_filename = os.path.join(options.data_directory, "pyspdir_twostage", str(a_date),
-                                                  "Scenario_forecasts.dat")
-    return simulated_dat_filename
 
 def create_pricing_model(model_data,
                          network_constraints='ptdf_power_flow',
@@ -1309,33 +1045,65 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
                     thermal_reserve_cleared_DA=thermal_reserve_cleared_DA,
                     renewable_gen_cleared_DA=renewable_gen_cleared_DA)
 
-def create_ruc_instance_to_simulate_next_period(options, this_date, this_hour, next_date):
 
-    simulated_dat_filename_this = compute_simulation_filename_for_date(this_date, options)
-    print("")
-    print("Actual simulation data for date=" + str(this_date) + " drawn from file=" +
-          simulated_dat_filename_this)
+def create_simulation_actuals(
+        options: Options, data_provider: DataProvider, 
+        this_date: string, this_hour:int) -> EgretModel:
+    ''' Get an Egret model consisting of data to be treated as actuals, starting at a given time.
 
-    if not os.path.exists(simulated_dat_filename_this):
-        raise RuntimeError("The file " + simulated_dat_filename_this + " does not exist or cannot be read.")
+    Parameters
+    ----------
+    options:Options
+        Global option values
+    data_provider: DataProvider
+        An object that can provide actual and/or forecast data for the requested days
+    this_date: string
+        A string that can be parsed as a date
+    this_hour: int
+        0-based index of the first hour of the day for which data should be retrieved
+    ''' 
+    # Convert time string to time
+    start_time = dateutil.parser.parse(this_date)
 
-    ruc_instance_to_simulate_this_period = uc_abstract_data_model.create_instance(simulated_dat_filename_this)
-
-    if next_date is not None and this_hour != 0:
-        simulated_dat_filename_next = compute_simulation_filename_for_date(next_date, options)
-        print("")
-        print("Actual simulation data for date=" + str(next_date) + " drawn from file=" +
-              simulated_dat_filename_next)
-
-        if not os.path.exists(simulated_dat_filename_next):
-            raise RuntimeError("The file " + simulated_dat_filename_next + " does not exist or cannot be read.")
-
-        ruc_instance_to_simulate_next_period = uc_abstract_data_model.create_instance(simulated_dat_filename_next)
+    # Pick whether we're getting actuals or forecasts
+    if options.simulate_out_of_sample:
+        get_data_func = data_provider.populate_with_actuals
     else:
-        ruc_instance_to_simulate_next_period = None
+        if options.run_deterministic_ruc:
+            print("")
+            print("***WARNING: Simulating the forecast scenario when running deterministic RUC - "
+                  "time consistency across midnight boundaries is not guaranteed, and may lead to threshold events.")
+        get_data_func = data_provider.populate_with_forecast_data
 
-    print("")
-    print("Creating RUC instance to simulate")
-    new_ruc_to_simulate_md = _get_ruc_data(options, ruc_instance_to_simulate_this_period, this_hour, ruc_instance_to_simulate_next_period )
+    # Get a new model
+    # TODO: Avoid hard-coding the number of values
+    md = data_provider.get_initial_model(options, 48)
 
-    return new_ruc_to_simulate_md
+    # Fill it in with data
+    data_provider.populate_initial_state_data(options, start_time.date(), md)
+    if this_hour == 0:
+        get_data_func(options, start_time, 48, 60, md)
+    else:
+        get_data_func(options, start_time, 24, 60, md)
+        _copy_time_period_data(options, range(0,24), range(24,48), md)
+
+    return md
+
+def _copy_time_period_data(options, copy_from_periods, copy_to_periods, model):
+    ''' Copy forecastable data between time periods
+    '''
+    # copy renewables limits
+    for gen, gdata in model.elements('generator', generator_type='renewable'):
+        for t_from, t_to in zip(copy_from_periods, copy_to_periods):
+            gdata['p_min']['values'][t_to] = gdata['p_min']['values'][t_from]
+            gdata['p_max']['values'][t_to] = gdata['p_max']['values'][t_from]
+
+    # Copy loads
+    for bus, bdata in model.elements('load'):
+        for t_from, t_to in zip(copy_from_periods, copy_to_periods):
+            bdata['p_load']['values'][t_to] = bdata['p_load']['values'][t_from]
+
+    # Copy reserve requirement
+    reserve_reqs = model.data['system']['reserve_requirement']['values']
+    for t_from, t_to in zip(copy_from_periods, copy_to_periods):
+        reserve_reqs[t_to] = reserve_reqs[t_from]

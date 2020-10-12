@@ -16,8 +16,9 @@ if TYPE_CHECKING:
 import os
 import pyomo.environ as pe
 
-from prescient.engine.modeling_engine import ModelingEngine
+from prescient.engine.modeling_engine import ModelingEngine, ForecastErrorMethod
 from prescient.simulator.data_manager import RucMarket
+from prescient.data.providers.dat_data_provider import DatDataProvider
 
 from .data_extractors import ScedDataExtractor, RucDataExtractor
 from .ptdf_manager import PTDFManager
@@ -55,21 +56,22 @@ class EgretEngine(ModelingEngine):
         self._ptdf_manager = PTDFManager()
         self._last_sced_pyo_model = None
         self._last_sced_pyo_solver = None
+        self._data_provider = DatDataProvider()
+        self._data_provider.initialize(options)
+
 
     def create_deterministic_ruc(self, 
             options: Options,
             uc_date:str,
             uc_hour: int,
-            next_uc_date: Optional[str],
             prior_ruc_instance: RucModel,
-            prior_scenario_tree: ScenarioTree,
             output_ruc_initial_conditions: bool,
             projected_sced_instance: OperationsModel,
             sced_schedule_hour: int,
             ruc_horizon: int,
             run_ruc_with_next_day_data: bool
-           ) -> Tuple[RucModel, ScenarioTree]:
-        return self._p.create_deterministic_ruc(options, uc_date, uc_hour, next_uc_date,
+           ) -> RucModel:
+        return self._p.create_deterministic_ruc(options, self._data_provider, uc_date, uc_hour,
                                                 prior_ruc_instance, projected_sced_instance,
                                                 output_ruc_initial_conditions,
                                                 sced_schedule_hour, ruc_horizon,
@@ -87,21 +89,19 @@ class EgretEngine(ModelingEngine):
                                                                 options,
                                                                 self._ptdf_manager)
 
-    def create_ruc_instance_to_simulate_next_period(
+    def create_simulation_actuals(
             self,
             options: Options,
             uc_date: str,
-            uc_hour: int,
-            next_uc_date: Optional[str]
+            uc_hour: int
            ) -> RucModel:
-        return self._p.create_ruc_instance_to_simulate_next_period(options, uc_date, uc_hour, next_uc_date)
+        return self._p.create_simulation_actuals(options, self._data_provider, 
+                                                 uc_date, uc_hour)
 
 
     def create_sced_instance(self,
             deterministic_ruc_instance_for_this_period: RucModel,
-            scenario_tree_for_this_period: ScenarioTree,
             deterministic_ruc_instance_for_next_period: RucModel,
-            scenario_tree_for_next_period: ScenarioTree,
             ruc_instance_to_simulate_this_period: RucModel,
             prior_sced_instance: OperationsModel,
             actual_demand: Mapping[Tuple[Bus, int], float],
@@ -116,8 +116,7 @@ class EgretEngine(ModelingEngine):
             sced_horizon: int=24,
             ruc_every_hours: int=24,
             initialize_from_ruc: bool=True,
-            use_prescient_forecast_error: bool=True,
-            use_persistent_forecast_error: bool=False,
+            forecast_error_method = ForecastErrorMethod.PRESCIENT,
             write_sced_instance: bool = False,
             lp_filename: str = None,
             output_initial_conditions: bool = False,
@@ -125,8 +124,8 @@ class EgretEngine(ModelingEngine):
            ) -> Tuple[OperationsModel, float]:
 
         current_sced_instance = self._p.create_sced_instance(
-            deterministic_ruc_instance_for_this_period, None, scenario_tree_for_this_period, 
-            deterministic_ruc_instance_for_next_period, None, scenario_tree_for_next_period,
+            deterministic_ruc_instance_for_this_period, 
+            deterministic_ruc_instance_for_next_period,
             ruc_instance_to_simulate_this_period,
             prior_sced_instance,
             actual_demand,
@@ -141,8 +140,7 @@ class EgretEngine(ModelingEngine):
             sced_horizon,
             ruc_every_hours,
             initialize_from_ruc,
-            use_prescient_forecast_error,
-            use_persistent_forecast_error)
+            forecast_error_method)
 
         if write_sced_instance:
             current_sced_instance.write(lp_filename)
@@ -486,7 +484,7 @@ class EgretEngine(ModelingEngine):
             self.create_sced_instance = egret_plugin.create_sced_instance
             self.create_deterministic_ruc = egret_plugin.create_deterministic_ruc
             self.solve_deterministic_ruc = egret_plugin.solve_deterministic_ruc
-            self.create_ruc_instance_to_simulate_next_period = egret_plugin.create_ruc_instance_to_simulate_next_period
+            self.create_simulation_actuals = egret_plugin.create_simulation_actuals
             self.solve_deterministic_day_ahead_pricing_problem = egret_plugin.solve_deterministic_day_ahead_pricing_problem
             self._zero_out_costs = egret_plugin._zero_out_costs
 
@@ -498,8 +496,9 @@ class EgretEngine(ModelingEngine):
 
                 method_names = ["call_solver",
                                 "create_sced_instance",
-                                "create_and_solve_deterministic_ruc",
-                                "create_ruc_instance_to_simulate_next_period",
+                                "create_deterministic_ruc",
+                                "solve_deterministic_ruc",
+                                "create_simulation_actuals",
                                 "solve_deterministic_day_ahead_pricing_problem"]
 
                 for method_name in method_names:

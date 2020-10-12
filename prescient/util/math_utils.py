@@ -13,7 +13,7 @@ def round_small_values(x, p=1e-6):
     # Rounds values that are within (-1e-6, 1e-6) to 0.
     try:
         if math.fabs(x) < p:
-            return 0
+            return 0.0
         return x
     except:
         raise RuntimeError("Utility function round_small_values failed on input=%s, p=%f" % (str(x), p))
