@@ -119,6 +119,7 @@ class ReportingManager(_Manager):
         bus_columns = {'Date':       lambda hourly,b: str(hourly.date),
                        'Hour':       lambda hourly,b: hourly.hour + 1,
                        'Bus':        lambda hourly,b: b,
+                       'Demand':     lambda hourly,b: hourly.bus_demands[b],                       
                        'Shortfall':     lambda hourly,b: hourly.observed_bus_mismatches[b] if hourly.observed_bus_mismatches[b] > 0.0 else 0.0,
                        'Overgeneration':  lambda hourly,b: -hourly.observed_bus_mismatches[b] if hourly.observed_bus_mismatches[b] < 0.0 else 0.0,
                        'LMP':   lambda hourly,b: hourly.observed_bus_LMPs[b],
