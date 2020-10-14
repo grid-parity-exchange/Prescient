@@ -119,6 +119,7 @@ class ReportingManager(_Manager):
         bus_columns = {'Date':       lambda hourly,b: str(hourly.date),
                        'Hour':       lambda hourly,b: hourly.hour + 1,
                        'Bus':        lambda hourly,b: b,
+                       'Demand':     lambda hourly,b: hourly.bus_demands[b],                       
                        'Shortfall':     lambda hourly,b: hourly.observed_bus_mismatches[b] if hourly.observed_bus_mismatches[b] > 0.0 else 0.0,
                        'Overgeneration':  lambda hourly,b: -hourly.observed_bus_mismatches[b] if hourly.observed_bus_mismatches[b] < 0.0 else 0.0,
                        'LMP':   lambda hourly,b: hourly.observed_bus_LMPs[b],
@@ -142,7 +143,7 @@ class ReportingManager(_Manager):
         stats_manager.register_for_overall_stats(lambda overall: line_file.close())
 
     def setup_hourly_gen_summary(self, options, stats_manager: StatsManager):
-        hourly_gen_path = os.path.join(options.output_directory, 'Hourly_gen_summary.csv')
+        hourly_gen_path = os.path.join(options.output_directory, 'hourly_gen_summary.csv')
         hourly_gen_file = open(hourly_gen_path, 'w', newline='')
         hourly_gen_columns = {'Date': lambda hourly: str(hourly.date),
                               'Hour': lambda hourly: hourly.hour + 1,
@@ -179,7 +180,7 @@ class ReportingManager(_Manager):
 
 
     def setup_daily_summary(self, options, stats_manager: StatsManager):
-        daily_path = os.path.join(options.output_directory, 'Daily_summary.csv')
+        daily_path = os.path.join(options.output_directory, 'daily_summary.csv')
         daily_file = open(daily_path, 'w', newline='')
         daily_columns = {'Date': lambda daily: str(daily.date),
                          'Demand': lambda daily: daily.this_date_demand,
@@ -215,7 +216,7 @@ class ReportingManager(_Manager):
         # We implement this as an inner function so that we can open and close the file
         # at the end of the simulation instead of keeping it open the whole session
         def write_overall_stats(overall: OverallStats):
-            overall_path = os.path.join(options.output_directory, 'Overall_simulation_output.csv')
+            overall_path = os.path.join(options.output_directory, 'overall_simulation_output.csv')
             overall_file = open(overall_path, 'w', newline='')
             overall_cols = {'Total demand':            lambda overall: overall.cumulative_demand,
                             'Total fixed costs':       lambda overall: overall.total_overall_fixed_costs,

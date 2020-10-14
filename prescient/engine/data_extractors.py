@@ -101,6 +101,11 @@ class ScedDataExtractor(ABC):
         pass
 
     @abstractmethod
+    def get_bus_demand(self, sced: OperationsModel, bus: B) -> float:
+        """Get the demand at a specific bus."""
+        pass    
+
+    @abstractmethod
     def get_bus_mismatch(self, sced: OperationsModel, bus: B) -> float:
         """Get the absolute value of the bus's load mismatch."""
         pass
@@ -363,6 +368,10 @@ class ScedDataExtractor(ABC):
     def get_all_flow_levels(self, sced: OperationsModel) -> Dict[L, float]:
         return {l: self.get_flow_level(sced, l)
                 for l in self.get_transmission_lines(sced)}
+
+    def get_all_bus_demands(self, sced: OperationsModel) -> Dict[B, float]:
+        return {b: self.get_bus_demand(sced, b)
+                for b in self.get_buses(sced)}
 
     def get_all_bus_mismatches(self, sced: OperationsModel) -> Dict[B, float]: 
         return {b: self.get_bus_mismatch(sced, b)

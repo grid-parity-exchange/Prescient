@@ -67,6 +67,8 @@ class HourlyStats:
 
     observed_flow_levels: Dict[L, float]
 
+    bus_demands: Dict[B, float]
+
     observed_bus_mismatches: Dict[B, float]
     observed_bus_LMPs: Dict[B, float]
 
@@ -190,6 +192,8 @@ class HourlyStats:
         self.observed_renewables_curtailment = extractor.get_all_renewables_curtailment(sced)
 
         self.observed_flow_levels = extractor.get_all_flow_levels(sced)
+
+        self.bus_demands = extractor.get_all_bus_demands(sced)        
 
         self.observed_bus_mismatches = extractor.get_all_bus_mismatches(sced)
         self.observed_bus_LMPs = extractor.get_all_bus_LMPs(lmp_sced)
