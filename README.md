@@ -5,7 +5,7 @@ Code base for Prescient production cost model / scenario generation / prediction
 
 ### Requirements
 * Python 3.7 or later
-* Pyomo 5.6 or later (Xpress users, 5.7.1 or later)
+* Pyomo 5.7 or later (Xpress users, 5.7.1 or later)
 * EGRET
 * A mixed-integer linear programming (MILP) solver
   * Open source: CBC, GLPK, SCIP, ...
@@ -30,13 +30,13 @@ Usage: runner.py config_file
 The installation of Prescient has added the `runner.py` command which is used to execute Prescient programs from the command line.
 
 ### Solvers
-If not using one of the commerical solvers describe below, we recommend users install the open source CBC MIP solver. The specific mechanics of installing CBC are platform-specific. When using Anaconda on Linux and Mac platforms, this can be accomplished simply by:
+If not using one of the commerical solvers describe below, we recommend users install the open source CBC MILP solver. The specific mechanics of installing CBC are platform-specific. When using Anaconda on Linux and Mac platforms, this can be accomplished simply by:
 
 ```
 conda install -c conda-forge coincbc
 ```
 
-The COIN-OR organization - who developers CBC - also provides pre-built binaries for a full range of platforms (including Windows) on https://bintray.com/coin-or/download.
+The COIN-OR organization - who develops CBC - also provides pre-built binaries for a full range of platforms (including Windows) on https://bintray.com/coin-or/download.
 
 
 #### Using a commercial solver
@@ -47,7 +47,7 @@ Instructions for installing Python bindings for CPLEX can be found [here](https:
 
 
 ##### Gurobi
-Python binding for Gurobi can be installed via conda:
+Python bindings for Gurobi can be installed via conda:
 ```
 conda install -c gurobi gurobi
 ```
@@ -58,7 +58,7 @@ conda install -c gurobi gurobi=8
 ```
 
 ##### Xpress
-Xpress Python bindings are both available through PyPI, e.g.:
+Xpress Python bindings are available through PyPI, e.g.:
 ```
 pip install xpress
 ```
