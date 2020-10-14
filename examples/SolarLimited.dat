@@ -1,8 +1,0 @@
-Source: CAISOSolar
-# a small solar test case - few scenarios.
-dps sunrise 12 sunset
-Paths(decision, path)
-meanonly
-quick meanonly 
-meanonly meanonly quickhigh
-meanonly meanonly quicklow
