@@ -1,4 +1,4 @@
-name: prescient 
+name: prescient
 channels:
 - conda-forge
 - defaults
