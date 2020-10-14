@@ -1,9 +1,20 @@
-name: prescient
+name: prescient 
 channels:
 - conda-forge
 - defaults
 dependencies:
-- python=3
-- notebook
-- pyomo
+- python>=3.7
+- appdirs
+- decorator
+- networkx
+- nose
+- numpy
+- pandas
+# - pkg-resources
+- ply
+- python-dateutil
+- pytz
+- pyomo>=5.7
+- scipy
+- six
 - ipopt
