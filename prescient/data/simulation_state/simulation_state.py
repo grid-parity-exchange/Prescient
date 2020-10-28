@@ -71,7 +71,7 @@ class SimulationState(ABC):
 
     @abstractmethod
     def get_future_actuals(self) -> Iterable[Sequence[float]]:
-        ''' Warning: Returns actual values for the current time AND FUTURE TIMES.
+        ''' Warning: Returns actual values of forecastables for the current time AND FUTURE TIMES.
 
         Be aware that this function returns information that is not yet known!
         The function lets you peek into the future.  Future actuals may be used

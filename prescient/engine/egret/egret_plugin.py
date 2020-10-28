@@ -292,6 +292,18 @@ def create_deterministic_ruc(options,
     data_provider.populate_with_forecast_data(options, start_time, forecast_request_count, 
                                               60, md)
 
+    # Make some near-term forecasts more accurate
+    ruc_delay = -(options.ruc_execution_hour%(-options.ruc_every_hours))
+    if options.ruc_prescience_hour > ruc_delay + 1:
+        improved_hour_count = options.ruc_prescience_hour - ruc_delay - 1
+        for forecast, actuals in zip(get_forecastables(md),
+                                     current_state.get_future_actuals()):
+            for t in range(0, improved_hour_count):
+                forecast_portion = (ruc_delay+t)/options.ruc_prescience_hour
+                actuals_portion = 1-forecast_portion
+                forecast[t] = forecast_portion*forecast[t] + actuals_portion*actuals[t]
+
+
     # Ensure the reserve requirement is satisfied
     _ensure_reserve_factor_honored(options, md, range(forecast_request_count))
 
