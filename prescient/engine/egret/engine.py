@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from prescient.simulator import Options
     from prescient.engine.abstract_types import *
+    from prescient.data.simulation_state import SimulationState
 
 import os
 import pyomo.environ as pe
@@ -22,6 +23,8 @@ from prescient.data.providers.dat_data_provider import DatDataProvider
 
 from .data_extractors import ScedDataExtractor, RucDataExtractor
 from .ptdf_manager import PTDFManager
+from .reporting import report_initial_conditions_for_deterministic_ruc, \
+                       report_demand_for_deterministic_ruc
 
 from egret.models.unit_commitment import _get_uc_model, create_tight_unit_commitment_model
 from egret.common.lazy_ptdf_utils import uc_instance_binary_relaxer
@@ -59,30 +62,33 @@ class EgretEngine(ModelingEngine):
         self._data_provider = DatDataProvider()
         self._data_provider.initialize(options)
 
-
     def create_deterministic_ruc(self, 
             options: Options,
             uc_date:str,
             uc_hour: int,
-            prior_ruc_instance: RucModel,
+            current_state: SimulationState,
             output_ruc_initial_conditions: bool,
-            projected_sced_instance: OperationsModel,
-            sced_schedule_hour: int,
             ruc_horizon: int,
-            run_ruc_with_next_day_data: bool
+            use_next_day_data: bool
            ) -> RucModel:
-        return self._p.create_deterministic_ruc(options, self._data_provider, uc_date, uc_hour,
-                                                prior_ruc_instance, projected_sced_instance,
-                                                output_ruc_initial_conditions,
-                                                sced_schedule_hour, ruc_horizon,
-                                                run_ruc_with_next_day_data)
+        ruc = self._p.create_deterministic_ruc(options, self._data_provider, 
+                                               uc_date, uc_hour,
+                                               current_state,
+                                               ruc_horizon,
+                                               use_next_day_data)
+        if output_ruc_initial_conditions:
+            report_initial_conditions_for_deterministic_ruc(ruc)
+            report_demand_for_deterministic_ruc(ruc, options.ruc_every_hours)
+
+        return ruc
+
 
     def solve_deterministic_ruc(self, options, ruc_instance, uc_date, uc_hour):
         return self._p.solve_deterministic_ruc(self._ruc_solver, options, ruc_instance, uc_date, uc_hour, self._ptdf_manager)
 
     def create_and_solve_day_ahead_pricing(self,
-            deterministic_ruc_instance: RucModel,
             options: Options,
+            deterministic_ruc_instance: RucModel,
             ) -> RucMarket:
         return self._p.solve_deterministic_day_ahead_pricing_problem(self._ruc_solver,
                                                                 deterministic_ruc_instance,
@@ -100,46 +106,20 @@ class EgretEngine(ModelingEngine):
 
 
     def create_sced_instance(self,
-            deterministic_ruc_instance_for_this_period: RucModel,
-            deterministic_ruc_instance_for_next_period: RucModel,
-            ruc_instance_to_simulate_this_period: RucModel,
-            prior_sced_instance: OperationsModel,
-            actual_demand: Mapping[Tuple[Bus, int], float],
-            demand_forecast_error: Mapping[Tuple[Bus, int], float],
-            actual_min_renewables: Mapping[Tuple[Generator, int], float],
-            actual_max_renewables: Mapping[Tuple[Generator, int], float],
-            renewables_forecast_error: Mapping[Tuple[Generator, int], float],
-            hour_to_simulate: int,
-            reserve_factor: float,
             options: Options,
+            current_state: SimulationState,
             hours_in_objective: int=1,
             sced_horizon: int=24,
-            ruc_every_hours: int=24,
-            initialize_from_ruc: bool=True,
             forecast_error_method = ForecastErrorMethod.PRESCIENT,
             write_sced_instance: bool = False,
-            lp_filename: str = None,
-            output_initial_conditions: bool = False,
-            output_demands: bool = False
-           ) -> Tuple[OperationsModel, float]:
+            lp_filename: str = None
+           ) -> OperationsModel:
 
         current_sced_instance = self._p.create_sced_instance(
-            deterministic_ruc_instance_for_this_period, 
-            deterministic_ruc_instance_for_next_period,
-            ruc_instance_to_simulate_this_period,
-            prior_sced_instance,
-            actual_demand,
-            demand_forecast_error,
-            actual_min_renewables,
-            actual_max_renewables,
-            renewables_forecast_error,
-            hour_to_simulate,
-            reserve_factor,
+            self._data_provider,
+            current_state,
             options,
-            hours_in_objective,
             sced_horizon,
-            ruc_every_hours,
-            initialize_from_ruc,
             forecast_error_method)
 
         if write_sced_instance:
@@ -207,8 +187,8 @@ class EgretEngine(ModelingEngine):
 
 
     def enable_quickstart_and_solve(self,
-            sced_instance: OperationsModel,
-            options: Options
+            options: Options,
+            sced_instance: OperationsModel
            ) -> OperationsModel:
         # Set up the quickstart run, allowing quickstart generators to turn on
         for g, g_dict in sced_instance.elements(element_type='generator', fast_start=True):
@@ -239,8 +219,8 @@ class EgretEngine(ModelingEngine):
         return sced_results
 
     def create_and_solve_lmp(self,
-            sced_instance: OperationsModel,
             options:Options,
+            sced_instance: OperationsModel,
            ) -> OperationsModel:
 
         lmp_sced_instance = sced_instance.clone()
