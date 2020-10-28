@@ -9,8 +9,11 @@
 from __future__ import annotations
 
 from ..data_provider import DataProvider
+from prescient.engine import forecast_helper
+
 from egret.parsers.prescient_dat_parser import get_uc_model, create_model_data_dict_params
 from egret.data.model_data import ModelData as EgretModel
+
 import os.path
 from datetime import datetime, date, timedelta
 import dateutil.parser
@@ -116,7 +119,7 @@ class DatDataProvider():
         num_time_periods: int
             The number of time steps for which forecast data will be provided.
         time_period_length_minutes: int
-            The number of minutes between each time step
+            The duration of each time step
         model: EgretModel
             The model where forecast data will be stored
 
@@ -128,9 +131,11 @@ class DatDataProvider():
         will be saved.  If arrays are larger than the number of requested time 
         steps, the remaining array elements will be left unchanged.
 
-        Forecast data is always taken from the file matching the date of the forecast.
-        In other words, only the first 24 hours of each forecast file will ever be
-        used.  If this isn't what you want, you'll need to handle that yourself.
+        If start_time is midnight of any day, all data comes from the DAT file for
+        the starting day.  Otherwise, forecast data is taken from the file matching 
+        the date of the time step.  In other words, if requesting data starting at 
+        midnight, all data in the first day's DAT file will be available, but otherwise
+        only the first 24 hours of each DAT file will be used.
 
         Note that this method has the same signature as populate_with_actuals.
         '''
@@ -144,7 +149,7 @@ class DatDataProvider():
                               time_period_length_minutes: int,
                               model: EgretModel
                              ) -> None:
-        ''' Populate an existing model with actual values.
+        ''' Populate an existing model with actuals data.
 
         Populates the following values for each requested time period:
             * demand for each bus
@@ -157,11 +162,11 @@ class DatDataProvider():
             Option values
         start_time: datetime
             The time (day, hour, and minute) of the first time step for
-            which actual data will be provided
+            which data will be provided
         num_time_periods: int
-            The number of time steps for which actual data will be provided.
+            The number of time steps for which actuals data will be provided.
         time_period_length_minutes: int
-            The number of minutes between each time step
+            The duration of each time step
         model: EgretModel
             The model where actuals data will be stored
 
@@ -173,11 +178,13 @@ class DatDataProvider():
         will be saved.  If arrays are larger than the number of requested time 
         steps, the remaining array elements will be left unchanged.
 
-        Actuals data is always taken from the file matching the date of the time step.
-        In other words, only the first 24 hours of each actuals file will ever be
-        used.  If this isn't what you want, you'll need to handle that yourself.
+        If start_time is midnight of any day, all data comes from the DAT file for
+        the starting day.  Otherwise, data is taken from the file matching 
+        the date of the time step.  In other words, if requesting data starting at 
+        midnight, all data in the first day's DAT file will be available, but otherwise
+        only the first 24 hours of each DAT file will be used.
 
-        Note that this method has the same signature as populate_with_actuals.
+        Note that this method has the same signature as populate_with_forecast_data.
         '''
         self._populate_with_forecastable_data(options, start_time, num_time_periods,
                                               time_period_length_minutes, model,
@@ -198,9 +205,6 @@ class DatDataProvider():
         # If not, only supply what we have space for
         if len(model.data['system']['time_keys']) < num_time_periods:
             num_time_periods = len(model.data['system']['time_keys'])
-
-        # Collect a list of non-dispatchable generators
-        renewables = list(model.elements('generator', generator_type='renewable'))
 
         start_hour = start_time.hour
         start_day = start_time.date()
@@ -225,21 +229,8 @@ class DatDataProvider():
 
             dat = identify_dat(day)
 
-            # fill in renewables limits
-            for gen, gdata in renewables:
-                pmin = dat.data['elements']['generator'][gen]['p_min']['values'][hour]
-                pmax = dat.data['elements']['generator'][gen]['p_max']['values'][hour]
-                gdata['p_min']['values'][step_index] = pmin
-                gdata['p_max']['values'][step_index] = pmax
-
-            # Fill in load data
-            for bus, bdata in model.elements('load'):
-                load = dat.data['elements']['load'][bus]['p_load']['values'][hour]
-                bdata['p_load']['values'][step_index] = load
-
-            # Fill in reserve data
-            reserve_req = dat.data['system']['reserve_requirement']['values'][hour]
-            model.data['system']['reserve_requirement']['values'][step_index] = reserve_req
+            for src, target in forecast_helper.get_forecastables(dat, model):
+                target[step_index] = src[hour]
 
 
     def _get_forecast_by_date(self, requested_date: date) -> EgretModel:
