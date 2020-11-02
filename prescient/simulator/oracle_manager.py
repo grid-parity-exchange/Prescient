@@ -24,6 +24,7 @@ import os
 from .manager import _Manager
 from .data_manager import RucPlan
 from prescient.engine.modeling_engine import ForecastErrorMethod
+from prescient.data.simulation_state import SimulationState
 
 class OracleManager(_Manager):
 
@@ -56,31 +57,18 @@ class OracleManager(_Manager):
         return (uc_hour, uc_date)
 
 
-    def _get_projected_sced_instance(self, options: Options, time_step: PrescientTime) -> Tuple[OperationsModel, int]:
+    def _get_projected_state(self, options: Options, time_step: PrescientTime) -> SimulationState:
         ''' Get the sced instance with initial conditions, and which hour of that sced that has the initial conditions'''
         
         ruc_delay = self._get_ruc_delay(options)
 
-        # If there is no RUC delay, use the beginning of the current sced
+        # If there is no RUC delay, use the current state as is
         if ruc_delay == 0:
             print("")
             print("Drawing UC initial conditions for date:", time_step.date, "hour:", time_step.hour, "from prior SCED instance.")
-            return (self.data_manager.prior_sced_instance, 1)
+            return self.data_manager.current_state
 
         uc_hour, uc_date = self._get_uc_activation_time(options, time_step)
-
-        # if this is the first hour of the day, we might (often) want to establish initial conditions from
-        # something other than the prior sced instance. these reasons are not for purposes of realism, but
-        # rather pragmatism. for example, there may be discontinuities in the "projected" initial condition
-        # at this time (based on the stochastic RUC schedule being executed during the day) and that of the
-        # actual sced instance.
-        # if we're not in the first day, we should always simulate from the
-        # state of the prior SCED.
-        #
-        # If this is the first date to simulate, we don't have anything
-        # else to go off of when it comes to initial conditions - use those
-        # found in the RUC.
-        initialize_from_ruc = self.data_manager.prior_sced_instance is None
 
         print("")
         print("Creating and solving SCED to determine UC initial conditions for date:", uc_date, "hour:", uc_hour)
@@ -98,33 +86,21 @@ class OracleManager(_Manager):
 
         # NOTE: the projected sced probably doesn't have to be run for a full 24 hours - just enough
         #       to get you to midnight and a few hours beyond (to avoid end-of-horizon effects).
+        #       But for now we run for 24 hours.
+        current_state = self.data_manager.current_state
         projected_sced_instance = self.engine.create_sced_instance(
-            self.data_manager.active_ruc,
-            None, 
-            self.data_manager.active_simulation_actuals,
-            self.data_manager.prior_sced_instance,
-            self.data_manager.actual_demand,
-            self.data_manager.demand_forecast_error,
-            self.data_manager.actual_min_renewables,
-            self.data_manager.actual_max_renewables,
-            self.data_manager.renewables_forecast_error,
-            time_step.hour % options.ruc_every_hours,
-            options.reserve_factor,
             options,
-            ## BK -- I'm not sure this was what it was. Don't we just want to
-            ##       consider the next 24 hours or whatever?
-            ## BK -- in the case of shorter ruc_horizons we may not have solutions
-            ##       a full 24 hours out!
-            hours_in_objective=min(24, options.ruc_horizon - time_step.hour % options.ruc_every_hours),
-            sced_horizon=min(24, options.ruc_horizon - time_step.hour % options.ruc_every_hours),
-            ruc_every_hours=options.ruc_every_hours,
-            initialize_from_ruc=initialize_from_ruc,
+            current_state,
+            hours_in_objective=min(24, current_state.timestep_count),
+            sced_horizon=min(24, current_state.timestep_count),
             forecast_error_method=sced_forecast_error_method
            )
 
         projected_sced_instance, solve_time = self.engine.solve_sced_instance(options, projected_sced_instance)
 
-        return (projected_sced_instance, ruc_delay)
+        future_state = current_state.get_projected_state(projected_sced_instance, ruc_delay)
+
+        return future_state
 
 
     def call_initialization_oracle(self, options: Options, time_step: PrescientTime):
@@ -145,10 +121,9 @@ class OracleManager(_Manager):
         # construct the simulation data associated with the first date #
         #################################################################
 
-        ruc_plan = self._generate_ruc(options, time_step.hour, time_step.date, None, None)
+        ruc_plan = self._generate_ruc(options, time_step.hour, time_step.date, None)
 
-        self.data_manager.prior_sced_instance = None
-        self.data_manager.set_pending_ruc_plan(ruc_plan)
+        self.data_manager.set_pending_ruc_plan(options, ruc_plan)
         self.data_manager.activate_pending_ruc(options)
 
         self.simulator.plugin_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
@@ -157,30 +132,24 @@ class OracleManager(_Manager):
     def call_planning_oracle(self, options: Options, time_step: PrescientTime):
         ''' Create a new RUC and make it the pending RUC
         '''
-        projected_sced_instance, sced_schedule_hour = self._get_projected_sced_instance(options, time_step)
+        projected_state = self._get_projected_state(options, time_step)
 
         uc_hour, uc_date = self._get_uc_activation_time(options, time_step)
 
-        ruc = self._generate_ruc(options, uc_hour, uc_date, projected_sced_instance, sced_schedule_hour)
-        self.data_manager.set_pending_ruc_plan(ruc)
-        # If there is a RUC delay...
-        if options.ruc_execution_hour % options.ruc_every_hours > 0:
-            self.data_manager.update_actuals_for_delayed_ruc(options)
-            self.data_manager.update_forecast_errors_for_delayed_ruc(options)
+        ruc = self._generate_ruc(options, uc_hour, uc_date, projected_state)
+        self.data_manager.set_pending_ruc_plan(options, ruc)
 
         return ruc
 
-    def _generate_ruc(self, options, uc_hour, uc_date, projected_sced_instance, sced_schedule_hour):
+    def _generate_ruc(self, options, uc_hour, uc_date, sim_state_for_ruc):
         '''Creates a RUC plan by calling the oracle for the long-term plan based on forecast'''
 
         deterministic_ruc_instance = self.engine.create_deterministic_ruc(
                 options,
                 uc_date,
                 uc_hour,
-                self.data_manager.active_ruc,
+                sim_state_for_ruc,
                 options.output_ruc_initial_conditions,
-                projected_sced_instance,
-                sced_schedule_hour,
                 options.ruc_horizon,
                 options.run_ruc_with_next_day_data,
                )
@@ -196,7 +165,7 @@ class OracleManager(_Manager):
 
         if options.compute_market_settlements:
             print("Solving day-ahead market")
-            ruc_market = self.engine.create_and_solve_day_ahead_pricing(deterministic_ruc_instance, options)
+            ruc_market = self.engine.create_and_solve_day_ahead_pricing(options, deterministic_ruc_instance)
         else:
             ruc_market = None
         # the RUC instance to simulate only exists to store the actual demand and renewables outputs
@@ -206,7 +175,7 @@ class OracleManager(_Manager):
         #            economic dispatch instances, as that would enable those instances to be
         #            prescient.
         print("")
-        print("Creating RUC instance to simulate")
+        print("Extracting scenario to simulate")
 
         simulation_actuals = self.engine.create_simulation_actuals(
             options,
@@ -223,18 +192,6 @@ class OracleManager(_Manager):
         self.simulator.plugin_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
 
     def call_operation_oracle(self, options: Options, time_step: PrescientTime, is_first_time_step:bool):
-        # if this is the first hour of the day, we might (often) want to establish initial conditions from
-        # something other than the prior sced instance. these reasons are not for purposes of realism, but
-        # rather pragmatism. for example, there may be discontinuities in the "projected" initial condition
-        # at this time (based on the stochastic RUC schedule being executed during the day) and that of the
-        # actual sced instance.
-        #
-        # if this is the first date to simulate, we don't have anything
-        # else to go off of when it comes to initial conditions, so use those
-        # found in the RUC.  Otherwise we always simulate from the state of
-        # the prior sced.
-        initialize_from_ruc = is_first_time_step
-
         # determine the SCED execution mode, in terms of how discrepancies between forecast and actuals are handled.
         # prescient processing is identical in the case of deterministic and stochastic RUC.
         # persistent processing differs, as there is no point forecast for stochastic RUC.
@@ -255,34 +212,21 @@ class OracleManager(_Manager):
         print("Solving SCED instance")
 
         current_sced_instance = self.engine.create_sced_instance(
-            self.data_manager.active_ruc,
-            self.data_manager.pending_ruc,
-            self.data_manager.active_simulation_actuals,
-            self.data_manager.prior_sced_instance,
-            self.data_manager.actual_demand,
-            self.data_manager.demand_forecast_error,
-            self.data_manager.actual_min_renewables,
-            self.data_manager.actual_max_renewables,
-            self.data_manager.renewables_forecast_error,
-            time_step.hour % options.ruc_every_hours,
-            options.reserve_factor,
             options,
+            self.data_manager.current_state,
+            hours_in_objective=1,
             sced_horizon=options.sced_horizon,
-            ruc_every_hours=options.ruc_every_hours,
-            initialize_from_ruc=initialize_from_ruc,
             forecast_error_method=forecast_error_method,
             write_sced_instance = options.write_sced_instances,
-            lp_filename=lp_filename,
-            output_initial_conditions=options.output_sced_initial_conditions,
-            output_demands=options.output_sced_demands
+            lp_filename=lp_filename
             )
 
         self.simulator.plugin_manager.invoke_before_operations_solve_callbacks(options, self.simulator, current_sced_instance)
 
         current_sced_instance, solve_time = self.engine.solve_sced_instance(options, current_sced_instance, 
-                                                                            output_initial_conditions=options.output_sced_initial_conditions,
-                                                                            output_demands=options.output_sced_demands,
-                                                                            lp_filename=lp_filename)
+                                                                            options.output_sced_initial_conditions,
+                                                                            options.output_sced_demands,
+                                                                            lp_filename)
 
         pre_quickstart_cache = None
 
@@ -301,11 +245,12 @@ class OracleManager(_Manager):
 
                 # Set up the quickstart run, allowing quickstart generators to turn on
                 print("Re-solving SCED after unfixing Quick Start Generators")
-                current_sced_instance = self.engine.enable_quickstart_and_solve(current_sced_instance, options)
+                current_sced_instance = self.engine.enable_quickstart_and_solve(options, current_sced_instance)
 
         print("Solving for LMPs")
-        lmp_sced = self.engine.create_and_solve_lmp(current_sced_instance, options)
+        lmp_sced = self.engine.create_and_solve_lmp(options, current_sced_instance)
 
+        self.data_manager.apply_sced(options, current_sced_instance)
         self.simulator.plugin_manager.invoke_after_operations_callbacks(options, self.simulator, current_sced_instance)
 
         ops_stats = self.simulator.stats_manager.collect_operations(current_sced_instance,

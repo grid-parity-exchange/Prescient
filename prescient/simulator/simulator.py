@@ -102,8 +102,7 @@ class Simulator:
                 oracle_manager.activate_pending_ruc(options)
 
             # We call the operations oracle at all time steps
-            current_sced_instance = oracle_manager.call_operation_oracle(options, time_step, is_first_time_step)
-            data_manager.prior_sced_instance = current_sced_instance
+            oracle_manager.call_operation_oracle(options, time_step, is_first_time_step)
 
             stats_manager.end_timestep(time_step)
 

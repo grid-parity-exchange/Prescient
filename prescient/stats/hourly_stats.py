@@ -101,35 +101,35 @@ class HourlyStats:
     extensions: Dict[Any, Any]
 
     @property
-    def total_costs(self):
+    def total_costs(self) -> float:
         return self.fixed_costs + self.variable_costs
 
     @property
-    def thermal_energy_payments(self):
+    def thermal_energy_payments(self) -> float:
         if self._options.compute_market_settlements:
             return sum(self.thermal_gen_revenue.values())
         return 0.
 
     @property
-    def renewable_energy_payments(self):
+    def renewable_energy_payments(self) -> float:
         if self._options.compute_market_settlements:
             return sum(self.renewable_gen_revenue.values())
         return 0.
 
     @property
-    def thermal_uplift_payments(self):
+    def thermal_uplift_payments(self) -> float:
         if self._options.compute_market_settlements:
             return sum(self.thermal_uplift.values())
         return 0.
 
     @property
-    def renewable_uplift_payments(self):
+    def renewable_uplift_payments(self) -> float:
         if self._options.compute_market_settlements:
             return sum(self.renewable_uplift.values())
         return 0.
 
     @property
-    def reserve_payments(self):
+    def reserve_payments(self) -> float:
         if self._options.compute_market_settlements:
             return sum(self.thermal_reserve_revenue.values())
         return 0.

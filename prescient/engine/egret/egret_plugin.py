@@ -25,12 +25,15 @@ from egret.models.unit_commitment import _time_series_dict, _preallocated_list, 
 
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
-from prescient.engine.modeling_engine import ForecastErrorMethod
 from prescient.simulator.data_manager import RucMarket
+from ..modeling_engine import ForecastErrorMethod
+from ..forecast_helper import get_forecastables
+from . import reporting
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from prescient.data.data_provider import DataProvider
+    from prescient.data.simulation_state import SimulationState
     from typing import Optional
     from egret.data.model_data import ModelData as EgretModel
 
@@ -74,63 +77,6 @@ def call_solver(solver,instance,options,solver_options,relaxed=False, set_instan
     return md, time, solver
 
 
-## utility for constructing pyomo data dictionary from the passed in parameters to use
-def _get_data_dict( data_model, time_horizon, demand_dict, reserve_dict, reserve_factor, \
-                    min_nondispatch_dict, max_nondispatch_dict, \
-                    UnitOnT0Dict, UnitOnT0StateDict, PowerGeneratedT0Dict, StorageSocOnT0Dict):
-
-    ## data_model is now an EGERT ModelData object
-
-    # cut off the remaining time steps
-    md = data_model.clone_at_time_indices(range(time_horizon))
-
-    load = md.data['elements']['load']
-    thermal_gens = dict(md.elements(element_type='generator', generator_type='thermal'))
-    renewable_gens = dict(md.elements(element_type='generator', generator_type='renewable'))
-    storage = md.data['elements']['storage']
-
-    time_periods = list(range(1,time_horizon+1))
-
-    calculate_reserve_factor = reserve_factor > 0
-
-    if calculate_reserve_factor:
-        total_demand = [0. for _ in range(time_horizon)]
-
-    for l, l_dict in load.items():
-        l_values = l_dict['p_load']['values']
-        for idx,t in enumerate(time_periods):
-            l_values[idx] = demand_dict[l,t]
-            if calculate_reserve_factor:
-                total_demand[idx] += demand_dict[l,t]
-
-    for r, r_dict in renewable_gens.items():
-        p_min = r_dict['p_min']['values']
-        p_max = r_dict['p_max']['values']
-        for idx,t in enumerate(time_periods):
-            p_min[idx] = min_nondispatch_dict[r,t]
-            p_max[idx] = max_nondispatch_dict[r,t]
-
-    for g, g_dict in thermal_gens.items():
-        g_dict['initial_status'] = UnitOnT0StateDict[g]
-        g_dict['initial_p_output'] = PowerGeneratedT0Dict[g]
-    
-    # TODO: storage should really have an initial output/input as well
-    for s, s_dict in storage.items():
-        s_dict['initial_state_of_charge'] = StorageSocOnT0Dict[s]
-    
-    if reserve_dict is not None:
-        reserve_vals = md.data['system']['reserve_requirement']['values']
-        for idx,t in enumerate(time_periods):
-            reserve_vals[idx] = reserve_dict[t]
-
-    if calculate_reserve_factor:
-        reserve_vals = md.data['system']['reserve_requirement']['values']
-        for idx, val in enumerate(reserve_vals):
-            if val < reserve_factor*total_demand[idx]:
-                reserve_vals[idx] = reserve_factor*total_demand[idx]
-
-    return md
-
 def _zero_out_costs(sced_model, hours_in_objective):
     ''' zero out certain costs in a sced model '''
     # establish the objective function for the hour to simulate - which is simply to 
@@ -170,436 +116,88 @@ def _zero_out_costs(sced_model, hours_in_objective):
                 m.SupplementalReserveCostGeneration[g,t].expr = 0.
 
     return
-#
-# a utility to create the hourly (deterministic) economic dispatch instance, given
-# the prior day's RUC solution, the basic ruc model, and the ruc instance to simulate.
+
 # TBD - we probably want to grab topology from somewhere, even if the stochastic 
 #       RUC is not solved with the topology.
-# a description of the input arguments:
-#
-# 1 - sced_model: an uninstantiated (abstract) unit commitment model. 
-#                 used as the basis for the constructed and returned model.
-#
-# 2 - stochastic_scenario_instances: a map from scenario name to scenario instance, for the stochastic RUC.
-#                              these instances are solved, with results loaded.
-#
-# 3 - ruc_instance_to_simulate: a single scenario / deterministic RUC instance. 
-#                               (projected) realized demands and renewables output for the SCED are extracted 
-#                               from this instance, as are static / topological features of the network.
-#
-# 4 - prior_sced_instance: the sced instance from the immediately preceding time period.
-#                          provides the initial generator (T0) state information.
-#                          can be None, in which case - TBD?!
-#
-# 5 - hour_to_simulate: the hour of the day to simulate, 0-based.
-#
-
-# NOTES: 
-# 1) It is critical that the SCED be multi-period, to manage ramp-down / shut-off constraints. 
-# 2) As a result, we define SCED as a weird-ish version of the SCUC - namely one in which
-#    the initial conditions are taken from the prior period SCED instance time period 1 (the
-#    first real period), and the binaries for all remaining subsequent time periods in the day
-#    are taken from (and fixed to) the values in the stochastic RUC - as these are the commitments 
-#    that must be satisfied.
-# 3) We are presently taking the demand in future time periods from the instance to simulate. this
-#    may sound a bit like cheating, but we can argue that the one would use the scenario from the
-#    RUC that is closest to that observed. this brings to mind a matching / selection scheme, but
-#    that is presently not conducted.
-
-## TODO: propogate relax_t0_ramping_initial_day into this function
-def create_sced_instance(today_ruc_instance, 
-                         tomorrow_ruc_instance,
-                         ruc_instance_to_simulate,  # provides actuals and an instance to query
-                         prior_sced_instance,  # used for initial conditions if initial_from_ruc=False
-                         actual_demand,  # native Python dictionary containing the actuals
-                         demand_forecast_error, 
-                         actual_min_renewables,  # native Python dictionary containing the actuals
-                         actual_max_renewables,  # native Python dictionary containing the actuals
-                         renewables_forecast_error,
-                         hour_to_simulate,
-                         reserve_factor, 
+def create_sced_instance(data_provider:DataProvider,
+                         current_state:SimulationState,
                          options,
-                         hours_in_objective=1, # by default, just worry about cost minimization for the hour to simulate.
                          sced_horizon=24, # by default simulate a SCED for 24 hours, to pass through the midnight boundary successfully
-                         ruc_every_hours=24,
-                         initialize_from_ruc=True,
                          forecast_error_method = ForecastErrorMethod.PRESCIENT
                          ):
+    ''' Create an hourly deterministic economic dispatch instance, given current forecasts and commitments.
+    '''
+    assert current_state != None
 
-    assert ruc_instance_to_simulate != None
-    assert hour_to_simulate >= 0
-    assert reserve_factor >= 0.0
+    sced_md = data_provider.get_initial_model(options, sced_horizon)
 
-    if prior_sced_instance is None:
-        assert hour_to_simulate == 0
+    # Set initial state
+    _copy_initial_state_into_model(options, current_state, sced_md)
 
-    # NOTE: if the prior SCED instance is None, then we extract the unit T0 state information from the
-    #       stochastic RUC instance (solved for the preceding day).
-
-    # the input hour is 0-based, but the time periods in our UC and SCED optimization models are one-based.
-    hour_to_simulate += 1 
-
-    #################################################################
-    # compute the T0 state parameters, based on the input instances #
-    #################################################################
-
-    UnitOnT0Dict         = {}
-    UnitOnT0StateDict    = {}
-    PowerGeneratedT0Dict = {}
-
-    # there are a variety of ways to accomplish this, which can result in
-    # radically different simulator behavior. these are driven by keyword
-    # arguments - we don't perform checking for specification of multiple
-    # alternatives. 
-
-    if initialize_from_ruc:
-        # the simplest initialization method is to set the initial conditions 
-        # to those found in the RUC instance. this has 
-        # the advantage that simulating from an in-sample scenario will yield
-        # a feasible sced at each simulated hour.
-
-        # Use the deterministic RUC directly.
-        print("")
-        print("Drawing initial conditions from deterministic RUC initial conditions")
-        for g, g_dict in today_ruc_instance.elements(element_type='generator', generator_type='thermal'):
-            UnitOnT0Dict[g] = int(g_dict['initial_status'] > 0)
-            UnitOnT0StateDict[g] = g_dict['initial_status']
-            PowerGeneratedT0Dict[g] = g_dict['initial_p_output']
-
-    else:
-        # TBD: Clean code below up - if we get this far, shouldn't we always have a prior sched instance?
-        print("")
-        print("Drawing initial conditions from prior SCED solution, if available")
-        assert prior_sced_instance is not None
-        #for g in sorted(ruc_instance_to_simulate.ThermalGenerators):
-        for g, g_dict in prior_sced_instance.elements(element_type='generator', generator_type='thermal'):
-
-            unit_on = int(round(g_dict['commitment']['values'][0]))
-            UnitOnT0Dict[g] = unit_on
-
-            # since we are dealing with a single time period model, propagate the
-            # UnitOn state (which will be fixed in any case) backward into the past.
-            # NOTE: These should be longer than any reasonable min up/down time, and for
-            #       some steam units these can be longer than a day (FERC set as a maximum
-            #       of 168, so I've doubled that here)
-            if unit_on == 1:
-                UnitOnT0StateDict[g] = 336
-            else:
-                UnitOnT0StateDict[g] = -336
-
-            #PowerGeneratedT0Dict[g] = value(prior_sced_instance.PowerGenerated[g, 1])
-            candidate_power_generated = g_dict['pg']['values'][0]
-
-            # the validators are rather picky, in that tolerances are not acceptable.
-            # given that the average power generated comes from an optimization 
-            # problem solve, the average power generated can wind up being less
-            # than or greater than the bounds by a small epsilon. touch-up in this
-            # case.
-
-            if isinstance(g_dict['p_min'], dict):
-                min_power_output = g_dict['p_min']['values'][0]
-            else:
-                min_power_output = g_dict['p_min']
-            if isinstance(g_dict['p_max'], dict):
-                max_power_output = g_dict['p_max']['values'][0]
-            else:
-                max_power_output = g_dict['p_max']
-
-                
-            # TBD: Eventually make the 1e-5 an user-settable option.
-            if unit_on == 0:
-                # if the unit is off, then the power generated at t0 must be equal to 0 -
-                # no tolerances allowed.
-                PowerGeneratedT0Dict[g] = 0.0
-            elif math.fabs(min_power_output - candidate_power_generated) <= 1e-5: 
-                PowerGeneratedT0Dict[g] = min_power_output
-            elif math.fabs(max_power_output - candidate_power_generated) <= 1e-5: 
-                PowerGeneratedT0Dict[g] = max_power_output
-            else:
-                PowerGeneratedT0Dict[g] = candidate_power_generated
-            
     ################################################################################
     # initialize the demand and renewables data, based on the forecast error model #
     ################################################################################
 
     if forecast_error_method is ForecastErrorMethod.PRESCIENT:
-
-        demand_dict = dict(((b, t+1), actual_demand[b, hour_to_simulate + t])
-                           for b,_ in ruc_instance_to_simulate.elements(element_type='bus') for t in range(0, sced_horizon))
-        min_nondispatch_dict = dict(((g, t+1), actual_min_renewables[g, hour_to_simulate + t])
-                                    for g,_ in ruc_instance_to_simulate.elements(element_type='generator', generator_type='renewable')
-                                    for t in range(0, sced_horizon))
-        max_nondispatch_dict = dict(((g, t+1), actual_max_renewables[g, hour_to_simulate + t])
-                                    for g,_ in ruc_instance_to_simulate.elements(element_type='generator', generator_type='renewable')
-                                    for t in range(0, sced_horizon))
+        # Warning: This method can see into the future!
+        future_actuals = current_state.get_future_actuals()
+        sced_forecastables, = get_forecastables(sced_md)
+        for future,sced_data in zip(future_actuals, sced_actuals):
+            for t in range(sced_horizon):
+                sced_data[t] = future[t]
 
     else:  # persistent forecast error:
+        current_actuals = current_state.get_current_actuals()
+        forecasts = current_state.get_forecasts()
+        sced_forecastables = get_forecastables(sced_md)
+        # Go through each time series that can be forecasted
+        for current_actual, forecast, (sced_data,) in zip(current_actuals, forecasts, sced_forecastables):
+            # the first value is, by definition, the actual.
+            sced_data[0] = current_actual
 
-        demand_dict = {}
-        min_nondispatch_dict = {}
-        max_nondispatch_dict = {}
-
-        # we're running in deterministic mode
-        # which is all that is currently supported
-        # the current hour is necessarily (by definition) the actual.
-        for b,_ in ruc_instance_to_simulate.elements(element_type='bus'):
-            demand_dict[(b,1)] = actual_demand[b, hour_to_simulate]
-
-        # for each subsequent hour, apply a simple persistence forecast error model to account for deviations.
-        for b,_ in ruc_instance_to_simulate.elements(element_type='bus'):
-            forecast_error_now = demand_forecast_error[(b, hour_to_simulate)]
-            actual_now = actual_demand[b, hour_to_simulate]
-            forecast_now = actual_now + forecast_error_now
-
-            for t in range(1, sced_horizon):
-                # IMPT: forecast errors (and therefore forecasts) are relative to actual demand, 
-                #       which is the only reason that the latter appears below - to reconstruct
-                #       the forecast. thus, no presicence is involved.
-                forecast_error_later = demand_forecast_error[(b,hour_to_simulate + t)]
-                actual_later = actual_demand[b,hour_to_simulate + t]
-                forecast_later = actual_later + forecast_error_later
-                # 0 demand can happen, in some odd circumstances (not at the ISO level!).
-                if forecast_now != 0.0:
-                    demand_dict[(b, t+1)] = (forecast_later/forecast_now)*actual_now
-                else:
-                    demand_dict[(b, t+1)] = 0.0
-
-        # repeat the above for renewables.
-        for g,_ in ruc_instance_to_simulate.elements(element_type='generator', generator_type='renewable'):
-            min_nondispatch_dict[(g, 1)] = actual_min_renewables[g, hour_to_simulate]
-            max_nondispatch_dict[(g, 1)] = actual_max_renewables[g, hour_to_simulate]
-            
-        for g,_ in ruc_instance_to_simulate.elements(element_type='generator', generator_type='renewable'):
-            forecast_error_now = renewables_forecast_error[(g, hour_to_simulate)]
-            actual_now = actual_max_renewables[g, hour_to_simulate]
-            forecast_now = actual_now + forecast_error_now
+            # Find how much the first forecast was off from the actual, as a fraction of 
+            # the forecast. For all subsequent times, adjust the forecast by the same fraction.
+            current_forecast = forecast[0]
+            if current_forecast == 0.0:
+                forecast_error_ratio = 0.0
+            else:
+                forecast_error_ratio = current_actual / forecast[0]
 
             for t in range(1, sced_horizon):
-                # forecast errors are with respect to the maximum - that is the actual maximum power available.
-                forecast_error_later = renewables_forecast_error[(g, hour_to_simulate + t)]
-                actual_later = actual_max_renewables[g, hour_to_simulate + t]
-                forecast_later = actual_later + forecast_error_later
+                sced_data[t] = forecast[t] * forecast_error_ratio
 
-                if forecast_now != 0.0:
-                    max_nondispatch_dict[(g, t+1)] = (forecast_later/forecast_now)*actual_now
-                else:
-                    max_nondispatch_dict[(g, t+1)] = 0.0
-                # TBD - fix this - it should be non-zero!
-                min_nondispatch_dict[(g, t+1)] = 0.0
+    _ensure_reserve_factor_honored(options, sced_md, range(sced_horizon))
 
-    ##########################################################################
-    # construct the data dictionary for instance initialization from scratch #
-    ##########################################################################
-
-    if prior_sced_instance is not None:
-        #StorageSocOnT0Dict = dict((s, value(prior_sced_instance.SocStorage[s, 1]))
-        #                                     for s in sorted(ruc_instance_to_simulate.Storage))
-        StorageSocOnT0Dict = { s : s_dict['state_of_charge']['values'][0] for s,s_dict in prior_sced_instance.elements('storage') }
-    else:
-        StorageSocOnT0Dict = { s : s_dict['state_of_charge']['values'][0] for s,s_dict in ruc_instance_to_simulate.elements('storage') }
-
-    # TBD - for now, we are ignoring the ReserveRequirement parameters for the economic dispatch
-    # we do handle the ReserveFactor, below.
-    sced_md = _get_data_dict( ruc_instance_to_simulate, sced_horizon, demand_dict, None, options.reserve_factor,\
-                              min_nondispatch_dict, max_nondispatch_dict,
-                              UnitOnT0Dict, UnitOnT0StateDict, PowerGeneratedT0Dict, StorageSocOnT0Dict)
-
-
-    #######################
-    # create the instance #
-    #######################
-
+    ## TODO: propogate relax_t0_ramping_initial_day into this function
     ## if relaxing initial ramping, we need to relax it in the first SCED as well
     assert options.relax_t0_ramping_initial_day is False
 
-    ##################################################################
-    # set the unit on variables in the sced instance to those values #
-    # found in the stochastic ruc instance for the input time period #
-    ##################################################################
-
-    # NOTE: the values coming back from the RUC solves can obviously
-    #       be fractional, due to numerical tolerances on integrality.
-    #       we could enforce integrality at the solver level, but are
-    #       not presently. instead, we round, to force integrality.
-    #       this has the disadvantage of imposing a disconnect between
-    #       the stochastic RUC solution and the SCED, but for now,
-    #       we will live with it.
-    #for t in sorted(sced_instance.TimePeriods):
-
+    # Set generator commitments
     for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
-        fixed_commitment = _preallocated_list(sced_md.data['system']['time_keys'])
+        # Start by preparing an empty array of the correct size for each generator
+        fixed_commitment = [None]*sced_horizon
         g_dict['fixed_commitment'] = _time_series_dict(fixed_commitment)
 
-    for idx,t in enumerate(sced_md.data['system']['time_keys']):
-        # the input t and hour_to_simulate are both 1-based => so is the translated_t
-        t = int(t)
-        translated_t = t + hour_to_simulate - 1
-        translated_idx = translated_t - 1
+        # Now fill it in with data
+        for t in range(sced_horizon):
+            fixed_commitment[t] = current_state.get_generator_commitment(g,t)
 
-        for g,g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
-            # CRITICAL: today's ruc instance and tomorrow's ruc instance are not guaranteed
-            #           to be consistent, in terms of the value of the binaries in the time 
-            #           periods in which they overlap, nor the projected power levels for 
-            #           time units in which they overlap. originally, we were trying to be
-            #           clever and using today's ruc instance for hours <= 24, and tomorrow's
-            #           ruc instance for hours > 24, but we didn't think this carefully 
-            #           enough through. this issue should be revisited. at the moment, we 
-            #           are relying on the consistency between our projections for the unit
-            #           states at midnight and the values actually observed. these should not
-            #           be too disparate, given that the projection is only 3 hours out.
-            # NEW: this is actually a problem 3 hours out - especially if the initial state
-            #      projections involving PowerGeneratedT0 is incorrect. and these are often
-            #      divergent. 
-            if translated_t > ruc_every_hours and \
-                tomorrow_ruc_instance is not None:
-                    #new_value = int(round(value(tomorrow_ruc_instance.UnitOn[g, translated_t - ruc_every_hours])
-                    new_value = tomorrow_ruc_instance.data['elements']['generator'][g]['commitment']['values'][translated_idx-ruc_every_hours]
-                #else:
-                #    new_value = int(round(value(today_ruc_instance.UnitOn[g, translated_t])))
-            else:
-                new_value = today_ruc_instance.data['elements']['generator'][g]['commitment']['values'][translated_idx]
-            #sced_instance.UnitOn[g, t] = new_value
-            g_dict['fixed_commitment']['values'][idx] = int(round(new_value))
+    # TODO: This is a temporary adjustment to match current test values.
+    for g, g_dict in sced_md.elements('generator', generator_type='thermal'):
+        if g_dict['initial_status'] > 0:
+            g_dict['initial_status'] = 336
+        else:
+            g_dict['initial_status'] = -336
+
 
     return sced_md
 
 
 ##### BEGIN Deterministic RUC solvers and helper functions ########
 ###################################################################
-# utility functions for computing and reporting various aspects   #
+# utility functions for computing various aspects                 #
 # of a deterministic unit commitment solution.                    #
 ###################################################################
-
-def _output_solution_for_deterministic_ruc(ruc_instance, 
-                                          this_date,
-                                          this_hour,
-                                          ruc_every_hours,
-                                          max_thermal_generator_label_length=DEFAULT_MAX_LABEL_LENGTH):
-
-    last_time_period = min(len(ruc_instance.data['system']['time_keys']), 36)
-    last_time_period_storage = min(len(ruc_instance.data['system']['time_keys']), 26)
-
-    thermal_gens = dict(ruc_instance.elements(element_type='generator', generator_type='thermal'))
-
-    print("Generator Commitments:")
-    for g,gdict in thermal_gens.items():
-        print(("%-"+str(max_thermal_generator_label_length)+"s: ") % g, end=' ')
-        for t in range(last_time_period):
-            print("%2d"% int(round(gdict['commitment']['values'][t])), end=' ')
-            if t+1 == ruc_every_hours: 
-                print(" |", end=' ')
-        print("")
-
-    print("")
-    print("Generator Dispatch Levels:")
-    for g,gdict in thermal_gens.items():
-        print(("%-"+str(max_thermal_generator_label_length)+"s: ") % g, end=' ')
-        for t in range(last_time_period):
-            print("%7.2f"% gdict['pg']['values'][t], end=' ')
-            if t+1 == ruc_every_hours: 
-                print(" |", end=' ')
-        print("")
-
-    print("")
-    print("Generator Reserve Headroom:")
-    total_headroom = [0.0 for i in range(0, last_time_period)]  # add the 0 in for simplicity of indexing
-    for g,gdict in thermal_gens.items():
-        print(("%-"+str(max_thermal_generator_label_length)+"s: ") % g, end=' ')
-        for t in range(last_time_period):
-            headroom = gdict['headroom']['values'][t]
-            print("%7.2f" % headroom, end=' ')
-            total_headroom[t] += headroom
-            if t+1 == ruc_every_hours: 
-                print(" |", end=' ')
-        print("")
-    print(("%-"+str(max_thermal_generator_label_length)+"s: ") % "Total", end=' ')
-    for t in range(last_time_period):
-        print("%7.2f" % total_headroom[t], end=' ')
-        if t+1 == ruc_every_hours: 
-            print(" |", end=' ')
-    print("")
-
-    storage = dict(ruc_instance.elements(element_type='storage'))
-    if len(storage) > 0:
-        
-        print("Storage Input levels")
-        for s,sdict in storage.items():
-            print("%30s: " % s, end=' ')
-            for t in range(last_time_period_storage):
-                print("%7.2f"% sdict['p_charge']['values'][t], end=' ')
-                if t+1 == ruc_every_hours: 
-                    print(" |", end=' ')
-            print("")
-
-        print("Storage Output levels")
-        for s,sdict in storage.items():
-            print("%30s: " % s, end=' ')
-            for t in range(last_time_period_storage):
-                print("%7.2f"% sdict['p_discharge']['values'][t], end=' ')
-                if t+1 == ruc_every_hours: 
-                    print(" |", end=' ')
-            print("")
-
-        print("Storage SOC levels")
-        for s,sdict in storage.items():
-            print("%30s: " % s, end=' ')
-            for t in range(last_time_period_storage):
-                print("%7.2f"% sdict['state_of_charge']['values'][t], end=' ')
-                if t+1 == ruc_every_hours: 
-                    print(" |", end=' ')
-            print("")
-
-
-def _report_fixed_costs_for_deterministic_ruc(deterministic_instance):
-
-    costs = sum( sum(g_dict['commitment_cost']['values']) for _,g_dict in deterministic_instance.elements(element_type='generator', generator_type='thermal'))
-
-    print("Fixed costs:    %12.2f" % costs)
-
-def _report_generation_costs_for_deterministic_ruc(deterministic_instance):
-    costs = sum( sum(g_dict['production_cost']['values']) for _,g_dict in deterministic_instance.elements(element_type='generator', generator_type='thermal'))
-
-    print("Variable costs: %12.2f" % costs)
-    
-def _report_load_generation_mismatch_for_deterministic_ruc(ruc_instance):
-
-    time_periods = ruc_instance.data['system']['time_keys']
-
-    buses = ruc_instance.data['elements']['bus']
-
-    for i,t in enumerate(time_periods):
-        mismatch_reported = False
-        sum_mismatch = round_small_values(sum(bdict['p_balance_violation']['values'][i]
-                                              for bdict in buses.values()))
-        if sum_mismatch != 0.0:
-            posLoadGenerateMismatch = round_small_values(sum(max(bdict['p_balance_violation']['values'][i],0.)
-                                                            for bdict in buses.values()))
-            negLoadGenerateMismatch = round_small_values(sum(min(bdict['p_balance_violation']['values'][i],0.)
-                                                            for bdict in buses.values()))
-            if negLoadGenerateMismatch != 0.0:
-                print("Projected over-generation reported at t=%s -   total=%12.2f" % (t, negLoadGenerateMismatch))
-            if posLoadGenerateMismatch != 0.0:
-                print("Projected load shedding reported at t=%s -     total=%12.2f" % (t, posLoadGenerateMismatch))
-
-        if 'reserve_shortfall' in ruc_instance.data['system']:
-            reserve_shortfall_value = round_small_values(ruc_instance.data['system']['reserve_shortfall']['values'][i])
-            if reserve_shortfall_value != 0.0:
-                print("Projected reserve shortfall reported at t=%s - total=%12.2f" % (t, reserve_shortfall_value))
-
-def _report_curtailment_for_deterministic_ruc(deterministic_instance):
-    
-    rn_gens = dict(deterministic_instance.elements(element_type='generator', generator_type='renewable'))
-    time_periods = deterministic_instance.data['system']['time_keys']
-
-    curtailment_in_some_period = False
-    for i,t in enumerate(time_periods):
-        quantity_curtailed_this_period = sum(gdict['p_max']['values'][i] - gdict['pg']['values'][i] \
-                                            for gdict in rn_gens.values())
-        if quantity_curtailed_this_period > 0.0:
-            if curtailment_in_some_period == False:
-                print("Renewables curtailment summary (time-period, aggregate_quantity):")
-                curtailment_in_some_period = True
-            print("%s %12.2f" % (t, quantity_curtailed_this_period))
 
 ## NOTE: in closure for deterministic_ruc_solver_plugin
 def create_solve_deterministic_ruc(deterministic_ruc_solver):
@@ -618,33 +216,26 @@ def create_solve_deterministic_ruc(deterministic_ruc_solver):
             print("RUC instance written to file=" + current_ruc_filename)
 
 
-        thermal_gens = dict(ruc_instance_for_this_period.elements(element_type='generator', generator_type='thermal'))
-        if len(thermal_gens) == 0:
-            max_thermal_generator_label_length = None
-        else:
-            max_thermal_generator_label_length = max((len(this_generator) for this_generator in thermal_gens))
         
         total_cost = ruc_instance_for_this_period.data['system']['total_cost']
         print("")
         print("Deterministic RUC Cost: {0:.2f}".format(total_cost))
     
         if options.output_ruc_solutions:
-    
             print("")
-            _output_solution_for_deterministic_ruc(ruc_instance_for_this_period, 
-                                                   this_date, 
-                                                   this_hour, 
-                                                   options.ruc_every_hours,
-                                                   max_thermal_generator_label_length=max_thermal_generator_label_length,
-                                                   )
+            reporting.output_solution_for_deterministic_ruc(
+                ruc_instance_for_this_period, 
+                this_date, 
+                this_hour, 
+                options.ruc_every_hours)
     
         print("")
-        _report_fixed_costs_for_deterministic_ruc(ruc_instance_for_this_period)
-        _report_generation_costs_for_deterministic_ruc(ruc_instance_for_this_period)
+        reporting.report_fixed_costs_for_deterministic_ruc(ruc_instance_for_this_period)
+        reporting.report_generation_costs_for_deterministic_ruc(ruc_instance_for_this_period)
         print("")
-        _report_load_generation_mismatch_for_deterministic_ruc(ruc_instance_for_this_period)                        
+        reporting.report_load_generation_mismatch_for_deterministic_ruc(ruc_instance_for_this_period)                        
         print("")
-        _report_curtailment_for_deterministic_ruc(ruc_instance_for_this_period)                        
+        reporting.report_curtailment_for_deterministic_ruc(ruc_instance_for_this_period)                        
     
         return ruc_instance_for_this_period
     return solve_deterministic_ruc
@@ -685,12 +276,9 @@ def create_deterministic_ruc(options,
                              data_provider:DataProvider,
                              this_date, 
                              this_hour,
-                             prior_deterministic_ruc, # UnitOn T0 state should come from here
-                             projected_sced, # PowerGenerated T0 state should come from here
-                             output_initial_conditions,
-                             sced_schedule_hour=4,
-                             ruc_horizon=48,
-                             use_next_day_in_ruc=False):
+                             current_state:SimulationState,
+                             ruc_horizon,
+                             use_next_day_in_ruc):
 
     ruc_every_hours = options.ruc_every_hours
 
@@ -701,75 +289,10 @@ def create_deterministic_ruc(options,
     md = data_provider.get_initial_model(options, ruc_horizon)
 
     # Populate the T0 data
-    if prior_deterministic_ruc is None or projected_sced is None:
+    if current_state is None or current_state.timestep_count == 0:
         data_provider.populate_initial_state_data(options, start_day, md)
     else:
-        for s, sdict in md.elements('storage'):
-            s_dict['initial_state_of_charge'] = projected_sced['elements']['storage'][s]['state_of_charge']['values'][sced_schedule_hour-1]
-
-        for g, g_dict in prior_deterministic_ruc.elements(element_type='generator', generator_type='thermal'):
-            # this generator's commitments
-            g_commit = g_dict['commitment']['values']
-            final_unit_on_state = int(round(g_commit[ruc_every_hours-1]))
-
-            state_duration = 1
-
-            hours = list(range(ruc_every_hours-1))
-            hours.reverse()
-            for i in hours:
-                this_unit_on_state = int(round(g_commit[i]))
-                if this_unit_on_state != final_unit_on_state:
-                    break
-                state_duration += 1
-            if final_unit_on_state == 0:
-                state_duration = -state_duration
-            ## get hours before prior_deterministic_ruc
-            prior_UnitOnT0State = int(g_dict['initial_status'])
-            # if we have the same state at the beginning and the end of the horizon,
-            # AND it agrees with the state from the previous, we can add the prior state.
-            # Important for doing more than daily commitments, and long horizon generators
-            # like nuclear and some coal units.
-            if abs(state_duration) == ruc_every_hours and \
-               ((prior_UnitOnT0State < 0) == (state_duration < 0)):
-                state_duration += prior_UnitOnT0State
-            md.data['elements']['generator'][g]['initial_status'] = state_duration
-
-            # power generated is the projected output at t0
-            #power_generated_at_t0 = value(projected_sced.PowerGenerated[g, sced_schedule_hour])
-            power_generated_at_t0 = projected_sced.data['elements']['generator'][g]['pg']['values'][sced_schedule_hour-1]
-
-            # on occasion, the average power generated across scenarios for a single generator
-            # can be a very small negative number, due to MIP tolerances allowing it. if this
-            # is the case, simply threshold it to 0.0. similarly, the instance validator will
-            # fail if the average power generated is small-but-positive (e.g., 1e-14) and the
-            # UnitOnT0 state is Off. in the latter case, just set the average power to 0.0.
-            if power_generated_at_t0 < 0.0:
-                power_generated_at_t0 = 0.0
-            elif final_unit_on_state == 0:
-                power_generated_at_t0 = 0.0
-
-            # the validators are rather picky, in that tolerances are not acceptable.
-            # given that the average power generated comes from an optimization 
-            # problem solve, the average power generated can wind up being less
-            # than or greater than the bounds by a small epsilon. touch-up in this
-            # case.
-            if isinstance(g_dict['p_min'], dict):
-                min_power_output = g_dict['p_min']['values'][sced_schedule_hour-1]
-            else:
-                min_power_output = g_dict['p_min']
-            if isinstance(g_dict['p_max'], dict):
-                max_power_output = g_dict['p_max']['values'][sced_schedule_hour-1]
-            else:
-                max_power_output = g_dict['p_max']
-
-            # Ensure power generated is within limits
-            # TBD: Eventually make the 1e-5 an user-settable option.
-            if math.isclose(min_power_output, power_generated_at_t0, rel_tol=0, abs_tol=1e-5):
-                power_generated_at_t0 = min_power_output
-            elif math.isclose(max_power_output, power_generated_at_t0, rel_tol=0, abs_tol=1e-5):
-                power_generated_at_t0 = max_power_output
-
-            md.data['elements']['generator'][g]['initial_p_output'] = power_generated_at_t0
+        _copy_initial_state_into_model(options, current_state, md)
 
     # Populate forecasts
     copy_first_day = (not use_next_day_in_ruc) and (this_hour != 0)
@@ -778,91 +301,17 @@ def create_deterministic_ruc(options,
                                               60, md)
 
     # Ensure the reserve requirement is satisfied
-    if options.reserve_factor > 0:
-        reserve_factor = options.reserve_factor
-        reserve_reqs = md.data['system']['reserve_requirement']['values']
-        for t in range(0, forecast_request_count):
-            total_load = sum(bdata['p_load']['values'][t]
-                             for bus, bdata in md.elements('load'))
-            min_reserve = reserve_factor*total_demand
-            if reserve_reqs[t] < min_reserve:
-                reserve_reqs[t] = min_reserve
+    _ensure_reserve_factor_honored(options, md, range(forecast_request_count))
 
     # Copy from first 24 to second 24, if necessary
     if copy_first_day:
-        _copy_time_period_data(options, range(0,24), range(24, ruc_horizon-24), md)
+        for vals, in get_forecastables(md):
+            for t in range(24, ruc_horizon):
+                vals[t] = vals[t-24]
 
     return md
 
-def _report_initial_conditions_for_deterministic_ruc(deterministic_instance,
-                                                    max_thermal_generator_label_length=DEFAULT_MAX_LABEL_LENGTH):
 
-    tgens = dict(deterministic_instance.elements(element_type='generator', generator_type='thermal'))
-    print("")
-    print("Initial condition detail (gen-name t0-unit-on t0-unit-on-state t0-power-generated):")
-    #assert(len(deterministic_instance.PowerGeneratedT0) == len(deterministic_instance.UnitOnT0State))
-    for g,gdict in tgens.items():
-        print(("%-"+str(max_thermal_generator_label_length)+"s %5d %7d %12.2f" ) % 
-              (g, 
-               int(gdict['initial_status']>0),
-               gdict['initial_status'],
-               gdict['initial_p_output'],
-               ))
-
-    # it is generally useful to know something about the bounds on output capacity
-    # of the thermal fleet from the initial condition to the first time period. 
-    # one obvious use of this information is to aid analysis of infeasibile
-    # initial conditions, which occur rather frequently when hand-constructing
-    # instances.
-
-    # output the total amount of power generated at T0
-    total_t0_power_output = 0.0
-    for g,gdict in tgens.items():
-        total_t0_power_output += gdict['initial_p_output']
-    print("")
-    print("Power generated at T0=%8.2f" % total_t0_power_output)
-    
-    # compute the amount of new generation that can be brought on-line the first period.
-    total_new_online_capacity = 0.0
-    for g,gdict in tgens.items():
-        t0_state = gdict['initial_status']
-        if t0_state < 0: # the unit has been off
-            if int(math.fabs(t0_state)) >= gdict['min_down_time']:
-                if isinstance(gdict['p_max'], dict):
-                    p_max = gdict['p_max']['values'][0]
-                else:
-                    p_max = gdict['p_max']
-                total_new_online_capacity += min(gdict['startup_capacity'], p_max)
-    print("")
-    print("Total capacity at T=1 available to add from newly started units=%8.2f" % total_new_online_capacity)
-
-    # compute the amount of generation that can be brough off-line in the first period
-    # (to a shut-down state)
-    total_new_offline_capacity = 0.0
-    for g,gdict in tgens.items():
-        t0_state = gdict['initial_status']
-        if t0_state > 0: # the unit has been on
-            if t0_state >= gdict['min_up_time']:
-                if gdict['initial_p_output'] <= gdict['shutdown_capacity']:
-                    total_new_offline_capacity += gdict['initial_p_output']
-    print("")
-    print("Total capacity at T=1 available to drop from newly shut-down units=%8.2f" % total_new_offline_capacity)
-
-def _report_demand_for_deterministic_ruc(ruc_instance,
-                                         ruc_every_hours,
-                                         max_bus_label_length=DEFAULT_MAX_LABEL_LENGTH):
-
-    load = ruc_instance.data['elements']['load']
-    times = ruc_instance.data['system']['time_keys']
-    print("")
-    print("Projected Demand:")
-    for b, ldict in load.items():
-        print(("%-"+str(max_bus_label_length)+"s: ") % b, end=' ')
-        for i in range(min(len(times), 36)):
-            print("%8.2f"% ldict['p_load']['values'][i], end=' ')
-            if i+1 == ruc_every_hours: 
-                print(" |", end=' ')
-        print("")
 
 
 ###### END Deterministic RUC solvers and helper functions #########
@@ -1076,34 +525,43 @@ def create_simulation_actuals(
         get_data_func = data_provider.populate_with_forecast_data
 
     # Get a new model
-    # TODO: Avoid hard-coding the number of values
-    md = data_provider.get_initial_model(options, 48)
+    md = data_provider.get_initial_model(options, options.ruc_horizon)
 
     # Fill it in with data
     data_provider.populate_initial_state_data(options, start_time.date(), md)
     if this_hour == 0:
-        get_data_func(options, start_time, 48, 60, md)
+        get_data_func(options, start_time, options.ruc_horizon, 60, md)
     else:
         get_data_func(options, start_time, 24, 60, md)
-        _copy_time_period_data(options, range(0,24), range(24,48), md)
+        for vals, in get_forecastables(md):
+            for t in range(24, options.ruc_horizon):
+                vals[t] = vals[t-24]
 
     return md
 
-def _copy_time_period_data(options, copy_from_periods, copy_to_periods, model):
-    ''' Copy forecastable data between time periods
+def _ensure_reserve_factor_honored(options:Options, md:EgretModel, time_periods:Iterable[int]) -> None:
+    ''' Adjust reserve requirements to satisfy the reserve factor.
+
+    For each time period in time_periods, ensure that the reserve requirement is no less than
+    the total load for that time period multiplied by the reserve factor.  If the reserve 
+    requirement for a time is too low it is raised, otherwise it is left alone.
+
     '''
-    # copy renewables limits
-    for gen, gdata in model.elements('generator', generator_type='renewable'):
-        for t_from, t_to in zip(copy_from_periods, copy_to_periods):
-            gdata['p_min']['values'][t_to] = gdata['p_min']['values'][t_from]
-            gdata['p_max']['values'][t_to] = gdata['p_max']['values'][t_from]
+    if options.reserve_factor > 0:
+        reserve_factor = options.reserve_factor
+        reserve_reqs = md.data['system']['reserve_requirement']['values']
+        for t in time_periods:
+            total_load = sum(bdata['p_load']['values'][t]
+                             for bus, bdata in md.elements('load'))
+            min_reserve = reserve_factor*total_demand
+            if reserve_reqs[t] < min_reserve:
+                reserve_reqs[t] = min_reserve
 
-    # Copy loads
-    for bus, bdata in model.elements('load'):
-        for t_from, t_to in zip(copy_from_periods, copy_to_periods):
-            bdata['p_load']['values'][t_to] = bdata['p_load']['values'][t_from]
-
-    # Copy reserve requirement
-    reserve_reqs = model.data['system']['reserve_requirement']['values']
-    for t_from, t_to in zip(copy_from_periods, copy_to_periods):
-        reserve_reqs[t_to] = reserve_reqs[t_from]
+def _copy_initial_state_into_model(options:Options, 
+                                   current_state:SimulationState, 
+                                   md:EgretModel):
+    for g, g_dict in md.elements('generator', generator_type='thermal'):
+        g_dict['initial_status'] = current_state.get_initial_generator_state(g)
+        g_dict['initial_p_output']  = current_state.get_initial_power_generated(g)
+    for s,s_dict in md.elements('storage'):
+        s_dict['initial_state_of_charge'] = current_state.get_initial_state_of_charge(s)

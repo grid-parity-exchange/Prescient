@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from typing import TypeVar, Iterable, Optional, Mapping, Tuple, Union
     from .abstract_types import *
     from prescient.simulator.options import Options
+    from prescient.data.simulation_state import SimulationState
     from .data_extractors import ScedDataExtractor, RucDataExtractor
 
 from abc import ABC, abstractmethod
@@ -36,12 +37,10 @@ class ModelingEngine(ABC):
             options: Options,
             uc_date:str,
             uc_hour: int,
-            prior_ruc_instance: RucModel,
+            current_state: SimulationState,
             output_ruc_initial_conditions: bool,
-            projected_sced_instance: OperationsModel,
-            sced_schedule_hour: int,
             ruc_horizon: int,
-            run_ruc_with_next_day_data: bool
+            use_next_day_data: bool
            ) -> RucModel:
         pass
 
@@ -80,26 +79,13 @@ class ModelingEngine(ABC):
 
     @abstractmethod
     def create_sced_instance(self,
-            deterministic_ruc_instance_for_this_period: RucModel,
-            deterministic_ruc_instance_for_next_period: RucModel,
-            ruc_instance_to_simulate_this_period: RucModel,
-            prior_sced_instance: OperationsModel,
-            actual_demand: Mapping[Tuple[Bus, int], float],
-            demand_forecast_error: Mapping[Tuple[Bus, int], float],
-            actual_min_renewables: Mapping[Tuple[Generator, int], float],
-            actual_max_renewables: Mapping[Tuple[Generator, int], float],
-            renewables_forecast_error: Mapping[Tuple[Generator, int], float],
-            hour_to_simulate: int,
-            reserve_factor: float,
             options: Options,
+            current_state: SimulationState,
             hours_in_objective: int=1,
             sced_horizon: int=24,
-            ruc_every_hours: int=24,
-            initialize_from_ruc: bool=True,
             forecast_error_method: ForecastErrorMethod=ForecastErrorMethod.PRESCIENT,
             write_sced_instance: bool = False,
-            output_initial_conditions: bool = False,
-            output_demands: bool = False
+            lp_filename: str=None
             ) -> OperationsModel:
         '''
         Create a new operations model.
@@ -138,8 +124,8 @@ class ModelingEngine(ABC):
         pass
 
     def enable_quickstart_and_solve(self,
-            sced_instance: OperationsModel,
-            options: Options
+            options: Options,
+            sced_instance: OperationsModel
            ) -> OperationsModel:
         '''
         Re-solve the passed in model with quickstart generators enabled.  The existing model 
@@ -152,8 +138,8 @@ class ModelingEngine(ABC):
 
     @abstractmethod
     def create_and_solve_lmp(self,
-            sced_instance: OperationsModel,
             options:Options,
+            sced_instance: OperationsModel,
            ) -> OperationsModel:
         '''
         Create and solve a variation of the passed in model that honors price thesholds
