@@ -182,14 +182,6 @@ def create_sced_instance(data_provider:DataProvider,
         for t in range(sced_horizon):
             fixed_commitment[t] = current_state.get_generator_commitment(g,t)
 
-    # TODO: This is a temporary adjustment to match current test values.
-    for g, g_dict in sced_md.elements('generator', generator_type='thermal'):
-        if g_dict['initial_status'] > 0:
-            g_dict['initial_status'] = 336
-        else:
-            g_dict['initial_status'] = -336
-
-
     return sced_md
 
 
