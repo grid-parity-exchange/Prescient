@@ -15,3 +15,5 @@ examples/simple_nostorage_scengen/
 
 .mypy_cache
 
+tests/simulator_tests/test_cases/deterministic_with_network_simulation_output/
+tests/simulator_tests/test_cases/deterministic_simulation_output/
