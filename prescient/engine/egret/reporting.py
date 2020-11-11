@@ -128,8 +128,6 @@ def report_curtailment_for_deterministic_ruc(ruc):
             print("%s %12.2f" % (t, quantity_curtailed_this_period))
 
 def output_solution_for_deterministic_ruc(ruc_instance, 
-                                          this_date,
-                                          this_hour,
                                           ruc_every_hours):
     thermal_gens = dict(ruc_instance.elements('generator', generator_type='thermal'))
     if len(thermal_gens) == 0:

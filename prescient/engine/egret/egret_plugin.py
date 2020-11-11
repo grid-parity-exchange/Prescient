@@ -217,8 +217,6 @@ def create_solve_deterministic_ruc(deterministic_ruc_solver):
             print("")
             reporting.output_solution_for_deterministic_ruc(
                 ruc_instance_for_this_period, 
-                this_date, 
-                this_hour, 
                 options.ruc_every_hours)
     
         print("")
@@ -274,7 +272,7 @@ def create_deterministic_ruc(options,
 
     ruc_every_hours = options.ruc_every_hours
 
-    start_day = dateutil.parser.parse(this_date).date()
+    start_day = this_date
     start_time = datetime.datetime.combine(start_day, datetime.time(hour=this_hour))
 
     # Create a new model
@@ -501,7 +499,7 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
 
 def create_simulation_actuals(
         options: Options, data_provider: DataProvider, 
-        this_date: string, this_hour:int) -> EgretModel:
+        this_date: datetime.date, this_hour:int) -> EgretModel:
     ''' Get an Egret model consisting of data to be treated as actuals, starting at a given time.
 
     Parameters
@@ -516,7 +514,8 @@ def create_simulation_actuals(
         0-based index of the first hour of the day for which data should be retrieved
     ''' 
     # Convert time string to time
-    start_time = dateutil.parser.parse(this_date)
+    start_time = datetime.datetime.combine(this_date, 
+                                           datetime.time(hour=this_hour))
 
     # Pick whether we're getting actuals or forecasts
     if options.simulate_out_of_sample:

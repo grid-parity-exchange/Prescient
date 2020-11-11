@@ -105,7 +105,7 @@ class StatsManager(_Manager):
         if self._overall_stats is None:
             self._overall_stats = OverallStats(self._options)
 
-        date = dateutil.parser.parse(time_step.date).date()
+        date = time_step.date
 
         # If we are just starting a new day, create new daily stats 
         if self._current_day_stats is None:
@@ -140,10 +140,7 @@ class StatsManager(_Manager):
 
         # convert time_step to a datetime.
         # eventually I'd like to change PrescientTime to use datetime natively.
-        date = dateutil.parser.parse(time_step.date)
-        this_time = datetime.datetime.combine(
-            date, 
-            datetime.time(time_step.hour))
+        this_time = time_step.datetime
         next_time = this_time + self._step_interval
         
         is_hour_end = next_time.hour != this_time.hour

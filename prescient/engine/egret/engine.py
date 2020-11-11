@@ -10,6 +10,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    import datetime
     from prescient.simulator import Options
     from prescient.engine.abstract_types import *
     from prescient.data.simulation_state import SimulationState
@@ -64,7 +65,7 @@ class EgretEngine(ModelingEngine):
 
     def create_deterministic_ruc(self, 
             options: Options,
-            uc_date:str,
+            uc_date:datetime.date,
             uc_hour: int,
             current_state: SimulationState,
             output_ruc_initial_conditions: bool,
@@ -98,7 +99,7 @@ class EgretEngine(ModelingEngine):
     def create_simulation_actuals(
             self,
             options: Options,
-            uc_date: str,
+            uc_date: datetime.date,
             uc_hour: int
            ) -> RucModel:
         return self._p.create_simulation_actuals(options, self._data_provider, 

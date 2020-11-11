@@ -84,25 +84,22 @@ class Simulator:
         self.plugin_manager.invoke_initialization_callbacks(options, self)
 
         first_time_step = time_manager.get_first_time_step()
-
         oracle_manager.call_initialization_oracle(options, first_time_step)
 
         for time_step in time_manager.time_steps():
-            print("Simulating time_step " + time_step.date + " " + str(time_step.hour+1))
+            print("Simulating time_step ", time_step)
 
             stats_manager.begin_timestep(time_step)
             data_manager.update_time(time_step)
 
-            is_first_time_step = time_manager.is_first_time_step(time_step)
-
-            if time_step.is_planning_time and not is_first_time_step:
+            if time_step.is_planning_time:
                 oracle_manager.call_planning_oracle(options, time_step)
 
-            if time_step.is_ruc_start_hour and not is_first_time_step:
+            if time_step.is_ruc_activation_time:
                 oracle_manager.activate_pending_ruc(options)
 
             # We call the operations oracle at all time steps
-            oracle_manager.call_operation_oracle(options, time_step, is_first_time_step)
+            oracle_manager.call_operation_oracle(options, time_step)
 
             stats_manager.end_timestep(time_step)
 

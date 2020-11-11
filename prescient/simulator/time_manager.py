@@ -8,16 +8,16 @@
 #  ___________________________________________________________________________
 
 from __future__ import annotations
-from .manager import _Manager
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from datetime import date
+
 import dateutil
 import sys
-import datetime
-from datetime import timedelta
-import time
+from datetime import timedelta, datetime, time
 from typing import Optional, Iterable
 
-#from .manager import _Manager
-#from .options import Options
+from .manager import _Manager
 from . import manager
 from . import options
 
@@ -26,38 +26,37 @@ class PrescientTime:
     '''
     A point in time during a simulation, with one hour granularity
     '''
-    def __init__(self, date:str, next_date:str, next_next_date:str, hour:int, is_planning_time:bool, is_ruc_start_hour:bool):
-        self._date = date
-        self._next_date = next_date
-        self._next_next_date = next_next_date
-        self._hour = hour
+    def __init__(self, when:datetime, is_planning_time:bool, is_ruc_activation_time:bool):
+        self._when = when
         self._is_planning_time = is_planning_time
-        self._is_ruc_start_hour = is_ruc_start_hour
-
-
-    @property
-    def date(self) -> str:
-        return self._date
+        self._is_ruc_activation_time = is_ruc_activation_time
 
     @property
-    def next_date(self) -> Optional[str]:
-        return self._next_date
+    def date(self) -> date:
+        return self._when.date()
 
     @property
-    def next_next_date(self) -> Optional[str]:
-        return self._next_next_date
+    def time(self) -> datetime.time:
+        return self._when.time()
+
+    @property 
+    def datetime(self) -> datetime.datetime:
+        return self._when
 
     @property
     def hour(self) -> int:
-        return self._hour
+        return self._when.hour
 
     @property
     def is_planning_time(self) -> bool:
         return self._is_planning_time
 
     @property
-    def is_ruc_start_hour(self) -> bool:
-        return self._is_ruc_start_hour
+    def is_ruc_activation_time(self) -> bool:
+        return self._is_ruc_activation_time
+
+    def __str__(self):
+        return self._when.isoformat(sep=' ', timespec='minutes')
 
 class TimeManager(manager._Manager):
     '''
@@ -71,121 +70,79 @@ class TimeManager(manager._Manager):
             print("***ERROR: Illegally formatted start date=" + options.start_date + " supplied!")
             sys.exit(1)
 
-        dates_to_simulate = [str(self._start_date + timedelta(n)) for n in range(0,options.num_days)]
+        self._stop_date = self._start_date + timedelta(days=options.num_days)
+        print(f"Dates to simulate: {str(self._start_date)} to {str(self._stop_date - timedelta(days=1))}")
 
-        self._dates_to_simulate = dates_to_simulate
-        self._end_date = dates_to_simulate[-1]
-
+        # Validate RUC frequency
         if 24 % options.ruc_every_hours != 0:
-            raise RuntimeError("--ruc-every-hours must be a divisor of 24! %d supplied!" % options.ruc_every_hours)
-        self._ruc_start_hours = list(range(0, 24, options.ruc_every_hours))
-        print("ruc_start_hours:", self._ruc_start_hours)
+            raise RuntimeError(
+                f"--ruc-every-hours must be a divisor of 24! {options.ruc_every_hours} supplied!" )
+        self._ruc_every_hours = options.ruc_every_hours
+        print("RUC activation hours:", ", ".join(str(hr) for hr in range(0, 24, options.ruc_every_hours)))
 
-        list_hours = dict((self._ruc_start_hours[i], list(range(self._ruc_start_hours[i],
-                                                                self._ruc_start_hours[i + 1])))
-                          for i in range(0, len(self._ruc_start_hours) - 1))
-        list_hours[self._ruc_start_hours[-1]] = list(range(self._ruc_start_hours[-1], 24))
-
-        self._list_hours = list_hours
-
+        # validate the RUC horizon
         if not options.ruc_every_hours <= options.ruc_horizon <= 48:
             raise RuntimeError(
-                "--ruc-horizon must be greater than or equal --ruc-every-hours and less than or equal to 48! %d supplied!" % options.ruc_horizon)
+                "--ruc-horizon must be greater than or equal --ruc-every-hours and"
+                " less than or equal to 48! {options.ruc_horizon} supplied!")
 
-        print("Dates to simulate:", dates_to_simulate)
+        # Compute RUC delay
+        self._ruc_delay = -(options.ruc_execution_hour%-self._ruc_every_hours)
 
         self._run_ruc = options.disable_ruc == False
 
         if self._run_ruc:
-            last_ruc_date = dates_to_simulate[-1]
-            print("")
-            print("Last RUC date:", last_ruc_date)
-
-        # ruc_execution_hour = one of the times of day that the ruc will run each day
-        # if negative, the number of hours before midnight
-        self._ruc_execution_hour = options.ruc_execution_hour
-
-        # ruc_every_hours = number of hours between each ruc planning run
-        self._ruc_every_hours = options.ruc_every_hours
+            print("Final RUC date:", str(self._stop_date - timedelta(days=1)))
 
         self._current_time = None
 
 
     def time_steps(self) -> Iterable[PrescientTime]:
         '''a generator which yields a PrescientTime instance for each time of interest in the simulation'''
-        next_dates = self._dates_to_simulate[1:] + [None]
-        next_next_dates = next_dates[1:] + [None]
-        for date, next_date, next_next_date in zip(self._dates_to_simulate, next_dates, next_next_dates):
-            for ruc_hour in self._ruc_start_hours:
-                for h in self._list_hours[ruc_hour]:
-                    planning_time = False
-                    if self._ruc_execution_hour % self._ruc_every_hours > 0:
-                        uc_hour = (h - self._ruc_execution_hour % (- self._ruc_every_hours)) % 24
-                    else:
-                        uc_hour = h
 
-                    if date != self._end_date:
-                        end_of_ruc = False
-                    elif uc_hour > 0:
-                        end_of_ruc = False
-                    elif self._ruc_execution_hour == 0:
-                        end_of_ruc = False
-                    else:
-                        end_of_ruc = True
+        # We start at time 0 of first day, stop before time 0 of stop day
+        current_time = datetime.combine(self._start_date, time(0))
+        stop_time = datetime.combine(self._stop_date, time(0))
 
-                    is_ruc_start_hour = (h in self._ruc_start_hours)
+        # minutes between each time step
+        step_delta = timedelta(minutes=60)
 
-                    if (h % self._ruc_every_hours == 0) and (self._ruc_execution_hour == 0):
-                        ## in this case, we need a SCED first because we ran a RUC before
-                        if (self._start_date == date) and (h == 0):
-                            is_ruc_hour = False
-                        else:
-                            is_ruc_hour = True
-                    elif (h % self._ruc_every_hours == self._ruc_execution_hour % self._ruc_every_hours):
-                        is_ruc_hour = True
-                    else:
-                        is_ruc_hour = False
+        # Set up the first planning and activation times.
+        # The first time step is not considered a planning time or activation time,
+        # even if it aligns with a normal planning or activation cycle.  That's 
+        # because up-front initialization includes first-time planning and activation.
+        # The first activation time is ruc_every_hours after t0, and the first 
+        # planning time is ruc_delay hours before that.
+        ruc_delta = timedelta(hours=self._ruc_every_hours)
+        next_activation_time = current_time + ruc_delta
+        next_planning_time = next_activation_time - timedelta(hours=self._ruc_delay)
 
-                    # run RUC at D-X (except on the last day of the simulation), where X is the
-                    # user-specified hour at which RUC is to be executed each day.
-                    if self._run_ruc \
-                            and (not end_of_ruc) \
-                            and is_ruc_hour:
+        while current_time < stop_time:
+            is_planning_time = current_time == next_planning_time
+            if is_planning_time:
+                next_planning_time += ruc_delta
+                # If the next plan won't be activated until after the simulation has finished,
+                # don't bother generating the plan. Push the next planning time out past the end.
+                if next_planning_time + timedelta(hours=self._ruc_delay) >= stop_time:
+                    next_planning_time = stop_time
 
-                        # print("DEBUG: Running RUC")
-                        planning_time = True
+            is_activation_time = current_time == next_activation_time
+            if is_activation_time:
+                next_activation_time += ruc_delta
 
-                    time = PrescientTime(date, next_date, next_next_date, h, planning_time, is_ruc_start_hour)
-                    self._current_time = time
-                    yield time
+            t = PrescientTime(current_time, is_planning_time, is_activation_time)
+            self._current_time = t
+            yield t
+
+            current_time += step_delta
+
 
     @property
     def current_time(self):
         return self._current_time
 
     def get_first_time_step(self) -> PrescientTime:
-        first_date = self._get_first_date()
-        second_date = self._get_second_date()
-        third_date = self._get_third_date()
-        first_hour = 0
-        planning_time = True
-        is_ruc_start_hour = False
-        return PrescientTime(first_date, second_date, third_date, first_hour, planning_time, is_ruc_start_hour)
-
-    @property
-    def dates_to_simulate(self) -> Iterable[str]:
-        return self._dates_to_simulate
-
-    def is_first_time_step(self, time: PrescientTime) -> bool:
-        return time.hour == 0 and time.date == self._get_first_date()
-
-    def _get_first_date(self) -> str:
-        return self._dates_to_simulate[0]
-
-    def _get_second_date(self) -> Optional[str]:
-        return self._dates_to_simulate[1] if len(self._dates_to_simulate) > 1 else None
-
-    def _get_third_date(self) -> Optional[str]:
-        return self._dates_to_simulate[2] if len(self._dates_to_simulate) > 2 else None
+        t0 = datetime.combine(self._start_date, time(0))
+        return PrescientTime(t0, False, False)
 
 

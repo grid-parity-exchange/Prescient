@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 
 import os
+from datetime import timedelta
 
 from .manager import _Manager
 from .data_manager import RucPlan
@@ -43,19 +44,9 @@ class OracleManager(_Manager):
     def _get_uc_activation_time(self, options, time_step):
         ''' Get the hour and date that a RUC generated at the given time will be activated '''
         ruc_delay = self._get_ruc_delay(options)
-        activation_hour = time_step.hour + ruc_delay
+        activation_time = time_step.datetime + timedelta(hours=ruc_delay)
 
-        if (activation_hour < 24):
-            # the RUC will go into effect the same day it is generated.
-            uc_date = time_step.date
-        else:
-            # This is the final RUC of the day, which will go into effect at the beginning of the next day
-            uc_date = time_step.next_date
-
-        uc_hour = activation_hour % 24
-
-        return (uc_hour, uc_date)
-
+        return (activation_time.hour, activation_time.date())
 
     def _get_projected_state(self, options: Options, time_step: PrescientTime) -> SimulationState:
         ''' Get the sced instance with initial conditions, and which hour of that sced that has the initial conditions'''
@@ -71,7 +62,7 @@ class OracleManager(_Manager):
         uc_hour, uc_date = self._get_uc_activation_time(options, time_step)
 
         print("")
-        print("Creating and solving SCED to determine UC initial conditions for date:", uc_date, "hour:", uc_hour)
+        print("Creating and solving SCED to determine UC initial conditions for date:", str(uc_date), "hour:", uc_hour)
 
         # determine the SCED execution mode, in terms of how discrepancies between forecast and actuals are handled.
         # prescient processing is identical in the case of deterministic and stochastic RUC.
@@ -112,10 +103,19 @@ class OracleManager(_Manager):
         # will at least get us a solution to start from.                                       #
         ########################################################################################
 
+        # Print one-time information about simulation options
         if options.run_ruc_with_next_day_data:
             print("Using next day forecasts for 48 hour RUC solves")
         else:
             print("Using current day's forecasts for RUC solves")
+        # determine the SCED execution mode, in terms of how discrepancies between forecast and actuals are handled.
+        # prescient processing is identical in the case of deterministic and stochastic RUC.
+        # persistent processing differs, as there is no point forecast for stochastic RUC.
+        if options.run_sced_with_persistent_forecast_errors:
+            print("Using persistent forecast error model when projecting demand and renewables in SCED")
+        else:
+            print("Using prescient forecast error model when projecting demand and renewables in SCED")
+        print("")
 
         #################################################################
         # construct the simulation data associated with the first date #
@@ -191,17 +191,14 @@ class OracleManager(_Manager):
         self.data_manager.activate_pending_ruc(options)
         self.simulator.plugin_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
 
-    def call_operation_oracle(self, options: Options, time_step: PrescientTime, is_first_time_step:bool):
+    def call_operation_oracle(self, options: Options, time_step: PrescientTime):
         # determine the SCED execution mode, in terms of how discrepancies between forecast and actuals are handled.
         # prescient processing is identical in the case of deterministic and stochastic RUC.
         # persistent processing differs, as there is no point forecast for stochastic RUC.
         if options.run_sced_with_persistent_forecast_errors:
-            print("Using persistent forecast error model when projecting demand and renewables in SCED")
             forecast_error_method = ForecastErrorMethod.PERSISTENT
         else:
-            print("Using prescient forecast error model when projecting demand and renewables in SCED")
             forecast_error_method = ForecastErrorMethod.PRESCIENT
-        print("")
 
         lp_filename = None
         if options.write_sced_instances:
