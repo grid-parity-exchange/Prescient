@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from typing import Dict, Sequence, TypeVar, Any
     from prescient.engine.data_extractors import ScedDataExtractor
     from prescient.engine.abstract_types import OperationsModel, G, L, B, S
+    from .operations_stats import OperationsStats
 
 from dataclasses import dataclass, field
 from datetime import date
@@ -24,11 +25,17 @@ class HourlyStats:
     date: date
     hour: int
 
+    # Stats for sceds within this hour (starts out empty, grows as more SCEDs are completed in simulation)
+    operations_stats: Sequence[OperationsStats]
+
+    sced_count: int # read-only property
+
     # This is constant throughout the simulation, but we calculate and store it every hour.
     # We can/should move it somewhere else eventually
     thermal_fleet_capacity: float = 0.0
 
     sced_runtime: float = 0.0
+    average_sced_runtime: float = 0.0
 
     total_demand: float = 0.0
     fixed_costs: float = 0.0
@@ -100,6 +107,10 @@ class HourlyStats:
 
     extensions: Dict[Any, Any]
 
+    @property 
+    def sced_count(self) -> int:
+        return len(self.operations_stats)
+
     @property
     def total_costs(self) -> float:
         return self.fixed_costs + self.variable_costs
@@ -138,121 +149,123 @@ class HourlyStats:
         self._options = options
         self.date = day
         self.hour = hour
+        self.operations_stats = []
         self.event_annotations = []
         self.extensions = {}
 
-    def populate_from_sced(self, 
-                           sced: OperationsModel, 
-                           runtime: float, 
-                           lmp_sced: OperationsModel, 
-                           pre_quickstart_cache: PreQuickstartCache,
-                           extractor: ScedDataExtractor):
-        self.sced_runtime = runtime
-
+    def incorporate_operations_stats(self, ops_stats: OperationsStats):
         # This is a constant, doesn't need to be recalculated over and over, keep it here until
         # we decide on a better place to keep it.
-        self.thermal_fleet_capacity = extractor.get_fleet_thermal_capacity(sced)
+        self.thermal_fleet_capacity = ops_stats.thermal_fleet_capacity
 
-        self.total_demand = extractor.get_total_demand(sced)
-        self.fixed_costs = extractor.get_fixed_costs(sced)
-        self.variable_costs = extractor.get_variable_costs(sced)
+        # Add scalar fields
+        summing_fields = [
+            'sced_runtime',
+            'fixed_costs',
+            'variable_costs',
+            'on_offs',
+            'sum_on_off_ramps',
+            'sum_nominal_ramps',
+            'quick_start_additional_costs',
+           ]
+        for field in summing_fields:
+            val = getattr(ops_stats, field)
+            add_to = getattr(self, field)
+            setattr(self, field, add_to+val)
 
-        self.power_generated = extractor.get_total_power_generated(sced)
+        # Add values indexed by a model entity
+        keyed_summing_fields = [
+            'observed_costs',
+            'thermal_gen_revenue',
+            'thermal_reserve_revenue',
+            'thermal_uplift',
+            'renewable_gen_revenue',
+            'renewable_uplift',
+           ]
+        for field in keyed_summing_fields:
+            if not hasattr(ops_stats, field):
+                continue
+            their_dict = getattr(ops_stats, field)
 
-        self.load_shedding, self.over_generation = extractor.get_load_mismatches(sced)
-        if self.load_shedding > 0.0:
-            self.event_annotations.append('Load Shedding')
-        if self.over_generation > 0.0:
-            self.event_annotations.append('Over Generation')
+            if hasattr(self, field):
+                my_dict = getattr(self, field)
+            else:
+                my_dict = {}
+                setattr(self, field, my_dict)
 
-        self.reserve_shortfall = extractor.get_reserve_shortfall(sced)
-        if self.reserve_shortfall > 0.0:
-            self.event_annotations.append('Reserve Shortfall')
+            for k,val in their_dict.items():
+                if k in my_dict:
+                    add_to = my_dict[k]
+                    my_dict[k] = add_to + val
+                else:
+                    my_dict[k] = val
 
-        self.available_reserve = extractor.get_available_reserve(sced)
-        self.available_quickstart = extractor.get_available_quick_start(sced)
+        averaging_fields = [
+            'total_demand',
+            'power_generated',
+            'load_shedding',
+            'over_generation',
+            'reserve_shortfall',
+            'available_reserve',
+            'available_quickstart',
+            'renewables_available',
+            'renewables_used',
+            'renewables_curtailment',
+            'quick_start_additional_power_generated',
+            'reserve_requirement',
+            'price',
+            'reserve_RT_price',
+            'planning_reserve_price'
+           ]
+        for field in averaging_fields:
+            val = getattr(ops_stats, field)
+            old_sum = getattr(self, field)*self.sced_count
+            setattr(self, field, (old_sum+val)/(self.sced_count+1))
 
-        self.renewables_available = extractor.get_renewables_available(sced)
-        self.renewables_used = extractor.get_renewables_used(sced)
-        self.renewables_curtailment = extractor.get_total_renewables_curtailment(sced)
+        self.average_sced_runtime = \
+            (self.average_sced_runtime*self.sced_count + ops_stats.sced_runtime) / (self.sced_count+1)
 
-        self.on_offs, self.sum_on_off_ramps, self.sum_nominal_ramps = extractor.get_on_off_and_ramps(sced)
+        keyed_averaging_fields = [
+            'observed_thermal_dispatch_levels',
+            'observed_thermal_headroom_levels',
+            'observed_thermal_states',
+            'observed_renewables_levels',
+            'observed_renewables_curtailment',
+            'observed_flow_levels',
+            'bus_demands',
+            'observed_bus_mismatches',
+            'observed_bus_LMPs',
+            'storage_input_dispatch_levels',
+            'storage_output_dispatch_levels',
+            'storage_soc_dispatch_levels',
+            'planning_energy_prices',
+            'thermal_gen_cleared_DA',
+            'thermal_reserve_cleared_DA',
+            'renewable_gen_cleared_DA',
+           ]
+        for field in keyed_averaging_fields:
+            if not hasattr(ops_stats, field):
+                continue
+            their_dict = getattr(ops_stats, field)
 
-        self.price = extractor.get_price(self.total_demand, self.fixed_costs, self.variable_costs)
+            if hasattr(self, field):
+                my_dict = getattr(self, field)
+            else:
+                my_dict = {}
+                setattr(self, field, my_dict)
 
-        self.quick_start_additional_costs = extractor.get_additional_quickstart_costs(pre_quickstart_cache, sced)
-        self.quick_start_additional_power_generated = extractor.get_additional_quickstart_power_generated(pre_quickstart_cache, sced)
-        self.used_as_quickstart = extractor.get_generator_quickstart_usage(pre_quickstart_cache, sced)
+            for k,val in their_dict.items():
+                if k in my_dict:
+                    old_sum = my_dict[k]*self.sced_count
+                    my_dict[k] = (old_sum+val)/(self.sced_count+1)
+                else:
+                    my_dict[k] = val
 
-        self.observed_thermal_dispatch_levels = extractor.get_all_thermal_dispatch_levels(sced)
-        self.observed_thermal_headroom_levels = extractor.get_all_thermal_headroom_levels(sced)
-        self.observed_thermal_states = extractor.get_all_thermal_states(sced)
-        self.observed_costs = extractor.get_cost_per_generator(sced)
-        self.observed_renewables_levels = extractor.get_all_nondispatchable_power_used(sced)
-        self.observed_renewables_curtailment = extractor.get_all_renewables_curtailment(sced)
+        # Flag which generators were used for quickstart at least once in the hour
+        for g,used in ops_stats.used_as_quickstart.items():
+            if g in self.used_as_quickstart:
+                self.used_as_quickstart[g] = used or self.used_as_quickstart[g]
+            else:
+                self.used_as_quickstart[g] = used
 
-        self.observed_flow_levels = extractor.get_all_flow_levels(sced)
-
-        self.bus_demands = extractor.get_all_bus_demands(sced)        
-
-        self.observed_bus_mismatches = extractor.get_all_bus_mismatches(sced)
-        self.observed_bus_LMPs = extractor.get_all_bus_LMPs(lmp_sced)
-
-        self.storage_input_dispatch_levels = extractor.get_all_storage_input_dispatch_levels(sced)
-        self.storage_output_dispatch_levels = extractor.get_all_storage_output_dispatch_levels(sced)
-        self.storage_soc_dispatch_levels = extractor.get_all_storage_soc_dispatch_levels(sced)
-
-        self.reserve_requirement = extractor.get_reserve_requirement(sced)
-
-        self.reserve_RT_price = extractor.get_reserve_RT_price(lmp_sced)
-
-    def populate_market_settlement(self,
-                                   sced: OperationsModel,
-                                   extractor: ScedDataExtractor,
-                                   ruc_market: RucMarket,
-                                   time_index: int):
-
-        self.planning_reserve_price = ruc_market.day_ahead_reserve_prices[time_index]
-        self.planning_energy_prices = { b : ruc_market.day_ahead_prices[b,time_index] \
-                                        for b in extractor.get_buses(sced) }
-
-        self.thermal_gen_cleared_DA = { g : ruc_market.thermal_gen_cleared_DA[g,time_index] \
-                                        for g in extractor.get_thermal_generators(sced) }
-
-        self.renewable_gen_cleared_DA = { g : ruc_market.renewable_gen_cleared_DA[g,time_index] \
-                                          for g in extractor.get_nondispatchable_generators(sced) }
-
-        self.thermal_reserve_cleared_DA = { g : ruc_market.thermal_reserve_cleared_DA[g,time_index] \
-                                            for g in extractor.get_thermal_generators(sced) }
-
-        self.thermal_gen_revenue = dict()
-        self.renewable_gen_revenue = dict()
-        for b in extractor.get_buses(sced):
-            price_DA = self.planning_energy_prices[b]
-            price_RT = self.observed_bus_LMPs[b]
-
-            for g in extractor.get_thermal_generators_at_bus(sced, b):
-                self.thermal_gen_revenue[g] = \
-                    self.thermal_gen_cleared_DA[g]*price_DA + \
-                    (self.observed_thermal_dispatch_levels[g] - self.thermal_gen_cleared_DA[g])*price_RT
-
-            for g in extractor.get_nondispatchable_generators_at_bus(sced, b):
-                self.renewable_gen_revenue[g] = \
-                    self.renewable_gen_cleared_DA[g]*price_DA + \
-                    (self.observed_renewables_levels[g] - self.renewable_gen_cleared_DA[g])*price_RT
-
-
-
-        r_price_DA = self.planning_reserve_price
-        r_price_RT = self.reserve_RT_price
-        self.thermal_reserve_revenue = { g : self.thermal_reserve_cleared_DA[g]*r_price_DA + \
-                                                ( self.observed_thermal_headroom_levels[g] - \
-                                                   self.thermal_reserve_cleared_DA[g] )*r_price_RT
-                                         for g in extractor.get_thermal_generators(sced) }
-
-        ## TODO: calculate uplift for the day
-        self.thermal_uplift = { g : 0. for g in extractor.get_thermal_generators(sced) }
-
-        ## TODO: calculate uplift for the day
-        self.renewable_uplift = { g : 0. for g in extractor.get_nondispatchable_generators(sced) }
-
+        self.operations_stats.append(ops_stats)

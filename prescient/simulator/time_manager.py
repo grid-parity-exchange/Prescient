@@ -73,6 +73,12 @@ class TimeManager(manager._Manager):
         self._stop_date = self._start_date + timedelta(days=options.num_days)
         print(f"Dates to simulate: {str(self._start_date)} to {str(self._stop_date - timedelta(days=1))}")
 
+        # Validate SCED frequency
+        if 60 % options.sced_frequency_minutes != 0:
+            raise RuntimeError(
+                f"--sced-frequency-minutes must divide evenly into 60! {options.sced_frequency_minutes} supplied!" )
+        self._sced_delta = timedelta(minutes=options.sced_frequency_minutes)
+
         # Validate RUC frequency
         if 24 % options.ruc_every_hours != 0:
             raise RuntimeError(
@@ -105,7 +111,7 @@ class TimeManager(manager._Manager):
         stop_time = datetime.combine(self._stop_date, time(0))
 
         # minutes between each time step
-        step_delta = timedelta(minutes=60)
+        step_delta = self._sced_delta
 
         # Set up the first planning and activation times.
         # The first time step is not considered a planning time or activation time,

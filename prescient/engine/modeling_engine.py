@@ -82,8 +82,8 @@ class ModelingEngine(ABC):
     def create_sced_instance(self,
             options: Options,
             current_state: SimulationState,
-            hours_in_objective: int=1,
-            sced_horizon: int=24,
+            hours_in_objective: int,
+            sced_horizon: int,
             forecast_error_method: ForecastErrorMethod=ForecastErrorMethod.PRESCIENT,
             write_sced_instance: bool = False,
             lp_filename: str=None
@@ -95,6 +95,11 @@ class ModelingEngine(ABC):
         directly from that object.  That is because they only apply to a "normal" sced, not a projected 
         sced, and this method is called for both (and could conceivably be called for other purposes as
         well).  The engine doesn't have any context to know which type of sced is being requested.
+
+        Arguments
+        ---------
+        sced_horizon: int
+            The number of time steps to include in the model
 
         Returns
         -------

@@ -25,7 +25,7 @@ from datetime import timedelta
 from .manager import _Manager
 from .data_manager import RucPlan
 from prescient.engine.modeling_engine import ForecastErrorMethod
-from prescient.data.simulation_state import SimulationState
+from prescient.data.simulation_state import SimulationState, StateWithOffset
 
 class OracleManager(_Manager):
 
@@ -49,7 +49,7 @@ class OracleManager(_Manager):
         return (activation_time.hour, activation_time.date())
 
     def _get_projected_state(self, options: Options, time_step: PrescientTime) -> SimulationState:
-        ''' Get the sced instance with initial conditions, and which hour of that sced that has the initial conditions'''
+        ''' Get the simulation state as we project it will appear after the RUC delay '''
         
         ruc_delay = self._get_ruc_delay(options)
 
@@ -78,7 +78,7 @@ class OracleManager(_Manager):
         # NOTE: the projected sced probably doesn't have to be run for a full 24 hours - just enough
         #       to get you to midnight and a few hours beyond (to avoid end-of-horizon effects).
         #       But for now we run for 24 hours.
-        current_state = self.data_manager.current_state
+        current_state = self.data_manager.current_state.get_state_with_step_length(60)
         projected_sced_instance = self.engine.create_sced_instance(
             options,
             current_state,
@@ -89,7 +89,7 @@ class OracleManager(_Manager):
 
         projected_sced_instance, solve_time = self.engine.solve_sced_instance(options, projected_sced_instance)
 
-        future_state = current_state.get_projected_state(projected_sced_instance, ruc_delay)
+        future_state = StateWithOffset(current_state, projected_sced_instance, ruc_delay)
 
         return future_state
 
@@ -121,7 +121,7 @@ class OracleManager(_Manager):
         # construct the simulation data associated with the first date #
         #################################################################
 
-        ruc_plan = self._generate_ruc(options, time_step.hour, time_step.date, None)
+        ruc_plan = self._generate_ruc(options, time_step.date, time_step.hour, None)
 
         self.data_manager.set_pending_ruc_plan(options, ruc_plan)
         self.data_manager.activate_pending_ruc(options)
@@ -136,12 +136,12 @@ class OracleManager(_Manager):
 
         uc_hour, uc_date = self._get_uc_activation_time(options, time_step)
 
-        ruc = self._generate_ruc(options, uc_hour, uc_date, projected_state)
+        ruc = self._generate_ruc(options, uc_date, uc_hour, projected_state)
         self.data_manager.set_pending_ruc_plan(options, ruc)
 
         return ruc
 
-    def _generate_ruc(self, options, uc_hour, uc_date, sim_state_for_ruc):
+    def _generate_ruc(self, options, uc_date, uc_hour, sim_state_for_ruc):
         '''Creates a RUC plan by calling the oracle for the long-term plan based on forecast'''
 
         deterministic_ruc_instance = self.engine.create_deterministic_ruc(
@@ -208,11 +208,12 @@ class OracleManager(_Manager):
         print("")
         print("Solving SCED instance")
 
+        sced_horizon_timesteps = options.sced_horizon * 60 // options.sced_frequency_minutes
         current_sced_instance = self.engine.create_sced_instance(
             options,
-            self.data_manager.current_state,
+            self.data_manager.current_state.get_state_with_step_length(options.sced_frequency_minutes),
             hours_in_objective=1,
-            sced_horizon=options.sced_horizon,
+            sced_horizon=sced_horizon_timesteps,
             forecast_error_method=forecast_error_method,
             write_sced_instance = options.write_sced_instances,
             lp_filename=lp_filename

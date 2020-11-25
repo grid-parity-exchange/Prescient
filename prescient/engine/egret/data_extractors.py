@@ -23,6 +23,9 @@ from prescient.engine.data_extractors import RucDataExtractor as BaseRucExtracto
 
 class ScedDataExtractor(BaseScedExtractor):
 
+    def get_sced_duration_minutes(self, sced: OperationsModel) -> int:
+        return sced.data['system']['time_period_length_minutes']
+
     def get_buses(self, sced: OperationsModel) -> Iterable[B]:
         return sced.data['elements']['bus'].keys()
 
