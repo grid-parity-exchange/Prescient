@@ -6,14 +6,16 @@
 #  Government retains certain rights in this software.
 #  This software is distributed under the Revised BSD License.
 #  ___________________________________________________________________________
+
+import math
 from prescient.util.math_utils import round_small_values
 
 def report_initial_conditions_for_deterministic_ruc(deterministic_instance):
-    tgens = deterministic_instance.elements('generator', generator_type='thermal')
-    if next(tgens, None) is None:
+    tgens = dict(deterministic_instance.elements('generator', generator_type='thermal'))
+    if not tgens:
         max_thermal_generator_label_length = None
     else:
-        max_thermal_generator_label_length = max((len(g) for g,_ in tgens))
+        max_thermal_generator_label_length = max((len(g) for g in tgens))
 
     print("")
     print("Initial condition detail (gen-name t0-unit-on t0-unit-on-state t0-power-generated):")
