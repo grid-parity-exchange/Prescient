@@ -21,6 +21,7 @@ The program ignores comments marked with the "#" symbol.
 import sys
 import os
 import subprocess
+import threading
 import importlib
 
 def parse_line(option_string):
@@ -67,6 +68,56 @@ def parse_commands(filename):
                 options.extend(parse_line(line))
     return program, options
 
+def run(config_filename, **kwargs):
+    '''
+    Parameters
+    ----------
+    config_filename : str
+        Path to Prescient txt file
+    kwargs :
+        Additional arguments to subprocess.Popen
+
+    Returns
+    -------
+    Result from subprocess.Popen
+
+    '''
+
+    if not(os.path.isfile(config_filename)):
+        print("{} is not a file or does not exist".format(config_filename))
+    script, options = parse_commands(config_filename)
+
+    ## we append an *.exe to the script so windows is happy
+    if sys.platform.startswith('win'):
+        script = script+'.exe'
+    os.environ['PYTHONUNBUFFERED'] = '1'
+
+    proc = subprocess.Popen([script] + options,
+                            stderr=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            **kwargs)
+
+    def write_output(stream, dest):
+        for line in stream:
+            print(line.decode('utf-8'), end='', file=dest)
+        stream.close()
+
+    def run_process(process):
+        process.wait()
+
+    tout = threading.Thread(target=write_output, args=(proc.stdout, sys.stdout))
+    terr = threading.Thread(target=write_output, args=(proc.stderr, sys.stderr))
+    tproc = threading.Thread(target=run_process, args=(proc,))
+
+    tout.start()
+    terr.start()
+    tproc.start()
+
+    tproc.join()
+    tout.join()
+    terr.join()
+
+    return proc
 
 def main():
     if len(sys.argv) != 2:
@@ -76,17 +127,7 @@ def main():
         sys.exit()
 
     config_filename = sys.argv[1]
-    if not(os.path.isfile(config_filename)):
-        print("{} is not a file or does not exist".format(config_filename))
-    script, options = parse_commands(config_filename)
-
-    # We pass shell=True for Windows machines, this somehow makes it properly
-    # pass through command line arguments.
-    if sys.platform.startswith('win'):
-        subprocess.call([script] + options, shell=True)
-    else:
-        subprocess.call([script] + options)
-
+    run(config_filename)
 
 if __name__ == '__main__':
     main()
