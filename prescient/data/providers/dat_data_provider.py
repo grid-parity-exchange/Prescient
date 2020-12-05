@@ -80,7 +80,7 @@ class DatDataProvider():
         data =_recurse_copy_with_time_series_length(first_day_model.data, num_time_steps)
         new_model = EgretModel(data)
         new_model.data['system']['time_keys'] = list(str(i) for i in range(1,num_time_steps+1))
-        new_model.data['system']["time_period_length_minutes"] = minutes_per_timestep
+        new_model.data['system']['time_period_length_minutes'] = minutes_per_timestep
 
         return new_model
 

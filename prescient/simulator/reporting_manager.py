@@ -67,79 +67,98 @@ class ReportingManager(_Manager):
     def setup_runtimes(self, options, stats_manager: StatsManager):
         runtime_path = os.path.join(options.output_directory, 'runtimes.csv')
         runtime_file = open(runtime_path, 'w', newline='')
-        runtime_columns = {"Date":       lambda hourly: str(hourly.date),
-                           "Hour":       lambda hourly: hourly.hour + 1,
-                           "Type":       lambda hourly: "SCED",
-                           "Solve Time": lambda hourly: hourly.sced_runtime}
-        runtime_writer = CsvReporter.from_dict(runtime_file, runtime_columns)
-        stats_manager.register_for_hourly_stats(runtime_writer.write_record)
+
+        ops_runtime_columns = {"Date":       lambda ops: str(ops.timestamp.date()),
+                               "Hour":       lambda ops: ops.timestamp.hour + 1,
+                               "Minute":     lambda ops: ops.timestamp.minute,
+                               "Type":       lambda ops: "SCED",
+                               "Solve Time": lambda ops: ops.sced_runtime}
+        ops_runtime_writer = CsvReporter.from_dict(runtime_file, ops_runtime_columns)
+        stats_manager.register_for_sced_stats(ops_runtime_writer.write_record)
+        
+        if options.sced_frequency_minutes != 60:
+            hr_runtime_columns = {"Date":       lambda hourly: str(hourly.date),
+                                  "Hour":       lambda hourly: hourly.hour + 1,
+                                  "Minute":     lambda hourly: 0,
+                                  "Type":       lambda hourly: "Hourly Average",
+                                  "Solve Time": lambda hourly: hourly.average_sced_runtime}
+            hr_runtime_writer = CsvReporter.from_dict(runtime_file, hr_runtime_columns, write_headers=False)
+            stats_manager.register_for_hourly_stats(hr_runtime_writer.write_record)
+
         stats_manager.register_for_overall_stats(lambda overall: runtime_file.close())
 
     def setup_thermal_detail(self, options, stats_manager: StatsManager):
         thermal_details_path = os.path.join(options.output_directory, 'thermal_detail.csv')
         thermal_details_file = open(thermal_details_path, 'w', newline='')
-        thermal_details_entries_per_hour = lambda hourly: hourly.observed_thermal_dispatch_levels.keys()
-        thermal_details_columns = {"Date":       lambda hourly,g: str(hourly.date),
-                                   "Hour":       lambda hourly,g: hourly.hour + 1,
-                                   'Generator':  lambda hourly,g: g,
-                                   'Dispatch':   lambda hourly,g: hourly.observed_thermal_dispatch_levels[g],
-                                   'Dispatch DA': lambda hourly,g: hourly.thermal_gen_cleared_DA[g] if options.compute_market_settlements else None,
-                                   'Headroom':   lambda hourly,g: hourly.observed_thermal_headroom_levels[g],
-                                   'Unit State': lambda hourly,g: hourly.observed_thermal_states[g],
-                                   'Unit Cost':  lambda hourly,g: hourly.observed_costs[g],
-                                   'Unit Market Revenue': lambda hourly,g: hourly.thermal_gen_revenue[g] + hourly.thermal_reserve_revenue[g] \
-                                                                 if options.compute_market_settlements else None,
-                                   'Unit Uplift Payment': lambda hourly,g: hourly.thermal_uplift[g] if options.compute_market_settlements else None,
-                                  }
-        thermal_details_writer = CsvMultiRowReporter.from_dict(thermal_details_file, thermal_details_entries_per_hour, thermal_details_columns)
-        stats_manager.register_for_hourly_stats(thermal_details_writer.write_record)
+        thermal_details_columns = {
+            'Date':       lambda ops,g: str(ops.timestamp.date()),
+            'Hour':       lambda ops,g: ops.timestamp.hour + 1,
+            'Minute':     lambda ops,g: ops.timestamp.minute,
+            'Generator':  lambda ops,g: g,
+            'Dispatch':   lambda ops,g: ops.observed_thermal_dispatch_levels[g],
+            'Dispatch DA':lambda ops,g: ops.thermal_gen_cleared_DA[g] if options.compute_market_settlements else None,
+            'Headroom':   lambda ops,g: ops.observed_thermal_headroom_levels[g],
+            'Unit State': lambda ops,g: ops.observed_thermal_states[g],
+            'Unit Cost':  lambda ops,g: ops.observed_costs[g],
+            'Unit Market Revenue': lambda ops,g: ops.thermal_gen_revenue[g] + ops.thermal_reserve_revenue[g] \
+                                                 if options.compute_market_settlements else None,
+            'Unit Uplift Payment': lambda hourly,g: hourly.thermal_uplift[g] if options.compute_market_settlements else None,
+           }
+        thermal_details_entries_per_report = lambda stats: stats.observed_thermal_dispatch_levels.keys()
+        thermal_details_writer = CsvMultiRowReporter.from_dict(thermal_details_file, thermal_details_entries_per_report, thermal_details_columns)
+        stats_manager.register_for_sced_stats(thermal_details_writer.write_record)
         stats_manager.register_for_overall_stats(lambda overall: thermal_details_file.close())
 
     def setup_renewables_detail(self, options, stats_manager: StatsManager):
         renewables_production_path = os.path.join(options.output_directory, 'renewables_detail.csv')
         renewables_production_file = open(renewables_production_path, 'w', newline='')
-        renewables_production_entries_per_hour = lambda hourly: hourly.observed_renewables_levels.keys()
-        renewables_production_columns = {'Date':       lambda hourly,g: str(hourly.date),
-                                         'Hour':       lambda hourly,g: hourly.hour + 1,
-                                         'Generator':  lambda hourly,g: g,
-                                         'Output':     lambda hourly,g: hourly.observed_renewables_levels[g],
-                                         'Output DA':  lambda hourly,g: hourly.renewable_gen_cleared_DA[g] if options.compute_market_settlements else None,
-                                         'Curtailment':   lambda hourly,g: hourly.observed_renewables_curtailment[g],
-                                         'Unit Market Revenue': lambda hourly,g: hourly.renewable_gen_revenue[g] if options.compute_market_settlements else None,
-                                         'Unit Uplift Payment': lambda hourly,g: hourly.renewable_uplift[g] if options.compute_market_settlements else None,
-                                        }
+        renewables_production_entries_per_hour = lambda ops: ops.observed_renewables_levels.keys()
+        renewables_production_columns = {
+            'Date':       lambda ops,g: str(ops.timestamp.date()),
+            'Hour':       lambda ops,g: ops.timestamp.hour + 1,
+            'Minute':     lambda ops,g: ops.timestamp.minute,
+            'Generator':  lambda ops,g: g,
+            'Output':     lambda ops,g: ops.observed_renewables_levels[g],
+            'Output DA':  lambda ops,g: ops.renewable_gen_cleared_DA[g] if options.compute_market_settlements else None,
+            'Curtailment':   lambda ops,g: ops.observed_renewables_curtailment[g],
+            'Unit Market Revenue': lambda ops,g: ops.renewable_gen_revenue[g] if options.compute_market_settlements else None,
+            'Unit Uplift Payment': lambda ops,g: ops.renewable_uplift[g] if options.compute_market_settlements else None,
+           }
         renewables_production_writer = CsvMultiRowReporter.from_dict(renewables_production_file, renewables_production_entries_per_hour, renewables_production_columns)
-        stats_manager.register_for_hourly_stats(renewables_production_writer.write_record)
+        stats_manager.register_for_sced_stats(renewables_production_writer.write_record)
         stats_manager.register_for_overall_stats(lambda overall: renewables_production_file.close())
 
     def setup_bus_detail(self, options, stats_manager: StatsManager):
         bus_path = os.path.join(options.output_directory, 'bus_detail.csv')
         bus_file = open(bus_path, 'w', newline='')
-        bus_entries_per_hour = lambda hourly: hourly.observed_bus_mismatches.keys()
-        bus_columns = {'Date':       lambda hourly,b: str(hourly.date),
-                       'Hour':       lambda hourly,b: hourly.hour + 1,
-                       'Bus':        lambda hourly,b: b,
-                       'Demand':     lambda hourly,b: hourly.bus_demands[b],                       
-                       'Shortfall':     lambda hourly,b: hourly.observed_bus_mismatches[b] if hourly.observed_bus_mismatches[b] > 0.0 else 0.0,
-                       'Overgeneration':  lambda hourly,b: -hourly.observed_bus_mismatches[b] if hourly.observed_bus_mismatches[b] < 0.0 else 0.0,
-                       'LMP':   lambda hourly,b: hourly.observed_bus_LMPs[b],
-                       'LMP DA': lambda hourly,b: hourly.planning_energy_prices[b] if options.compute_market_settlements else None,
-                      }
+        bus_entries_per_hour = lambda ops: ops.observed_bus_mismatches.keys()
+        bus_columns = {
+            'Date':       lambda ops,b: str(ops.timestamp.date()),
+            'Hour':       lambda ops,b: ops.timestamp.hour + 1,
+            'Minute':     lambda ops,b: ops.timestamp.minute,
+            'Bus':        lambda ops,b: b,
+            'Demand':     lambda ops,b: ops.bus_demands[b],                       
+            'Shortfall':  lambda ops,b: ops.observed_bus_mismatches[b] if ops.observed_bus_mismatches[b] > 0.0 else 0.0,
+            'Overgeneration':  lambda ops,b: -ops.observed_bus_mismatches[b] if ops.observed_bus_mismatches[b] < 0.0 else 0.0,
+            'LMP':        lambda ops,b: ops.observed_bus_LMPs[b],
+            'LMP DA':     lambda ops,b: ops.planning_energy_prices[b] if options.compute_market_settlements else None,
+           }
         bus_writer = CsvMultiRowReporter.from_dict(bus_file, bus_entries_per_hour, bus_columns)
-        stats_manager.register_for_hourly_stats(bus_writer.write_record)
+        stats_manager.register_for_sced_stats(bus_writer.write_record)
         stats_manager.register_for_overall_stats(lambda overall: bus_file.close())
 
     def setup_line_detail(self, options, stats_manager: StatsManager):
         line_path = os.path.join(options.output_directory, 'line_detail.csv')
         line_file = open(line_path, 'w', newline='')
-        line_entries_per_hour = lambda hourly: hourly.observed_flow_levels.keys()
-        line_columns = {'Date': lambda hourly,l: str(hourly.date),
-                        'Hour': lambda hourly,l: hourly.hour + 1,
-                        'Line': lambda hourly,l: l,
-                        'Flow': lambda hourly,l: hourly.observed_flow_levels[l]
+        line_entries_per_hour = lambda ops: ops.observed_flow_levels.keys()
+        line_columns = {'Date': lambda ops,l: str(ops.timestamp.date()),
+                        'Hour': lambda ops,l: ops.timestamp.hour + 1,
+                        'Minute': lambda ops,l: ops.timestamp.minute,
+                        'Line': lambda ops,l: l,
+                        'Flow': lambda ops,l: ops.observed_flow_levels[l]
                    }
         line_writer = CsvMultiRowReporter.from_dict(line_file, line_entries_per_hour, line_columns)
-        stats_manager.register_for_hourly_stats(line_writer.write_record)
+        stats_manager.register_for_sced_stats(line_writer.write_record)
         stats_manager.register_for_overall_stats(lambda overall: line_file.close())
 
     def setup_hourly_gen_summary(self, options, stats_manager: StatsManager):
