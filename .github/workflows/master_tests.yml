@@ -41,11 +41,17 @@ jobs:
             run: |
               conda info
               conda list
-          - name: Install CBC  
+          - name: Install CBC Conda
             if : matrix.os != 'windows-latest'
             run: |
               conda install coincbc
-
+          - name: Install CBC Windows
+            if : matrix.os == 'windows-latest'
+            run: |
+                # download CBC binary, copy to place already in PATH
+                curl -O https://ampl.com/dl/open/cbc/cbc-win64.zip
+                unzip cbc-win64.zip
+                cp cbc.exe $CONDA_PREFIX
           - name: Install EGRET
             run: |
               pip install git+https://github.com/grid-parity-exchange/Egret.git
