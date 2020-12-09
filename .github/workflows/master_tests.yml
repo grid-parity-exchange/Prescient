@@ -12,6 +12,8 @@ on:
     # nightly tests at 8:00 UTC
     schedule:
         - cron:  '0 8 * * *'
+    workflow_dispatch:
+         types: run-test
 
 defaults:
     run:
@@ -19,10 +21,16 @@ defaults:
 
 jobs:
     build:
-        runs-on: macos-10.15
+        runs-on: ${{ matrix.os }}
         strategy:
             matrix:
-                python-version: [3.7, 3.8]
+                os: [ubuntu-latest]
+                python-version: [3.7, 3.8, 3.9]
+                include:
+                    - os: macos-latest
+                      python-version: 3.7
+                    - os: windows-latest
+                      python-version: 3.7
         steps:
           - uses: actions/checkout@v2
           - uses: conda-incubator/setup-miniconda@v2
@@ -35,10 +43,17 @@ jobs:
             run: |
               conda info
               conda list
-          - name: Install CBC  
+          - name: Install CBC
             run: |
-              conda install coincbc==2.10.5
-
+              if [ ${{ matrix.os }} = windows-latest ]
+              then
+                # download CBC binary, copy to place already in PATH
+                curl -O https://ampl.com/dl/open/cbc/cbc-win64.zip
+                unzip cbc-win64.zip
+                cp cbc.exe $CONDA_PREFIX
+              else
+                conda install coincbc
+              fi
           - name: Install EGRET
             run: |
               pip install git+https://github.com/grid-parity-exchange/Egret.git
