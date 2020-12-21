@@ -557,7 +557,7 @@ def _ensure_reserve_factor_honored(options:Options, md:EgretModel, time_periods:
         for t in time_periods:
             total_load = sum(bdata['p_load']['values'][t]
                              for bus, bdata in md.elements('load'))
-            min_reserve = reserve_factor*total_demand
+            min_reserve = reserve_factor*total_load
             if reserve_reqs[t] < min_reserve:
                 reserve_reqs[t] = min_reserve
 
