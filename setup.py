@@ -41,7 +41,7 @@ setup(name='prescient',
         },
       package_data={'prescient.downloaders.rts_gmlc_prescient':['runners/*.txt','runners/templates/*']},
       install_requires=['numpy','matplotlib','pandas','scipy','pyomo>=5.7.1','six',
-                        'pyutilib', 'python-dateutil', 'networkx',
+                        'pyutilib', 'python-dateutil', 'networkx', 'jupyter',
                         'egret @ git+https://github.com/grid-parity-exchange/Egret.git'],
       dependency_links=['git+https://github.com/grid-parity-exchange/Egret.git#egg=egret'],
      )
