@@ -69,7 +69,7 @@ class ReportingManager(_Manager):
         runtime_file = open(runtime_path, 'w', newline='')
 
         ops_runtime_columns = {"Date":       lambda ops: str(ops.timestamp.date()),
-                               "Hour":       lambda ops: ops.timestamp.hour + 1,
+                               "Hour":       lambda ops: ops.timestamp.hour,
                                "Minute":     lambda ops: ops.timestamp.minute,
                                "Type":       lambda ops: "SCED",
                                "Solve Time": lambda ops: ops.sced_runtime}
@@ -78,7 +78,7 @@ class ReportingManager(_Manager):
         
         if options.sced_frequency_minutes != 60:
             hr_runtime_columns = {"Date":       lambda hourly: str(hourly.date),
-                                  "Hour":       lambda hourly: hourly.hour + 1,
+                                  "Hour":       lambda hourly: hourly.hour,
                                   "Minute":     lambda hourly: 0,
                                   "Type":       lambda hourly: "Hourly Average",
                                   "Solve Time": lambda hourly: hourly.average_sced_runtime}
@@ -92,7 +92,7 @@ class ReportingManager(_Manager):
         thermal_details_file = open(thermal_details_path, 'w', newline='')
         thermal_details_columns = {
             'Date':       lambda ops,g: str(ops.timestamp.date()),
-            'Hour':       lambda ops,g: ops.timestamp.hour + 1,
+            'Hour':       lambda ops,g: ops.timestamp.hour,
             'Minute':     lambda ops,g: ops.timestamp.minute,
             'Generator':  lambda ops,g: g,
             'Dispatch':   lambda ops,g: ops.observed_thermal_dispatch_levels[g],
@@ -115,7 +115,7 @@ class ReportingManager(_Manager):
         renewables_production_entries_per_hour = lambda ops: ops.observed_renewables_levels.keys()
         renewables_production_columns = {
             'Date':       lambda ops,g: str(ops.timestamp.date()),
-            'Hour':       lambda ops,g: ops.timestamp.hour + 1,
+            'Hour':       lambda ops,g: ops.timestamp.hour,
             'Minute':     lambda ops,g: ops.timestamp.minute,
             'Generator':  lambda ops,g: g,
             'Output':     lambda ops,g: ops.observed_renewables_levels[g],
@@ -134,7 +134,7 @@ class ReportingManager(_Manager):
         bus_entries_per_hour = lambda ops: ops.observed_bus_mismatches.keys()
         bus_columns = {
             'Date':       lambda ops,b: str(ops.timestamp.date()),
-            'Hour':       lambda ops,b: ops.timestamp.hour + 1,
+            'Hour':       lambda ops,b: ops.timestamp.hour,
             'Minute':     lambda ops,b: ops.timestamp.minute,
             'Bus':        lambda ops,b: b,
             'Demand':     lambda ops,b: ops.bus_demands[b],                       
@@ -152,7 +152,7 @@ class ReportingManager(_Manager):
         line_file = open(line_path, 'w', newline='')
         line_entries_per_hour = lambda ops: ops.observed_flow_levels.keys()
         line_columns = {'Date': lambda ops,l: str(ops.timestamp.date()),
-                        'Hour': lambda ops,l: ops.timestamp.hour + 1,
+                        'Hour': lambda ops,l: ops.timestamp.hour,
                         'Minute': lambda ops,l: ops.timestamp.minute,
                         'Line': lambda ops,l: l,
                         'Flow': lambda ops,l: ops.observed_flow_levels[l]
@@ -165,7 +165,7 @@ class ReportingManager(_Manager):
         hourly_gen_path = os.path.join(options.output_directory, 'hourly_gen_summary.csv')
         hourly_gen_file = open(hourly_gen_path, 'w', newline='')
         hourly_gen_columns = {'Date': lambda hourly: str(hourly.date),
-                              'Hour': lambda hourly: hourly.hour + 1,
+                              'Hour': lambda hourly: hourly.hour,
                               'Load shedding': lambda hourly: hourly.load_shedding,
                               'Reserve shortfall': lambda hourly: hourly.reserve_shortfall,
                               'Available reserves': lambda hourly: hourly.available_reserve,
@@ -181,7 +181,7 @@ class ReportingManager(_Manager):
         hourly_path = os.path.join(options.output_directory, 'hourly_summary.csv')
         hourly_file = open(hourly_path, 'w', newline='')
         hourly_columns = {'Date': lambda hourly: str(hourly.date),
-                          'Hour': lambda hourly: hourly.hour + 1,
+                          'Hour': lambda hourly: hourly.hour,
                           'TotalCosts': lambda hourly: hourly.total_costs,
                           'FixedCosts': lambda hourly: hourly.fixed_costs,
                           'VariableCosts': lambda hourly: hourly.variable_costs,

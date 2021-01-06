@@ -24,7 +24,7 @@ from . import options
 
 class PrescientTime:
     '''
-    A point in time during a simulation, with one hour granularity
+    A point in time during a simulation
     '''
     def __init__(self, when:datetime, is_planning_time:bool, is_ruc_activation_time:bool):
         self._when = when
