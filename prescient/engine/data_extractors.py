@@ -31,6 +31,11 @@ class ScedDataExtractor(ABC):
     """Extracts information from operations model instances."""
 
     @abstractmethod
+    def get_sced_duration_minutes(self, sced: OperationsModel) -> int:
+        """ Get the number of minutes of operation this sced represents """
+        pass
+
+    @abstractmethod
     def get_buses(self, sced: OperationsModel) -> Iterable[B]:
         """Get all buses in the model."""
         pass

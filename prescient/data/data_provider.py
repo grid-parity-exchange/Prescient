@@ -28,6 +28,29 @@ class DataProvider(ABC):
         pass
 
     @abstractmethod
+    def negotiate_data_frequency(self, desired_frequency_minutes:int):
+        ''' Get the number of minutes between each timestep of actuals data this provider will supply,
+            given the requested frequency.
+
+            Arguments
+            ---------
+            desired_frequency_minutes:int
+                The number of minutes between actual values that the application would like to get
+                from the data provider.
+
+            Returns
+            -------
+            Returns the number of minutes between each timestep of data.
+
+            The data provider may be able to provide data at different frequencies.  This method allows the 
+            data provider to select an appropriate frequency of data samples, given a requested data frequency.
+            
+            Note that the frequency indicated by this method only applies to actuals data; estimates are always
+            hourly.
+        '''
+        pass
+
+    @abstractmethod
     def get_initial_model(self, options:Options, num_time_steps:int) -> EgretModel:
         ''' Get a model ready to be populated with data
 

@@ -39,7 +39,30 @@ class DatDataProvider():
         self._first_day = dateutil.parser.parse(options.start_date).date()
         self._final_day = self._first_day + timedelta(days=options.num_days-1)
 
-    def get_initial_model(self, options:Options, num_time_steps:int) -> EgretModel:
+    def negotiate_data_frequency(self, desired_frequency_minutes:int):
+        ''' Get the number of minutes between each timestep of actuals data this provider will supply,
+            given the requested frequency.
+
+            Arguments
+            ---------
+            desired_frequency_minutes:int
+                The number of minutes between actual values that the application would like to get
+                from the data provider.
+
+            Returns
+            -------
+            Returns the number of minutes between each timestep of data.
+
+            The data provider may be able to provide data at different frequencies.  This method allows the 
+            data provider to select an appropriate frequency of data samples, given a requested data frequency.
+            
+            Note that the frequency indicated by this method only applies to actuals data; estimates are always
+            hourly.
+        '''
+        # This provider can only return one value every 60 minutes.
+        return 60
+
+    def get_initial_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
         ''' Get a model ready to be populated with data
 
         Returns
@@ -57,6 +80,7 @@ class DatDataProvider():
         data =_recurse_copy_with_time_series_length(first_day_model.data, num_time_steps)
         new_model = EgretModel(data)
         new_model.data['system']['time_keys'] = list(str(i) for i in range(1,num_time_steps+1))
+        new_model.data['system']['time_period_length_minutes'] = minutes_per_timestep
 
         return new_model
 
@@ -208,6 +232,12 @@ class DatDataProvider():
 
         start_hour = start_time.hour
         start_day = start_time.date()
+        assert(start_time.minute == 0)
+        assert(start_time.second == 0)
+
+        # Find the ratio of native step length to requested step length
+        src_step_length_minutes = identify_dat(start_day).data['system']['time_period_length_minutes']
+        step_ratio = int(time_period_length_minutes) // src_step_length_minutes
 
         # Loop through each time step
         for step_index in range(0, num_time_periods):
@@ -215,13 +245,22 @@ class DatDataProvider():
             day = step_time.date()
 
             # 0-based hour, useable as index into forecast arrays
-            hour = step_time.hour
+            src_step_index = step_index * step_ratio
 
-            # For data starting at time 0, we collect tomorrow's data
-            # from today's dat file
-            if start_hour == 0 and day != start_day:
-                day = start_day
-                hour += 24
+            # How we handle crossing midnight depends on whether we
+            # started at time 0
+            if day != start_day:
+                if start_hour == 0 :
+                    # For data starting at time 0, we collect tomorrow's 
+                    # data from today's dat file
+                    day = start_day
+                else:
+                    # Otherwise we need to subtract off one day's worth of samples
+                    src_step_index -= 24*60/src_step_length_minutes
+            ### Note that we will never be asked to cross midnight more than once.
+            ### That's because any data request that starts mid-day will only request
+            ### 24 hours of data and then copy it as needed to fill out the horizon.
+            ### If that ever changes, the code above will need to change.
 
             # If request is beyond the last day, just repeat the final day's values
             if day > self._final_day:
@@ -230,7 +269,7 @@ class DatDataProvider():
             dat = identify_dat(day)
 
             for src, target in forecast_helper.get_forecastables(dat, model):
-                target[step_index] = src[hour]
+                target[step_index] = src[src_step_index]
 
 
     def _get_forecast_by_date(self, requested_date: date) -> EgretModel:

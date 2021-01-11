@@ -122,14 +122,14 @@ def _zero_out_costs(sced_model, hours_in_objective):
 def create_sced_instance(data_provider:DataProvider,
                          current_state:SimulationState,
                          options,
-                         sced_horizon=24, # by default simulate a SCED for 24 hours, to pass through the midnight boundary successfully
+                         sced_horizon,
                          forecast_error_method = ForecastErrorMethod.PRESCIENT
                          ):
     ''' Create an hourly deterministic economic dispatch instance, given current forecasts and commitments.
     '''
     assert current_state != None
 
-    sced_md = data_provider.get_initial_model(options, sced_horizon)
+    sced_md = data_provider.get_initial_model(options, sced_horizon, current_state.minutes_per_step)
 
     # Set initial state
     _copy_initial_state_into_model(options, current_state, sced_md)
@@ -217,8 +217,6 @@ def create_solve_deterministic_ruc(deterministic_ruc_solver):
             print("")
             reporting.output_solution_for_deterministic_ruc(
                 ruc_instance_for_this_period, 
-                this_date, 
-                this_hour, 
                 options.ruc_every_hours)
     
         print("")
@@ -274,11 +272,11 @@ def create_deterministic_ruc(options,
 
     ruc_every_hours = options.ruc_every_hours
 
-    start_day = dateutil.parser.parse(this_date).date()
+    start_day = this_date
     start_time = datetime.datetime.combine(start_day, datetime.time(hour=this_hour))
 
     # Create a new model
-    md = data_provider.get_initial_model(options, ruc_horizon)
+    md = data_provider.get_initial_model(options, ruc_horizon, 60)
 
     # Populate the T0 data
     if current_state is None or current_state.timestep_count == 0:
@@ -500,8 +498,9 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
 
 
 def create_simulation_actuals(
-        options: Options, data_provider: DataProvider, 
-        this_date: string, this_hour:int) -> EgretModel:
+        options:Options, data_provider:DataProvider, 
+        this_date:datetime.date, this_hour:int,
+        step_size_minutes:int) -> EgretModel:
     ''' Get an Egret model consisting of data to be treated as actuals, starting at a given time.
 
     Parameters
@@ -510,13 +509,16 @@ def create_simulation_actuals(
         Global option values
     data_provider: DataProvider
         An object that can provide actual and/or forecast data for the requested days
-    this_date: string
-        A string that can be parsed as a date
+    this_date: date
+        The date of the first time step for which data should be retrieved
     this_hour: int
         0-based index of the first hour of the day for which data should be retrieved
+    step_size_minutes: int
+        The number of minutes between each time step
     ''' 
     # Convert time string to time
-    start_time = dateutil.parser.parse(this_date)
+    start_time = datetime.datetime.combine(this_date, 
+                                           datetime.time(hour=this_hour))
 
     # Pick whether we're getting actuals or forecasts
     if options.simulate_out_of_sample:
@@ -529,17 +531,21 @@ def create_simulation_actuals(
         get_data_func = data_provider.populate_with_forecast_data
 
     # Get a new model
-    md = data_provider.get_initial_model(options, options.ruc_horizon)
+    total_step_count = options.ruc_horizon * 60 // step_size_minutes
+    md = data_provider.get_initial_model(options, total_step_count, step_size_minutes)
 
     # Fill it in with data
     data_provider.populate_initial_state_data(options, start_time.date(), md)
     if this_hour == 0:
-        get_data_func(options, start_time, options.ruc_horizon, 60, md)
+        get_data_func(options, start_time, total_step_count, step_size_minutes, md)
     else:
-        get_data_func(options, start_time, 24, 60, md)
+        # only get up to 24 hours of data, then copy it
+        timesteps_per_day = 24 * 60 / step_size_minutes
+        steps_to_request = math.min(timesteps_per_day, total_step_count)
+        get_data_func(options, start_time, steps_to_request, step_size_minutes, md)
         for vals, in get_forecastables(md):
-            for t in range(24, options.ruc_horizon):
-                vals[t] = vals[t-24]
+            for t in range(timesteps_per_day, total_step_count):
+                vals[t] = vals[t-timesteps_per_day]
 
     return md
 

@@ -14,9 +14,7 @@ from typing import Callable
 from .options import Options
 from .manager import _Manager
 from .time_manager import PrescientTime
-from prescient.stats.hourly_stats import HourlyStats
-from prescient.stats.daily_stats import DailyStats
-from prescient.stats.overall_stats import OverallStats
+from prescient.stats import OperationsStats, HourlyStats, DailyStats, OverallStats
 from prescient.util.publish_subscribe import Dispatcher
 
 
@@ -44,10 +42,12 @@ class StatsManager(_Manager):
     #  * time steps are never more than 1 hour
 
     def __init__(self):
+        self._current_sced_stats = None
         self._current_hour_stats = None
         self._current_day_stats = None
         self._overall_stats = None
 
+        self._sced_publisher = Dispatcher()
         self._hourly_publisher = Dispatcher()
         self._daily_publisher = Dispatcher()
         self._overall_publisher = Dispatcher()
@@ -57,13 +57,13 @@ class StatsManager(_Manager):
         '''Called before a simulation begins'''
         self._options = options
 
-        # For now, hard-code a time step of 1 hour
-        self._step_interval = datetime.timedelta(hours=1)
+        self._step_interval = datetime.timedelta(minutes=options.sced_frequency_minutes)
 
         # Clear out any previous stats, if present
         self._overall_stats = None
         self._current_day_stats = None
         self._current_hour_stats = None
+        self._current_sced_stats = None
 
     def begin_timestep(self, time_step: PrescientTime) -> None:
         '''Called just before the simulation advances to the indicated time'''
@@ -105,7 +105,7 @@ class StatsManager(_Manager):
         if self._overall_stats is None:
             self._overall_stats = OverallStats(self._options)
 
-        date = dateutil.parser.parse(time_step.date).date()
+        date = time_step.date
 
         # If we are just starting a new day, create new daily stats 
         if self._current_day_stats is None:
@@ -115,6 +115,10 @@ class StatsManager(_Manager):
         if self._current_hour_stats is None:
             self._current_hour_stats = HourlyStats(self._options, date, time_step.hour)
 
+        # if we are just starting a new sced (which we always are), create new sced stats
+        if self._current_sced_stats is None:
+            self._current_sced_stats = OperationsStats(self._options, time_step.datetime)
+
 
     def collect_operations(self, sced, runtime, lmp_sced, pre_quickstart_cache, extractor):
         '''Called when a new operations sced has been run
@@ -122,14 +126,14 @@ class StatsManager(_Manager):
            Must be called within a timestep, i.e., after begin_timestep()
            and before the corresponding end_timestep().
         '''
-        self._current_hour_stats.populate_from_sced(sced, runtime, lmp_sced, pre_quickstart_cache, extractor)
-        return self._current_hour_stats
+        self._current_sced_stats.populate_from_sced(sced, runtime, lmp_sced, pre_quickstart_cache, extractor)
+        return self._current_sced_stats
 
     def collect_market_settlement(self, sced, extractor, ruc_market, time_index):
         ''' Called after new operations and LMP sced has run and
             after collect_operations
         '''
-        self._current_hour_stats.populate_market_settlement(sced, extractor, ruc_market, time_index)
+        self._current_sced_stats.populate_market_settlement(sced, extractor, ruc_market, time_index)
 
     def collect_quickstart_data(self, pre_quickstart_cache, sced):
         self._current_hour_stats.update_with_quickstart_data(quickstart_cache, sced)
@@ -138,12 +142,9 @@ class StatsManager(_Manager):
     def end_timestep(self, time_step: PrescientTime):
         '''Called after the simulation has completed the indicated time'''
 
-        # convert time_step to a datetime.
-        # eventually I'd like to change PrescientTime to use datetime natively.
-        date = dateutil.parser.parse(time_step.date)
-        this_time = datetime.datetime.combine(
-            date, 
-            datetime.time(time_step.hour))
+        self._finish_timestep()
+
+        this_time = time_step.datetime
         next_time = this_time + self._step_interval
         
         is_hour_end = next_time.hour != this_time.hour
@@ -158,6 +159,11 @@ class StatsManager(_Manager):
 
     def end_simulation(self):
         self._finish_simulation()
+
+    def register_for_sced_stats(self, callback: Callable[[OperationsStats], None], keep_alive=True):
+        self._sced_publisher.subscribe(callback)
+        if keep_alive:
+            self._subscribers.append(callback)
 
     def register_for_hourly_stats(self, callback: Callable[[HourlyStats], None], keep_alive=True):
         self._hourly_publisher.subscribe(callback)
@@ -174,6 +180,12 @@ class StatsManager(_Manager):
         if keep_alive:
             self._subscribers.append(callback)
 
+
+    def _finish_timestep(self):
+        if self._current_sced_stats is not None:
+            self._current_hour_stats.incorporate_operations_stats(self._current_sced_stats)
+            self._sced_publisher.publish(self._current_sced_stats)
+            self._current_sced_stats = None
 
     def _finish_hour(self):
         ''' Close the latest batch of hourly statistics, and roll them into the current day's stats'''

@@ -28,6 +28,7 @@ class CsvReporter:
     @staticmethod
     def from_dict(fileobj, 
                   header_to_value_map: Dict[str, Callable[[RecordType], Any]],
+                  write_headers: bool = True,
                   dialect: Dialect = 'excel'):
         ''' Create a CsvReporter from a dictionary of header to value method
 
@@ -49,7 +50,7 @@ class CsvReporter:
             -------
             Returns a new CsvReporter.
         '''
-        headers = header_to_value_map.keys()
+        headers = header_to_value_map.keys() if write_headers else None
         row_extractor = lambda rec: (f(rec) for f in header_to_value_map.values())
         return CsvReporter(fileobj, headers, row_extractor, dialect)
 

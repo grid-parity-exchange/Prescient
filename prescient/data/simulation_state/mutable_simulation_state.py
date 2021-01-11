@@ -18,6 +18,7 @@ from prescient.engine.forecast_helper import get_forecastables
 from . import SimulationState
 from . import _helper
 from .state_with_offset import StateWithOffset
+from .time_interpolated_state import TimeInterpolatedState
 
 
 class MutableSimulationState(SimulationState):
@@ -33,10 +34,27 @@ class MutableSimulationState(SimulationState):
         self._init_power_gen = {}
         self._init_soc = {}
 
+        # Timestep durations
+        self._minutes_per_forecast_step = 60
+        self._minutes_per_actuals_step = 60
+        # How often a SCED is run
+        self._sced_frequency = 60
+
+        # The current simulation minute
+        self._simulation_minute = 0
+        # Next simulation minute when forecasts should be popped
+        self._next_forecast_pop_minute = 0
+        self._next_actuals_pop_minute = 0
+
     @property
     def timestep_count(self) -> int:
         ''' The number of timesteps we have data for '''
         return len(self._forecasts[0]) if len(self._forecasts) > 0 else 0
+
+    @property
+    def minutes_per_step(self) -> int:
+        ''' The duration of each time step in minutes '''
+        return self._minutes_per_forecast_step
 
     def get_generator_commitment(self, g:G, time_index:int) -> Sequence[int]:
         ''' Get whether the generator is committed to be on (1) or off (0) for each time period
@@ -117,6 +135,11 @@ class MutableSimulationState(SimulationState):
             for s,s_dict in ruc.elements('storage'):
                 self._init_state_of_charge[s] = s_dict['initial_state_of_charge']
 
+            # If this is first RUC, also save data to indicate when to pop RUC-related state 
+            self._minutes_per_forecast_step = ruc.data['system']['time_period_length_minutes']
+            self._next_forecast_pop_minute = self._minutes_per_forecast_step
+            self._sced_frequency = options.sced_frequency_minutes
+
         # Now save all generator commitments
         # Keep the first "ruc_delay" commitments from the prior ruc
         for g, g_dict in ruc.elements('generator', generator_type='thermal'):
@@ -142,6 +165,13 @@ class MutableSimulationState(SimulationState):
         This does not apply to the very first actuals RUC, which is used to set up the 
         initial simulation state with no offset.
         '''
+        # If this is the first actuals, save data to indicate when to pop actuals-related state 
+        first_actuals = (len(self._actuals) == 0)
+        if first_actuals:
+            self._minutes_per_actuals_step = actuals.data['system']['time_period_length_minutes']
+            self._next_actuals_pop_minute = self._minutes_per_actuals_step
+            self._sced_frequency = options.sced_frequency_minutes
+
         _save_forecastables(options, actuals, self._actuals)
 
     def apply_sced(self, options, sced) -> None:
@@ -158,34 +188,34 @@ class MutableSimulationState(SimulationState):
         for s,soc in _helper.get_storage_socs_at_sced_offset(sced, 0):
             self._init_soc[s] = soc
 
-        # Advance one time period, dropping one period worth of data
-        for value_deque in self._forecasts:
-            value_deque.popleft()
-        for value_deque in self._actuals:
-            value_deque.popleft()
-        for value_deque in self._commits.values():
-            value_deque.popleft()
+        # Advance time, dropping data if necessary
+        self._simulation_minute += self._sced_frequency
 
-    def get_projected_state(self, projected_sced:OperationsModel, time_offset:int) -> SimulationState:
-        ''' Get the state as it is projected to be some time in the future.
+        while self._next_forecast_pop_minute <= self._simulation_minute:
+            for value_deque in self._forecasts:
+                value_deque.popleft()
+            for value_deque in self._commits.values():
+                value_deque.popleft()
+            self._next_forecast_pop_minute += self._minutes_per_forecast_step
 
-        Arguments
-        ---------
-        projected_sced:
-            A sced with expected generator and storage activity from the current time 
-            until the offset future time.
-        time_offset:
-            The number of time periods into the future that state is desired.
+        while self._simulation_minute >= self._next_actuals_pop_minute:
+            for value_deque in self._actuals:
+                value_deque.popleft()
+            self._next_actuals_pop_minute += self._minutes_per_actuals_step
 
-        The projected_sced is considered as starting at the same time as the current state.
-        The first "time_offset" time periods of the projected sced are used to find the
-        initial state of the future state.
+    def get_state_with_step_length(self, minutes_per_step:int) -> SimulationState:
+        # If our data matches what's stored here, no need to create an interpolated view
+        if self._minutes_per_forecast_step == minutes_per_step and \
+           self._minutes_per_actuals_step == minutes_per_step and \
+           self._sced_frequency == minutes_per_step:
+            return self
 
-        The returned future state references the state object it was derived from; changes
-        in the parent state will cause changes in the future state.
-        ''' 
-        return StateWithOffset(self, projected_sced, time_offset)
-
+        # Found out what fraction past the first step of each type we currently are
+        minutes_past_forecast = self._simulation_minute - self._next_forecast_pop_minute + self._minutes_per_forecast_step
+        minutes_past_actuals = self._simulation_minute - self._next_actuals_pop_minute + self._minutes_per_actuals_step
+        return TimeInterpolatedState(self, self._minutes_per_forecast_step, minutes_past_forecast,
+                                     self._minutes_per_actuals_step, minutes_past_actuals,
+                                     minutes_per_step)
 
 
 

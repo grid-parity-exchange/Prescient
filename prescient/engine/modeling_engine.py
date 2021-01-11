@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import TypeVar, Iterable, Optional, Mapping, Tuple, Union
+    import datetime
     from .abstract_types import *
     from prescient.simulator.options import Options
     from prescient.data.simulation_state import SimulationState
@@ -35,7 +36,7 @@ class ModelingEngine(ABC):
     @abstractmethod
     def create_deterministic_ruc(self,
             options: Options,
-            uc_date:str,
+            uc_date:datetime.date,
             uc_hour: int,
             current_state: SimulationState,
             output_ruc_initial_conditions: bool,
@@ -48,7 +49,7 @@ class ModelingEngine(ABC):
     def solve_deterministic_ruc(self,
             options: Options,
             ruc_instance: RucModel,
-            uc_date:str,
+            uc_date:datetime.date,
             uc_hour: int
            ) -> RucModel:
         pass
@@ -58,7 +59,7 @@ class ModelingEngine(ABC):
     def create_simulation_actuals(
             self,
             options: Options,
-            uc_date: str,
+            uc_date: datetime.date,
             uc_hour: int
            ) -> RucModel:
         ''' Get a new model holding data to be treated as actuals, starting at a given time.
@@ -69,8 +70,8 @@ class ModelingEngine(ABC):
             Global option values
         data_provider: DataProvider
             An object that can provide actual and/or forecast data for the requested days
-        this_date: string
-            A string that can be parsed as a date
+        this_date: date
+            The starting date for which data should be retrieved
         this_hour: int
             0-based index of the first hour of the day for which data should be retrieved
         ''' 
@@ -81,8 +82,8 @@ class ModelingEngine(ABC):
     def create_sced_instance(self,
             options: Options,
             current_state: SimulationState,
-            hours_in_objective: int=1,
-            sced_horizon: int=24,
+            hours_in_objective: int,
+            sced_horizon: int,
             forecast_error_method: ForecastErrorMethod=ForecastErrorMethod.PRESCIENT,
             write_sced_instance: bool = False,
             lp_filename: str=None
@@ -94,6 +95,11 @@ class ModelingEngine(ABC):
         directly from that object.  That is because they only apply to a "normal" sced, not a projected 
         sced, and this method is called for both (and could conceivably be called for other purposes as
         well).  The engine doesn't have any context to know which type of sced is being requested.
+
+        Arguments
+        ---------
+        sced_horizon: int
+            The number of time steps to include in the model
 
         Returns
         -------

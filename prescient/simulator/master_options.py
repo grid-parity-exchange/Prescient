@@ -544,6 +544,14 @@ def _construct_inner_options_parser():
     guiOverride['--sced-horizon'] = {}
     guiOverride['--sced-horizon']['bpa'] = False
 
+    input_simulation_options.add_option('--sced-frequency-minutes',
+                                        help="Specifies how often a SCED will be run, in minutes. "
+                                             "Must divide evenly into 60, or be a multiple of 60.",
+                                        action='store',
+                                        dest='sced_frequency_minutes',
+                                        type='int',
+                                        default=60)
+
     input_simulation_options.add_option("--random-seed",
                                         help="Seed the random number generator used in the simulation. "
                                              "Defaults to 0, "

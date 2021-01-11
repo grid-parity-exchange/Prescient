@@ -10,6 +10,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    import datetime
     from prescient.simulator import Options
     from prescient.engine.abstract_types import *
     from prescient.data.simulation_state import SimulationState
@@ -61,10 +62,12 @@ class EgretEngine(ModelingEngine):
         self._last_sced_pyo_solver = None
         self._data_provider = DatDataProvider()
         self._data_provider.initialize(options)
+        self._actuals_step_frequency = 60 if not options.simulate_out_of_sample \
+                                       else self._data_provider.negotiate_data_frequency(options.sced_frequency_minutes)
 
     def create_deterministic_ruc(self, 
             options: Options,
-            uc_date:str,
+            uc_date:datetime.date,
             uc_hour: int,
             current_state: SimulationState,
             output_ruc_initial_conditions: bool,
@@ -98,18 +101,19 @@ class EgretEngine(ModelingEngine):
     def create_simulation_actuals(
             self,
             options: Options,
-            uc_date: str,
+            uc_date: datetime.date,
             uc_hour: int
            ) -> RucModel:
         return self._p.create_simulation_actuals(options, self._data_provider, 
-                                                 uc_date, uc_hour)
+                                                 uc_date, uc_hour,
+                                                 self._actuals_step_frequency)
 
 
     def create_sced_instance(self,
             options: Options,
             current_state: SimulationState,
-            hours_in_objective: int=1,
-            sced_horizon: int=24,
+            hours_in_objective: int,
+            sced_horizon: int,
             forecast_error_method = ForecastErrorMethod.PRESCIENT,
             write_sced_instance: bool = False,
             lp_filename: str = None
