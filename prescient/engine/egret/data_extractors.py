@@ -35,6 +35,9 @@ class ScedDataExtractor(BaseScedExtractor):
     def get_all_storage(self, sced: OperationsModel) -> Iterable[S]:
         return sced.data['elements']['storage'].keys()
 
+    def get_all_generators(self, sced: OperationsModel) -> Iterable[G]:
+        return sced.data['elements']['generator'].keys()
+
     def get_thermal_generators(self, sced: OperationsModel) -> Iterable[G]:
         return (g for g,_ in \
                 sced.elements(element_type='generator', generator_type='thermal'))
@@ -124,6 +127,9 @@ class ScedDataExtractor(BaseScedExtractor):
     def get_scaled_startup_ramp_limit(self, sced: OperationsModel, g: G) -> float:
         return sced.data['elements']['generator'][g]['startup_capacity']
 
+    def get_generator_fuel(self, sced: OperationsModel, g: G) -> str:
+        return sced.data['elements']['generator'][g]['fuel']
+
     def get_reserve_shortfall(self, sced: OperationsModel) -> float:
         if 'reserve_shortfall' in sced.data['system']:
             return round_small_values(sced.data['system']['reserve_shortfall']['values'][0])
@@ -175,6 +181,11 @@ class ScedDataExtractor(BaseScedExtractor):
 
     def get_storage_soc_dispatch_level(self, sced: OperationsModel, storage: S) -> float:
         return sced.data['elements']['storage'][s]['state_of_charge']['values'][0]
+
+    def get_storage_type(self, sced: OperationsModel, storage: S) -> str:
+        if 'fuel' in sced.data['elements']['storage'][s]:
+            return sced.data['elements']['storage'][s]['fuel']
+        return 'Other'
 
     def get_bus_demand(self, sced: OperationsModel, bus: B) -> float:
         ''' get the demand on a bus in a given time period '''

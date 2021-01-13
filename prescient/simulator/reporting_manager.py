@@ -14,6 +14,9 @@ import itertools
 
 import numpy as np
 
+from egret.data.model_data import ModelData
+from egret.models.unit_commitment import _time_series_dict
+
 from .manager import _Manager
 from .stats_manager import StatsManager
 from prescient.stats.overall_stats import OverallStats
@@ -27,8 +30,8 @@ try:
     graphutils_functional = True
 except ValueError:
     print("***Unable to load Gtk back-end for matplotlib - graphics generation is disabled")
-    graphutils_functional = False    
-    
+    graphutils_functional = False
+
 class ReportingManager(_Manager):
 
     def initialize(self, options, stats_manager: StatsManager):
@@ -60,7 +63,7 @@ class ReportingManager(_Manager):
         self.setup_daily_summary(options, stats_manager)
         self.setup_overall_simulation_output(options, stats_manager)
 
-        if graphutils_functional:
+        if graphutils_functional and not options.disable_stackgraphs:
             self.setup_daily_stack_graph(options, stats_manager)
             self.setup_cost_summary_graph(options, stats_manager)
 
@@ -266,51 +269,107 @@ class ReportingManager(_Manager):
     def setup_daily_stack_graph(self, options, stats_manager: StatsManager):
         stats_manager.register_for_daily_stats(
             lambda daily_stats: ReportingManager.generate_stack_graph(
-                options, daily_stats, self.simulator.data_manager.prior_sced_instance))
+                options, daily_stats) )
 
     @staticmethod
-    def generate_stack_graph(options, daily_stats: DailyStats, sced):
-        plot_peak_demand = options.plot_peak_demand if options.plot_peak_demand > 0.0 else daily_stats.thermal_fleet_capacity
+    def generate_stack_graph(options, daily_stats: DailyStats):
 
-        daily_hours = range(0, 24)
-        generator_types = {**{g: sced.ThermalGeneratorType[g] for g in sced.ThermalGenerators},
-                           **{g: sced.NondispatchableGeneratorType[g] for g in sced.AllNondispatchableGenerators}}
-        generator_dispatch_levels = {**{g: np.fromiter((daily_stats.hourly_stats[h].observed_thermal_dispatch_levels[g] for h in daily_hours), float)
-                                        for g in sced.ThermalGenerators},
-                                     **{g: np.fromiter((daily_stats.hourly_stats[h].observed_renewables_levels[g] for h in daily_hours), float)
-                                        for g in sced.AllNondispatchableGenerators}}
-        reserve_requirements_by_hour = [daily_stats.hourly_stats[h].reserve_requirement for h in daily_hours]
-        curtailments_by_hour = [sum(daily_stats.hourly_stats[h].observed_renewables_curtailment.values()) for h in daily_hours]
-        load_shedding_by_hour = [daily_stats.hourly_stats[h].load_shedding for h in daily_hours]
-        reserve_shortfalls_by_hour = [daily_stats.hourly_stats[h].reserve_shortfall for h in daily_hours]
-        available_reserves_by_hour = [daily_stats.hourly_stats[h].available_reserve for h in daily_hours]
-        available_quickstart_by_hour = [daily_stats.hourly_stats[h].available_quickstart for h in daily_hours]
-        over_generation_by_hour = [daily_stats.hourly_stats[h].over_generation for h in daily_hours]
-        quick_start_additional_power_generated_by_hour = [daily_stats.hourly_stats[h].quick_start_additional_power_generated for h in daily_hours]
-        event_annotations = itertools.chain(*(daily_stats.hourly_stats[h].event_annotations for h in daily_hours))
-        demand_list = [daily_stats.hourly_stats[h].total_demand for h in daily_hours]
+        md_dict = ModelData.empty_model_data_dict()
 
-        graphutils.generate_stack_graph(plot_peak_demand,  # for scale of the plot
-                                        generator_types,
-                                        generator_dispatch_levels,
-                                        reserve_requirements_by_hour,
-                                        str(daily_stats.date),
-                                        curtailments_by_hour,
-                                        load_shedding_by_hour,
-                                        reserve_shortfalls_by_hour,
-                                        available_reserves_by_hour,
-                                        available_quickstart_by_hour,
-                                        over_generation_by_hour,
-                                        daily_stats.max_hourly_demand,
-                                        quick_start_additional_power_generated_by_hour,
-                                        annotations=event_annotations, 
-                                        show_plot_legend=(not options.disable_plot_legend),
-                                        output_directory=os.path.join(options.output_directory, "plots"),
-                                        plot_individual_generators=options.plot_individual_generators,
-                                        renewables_penetration_rate=daily_stats.this_date_renewables_penetration_rate,
-                                        fixed_costs=daily_stats.this_date_fixed_costs,
-                                        variable_costs=daily_stats.this_date_variable_costs,
-                                        demand=demand_list)
+        system = md_dict['system']
+
+        # put just the HH:MM in the graph
+        system['time_keys'] = [ str(opstats.timestamp.time())[0:5] for opstats in daily_stats.operations_stats() ]
+
+        system['reserve_requirement'] = _time_series_dict(
+                                            [ opstats.reserve_requirement for opstats in daily_stats.operations_stats() ]
+                                            )
+        system['reserve_shortfall'] = _time_series_dict(
+                                            [ opstats.reserve_shortfall for opstats in daily_stats.operations_stats() ]
+                                            )
+
+        elements = md_dict['elements']
+
+        elements['load'] = { 'system_load' :
+                                { 'p_load' : _time_series_dict(
+                                    [ opstats.total_demand for opstats in daily_stats.operations_stats() ]
+                                    )
+                                }
+                            }
+        elements['bus'] = { 'system_load_shed' :
+                                { 'p_balance_violation' : _time_series_dict(
+                                    [ opstats.load_shedding for opstats in daily_stats.operations_stats() ]
+                                    )
+                                },
+                            'system_over_generation' :
+                                { 'p_balance_violation' : _time_series_dict(
+                                    [ -opstats.over_generation for opstats in daily_stats.operations_stats() ]
+                                    )
+                                }
+                          }
+
+        ## load in generation, storage
+        generator_fuels = {}
+        thermal_quickstart = {}
+        thermal_dispatch = {}
+        thermal_headroom = {}
+        thermal_states = {}
+        renewables_dispatch = {}
+        renewables_curtailment = {}
+        storage_input_dispatch = {}
+        storage_output_dispatch = {}
+        storage_types = {}
+        for opstats in daily_stats.operations_stats():
+            _collect_time_assert_equal(opstats.generator_fuels, generator_fuels)
+            _collect_time_assert_equal(opstats.quick_start_capable, thermal_quickstart)
+            _collect_time_assert_equal(opstats.storage_types, storage_types)
+
+            _collect_time(opstats.observed_thermal_dispatch_levels, thermal_dispatch)
+            _collect_time(opstats.observed_thermal_headroom_levels, thermal_headroom)
+            _collect_time(opstats.observed_thermal_states, thermal_states)
+
+            _collect_time(opstats.observed_renewables_levels, renewables_dispatch)
+            _collect_time(opstats.observed_renewables_curtailment, renewables_curtailment)
+
+            _collect_time(opstats.storage_input_dispatch_levels, storage_input_dispatch)
+            _collect_time(opstats.storage_output_dispatch_levels, storage_output_dispatch)
+
+        # load generation
+        gen_dict = {}
+        for g, fuel in generator_fuels.items():
+            gen_dict[g] = { 'fuel' : fuel , 'generator_type' : 'renewable' } # will get re-set below for thermal units
+        for g, quickstart in thermal_quickstart.items():
+            gen_dict[g]['fast_start'] = quickstart
+            gen_dict[g]['generator_type'] = 'thermal'
+
+        _add_timeseries_attribute_to_egret_dict(gen_dict, thermal_dispatch, 'pg')
+        _add_timeseries_attribute_to_egret_dict(gen_dict, thermal_headroom, 'headroom')
+        _add_timeseries_attribute_to_egret_dict(gen_dict, thermal_states, 'commitment')
+
+        _add_timeseries_attribute_to_egret_dict(gen_dict, renewables_dispatch, 'pg')
+        _add_timeseries_attribute_to_egret_dict(gen_dict, renewables_curtailment, 'curtailment')
+        for g_dict in gen_dict.values():
+            if g_dict['generator_type'] == 'renewable':
+                pg = g_dict['pg']['values']
+                curtailment = g_dict['curtailment']['values']
+                g_dict['p_max'] = _time_series_dict([pg_val+c_val for pg_val, c_val in zip(pg, curtailment)])
+
+        elements['generator'] = gen_dict
+
+        # load storage
+        storage_dict = {}
+        for s, stype in storage_types.items():
+            storage_dict[s] = { 'fuel' : stype }
+        _add_timeseries_attribute_to_egret_dict(storage_dict, storage_input_dispatch, 'p_charge')
+        _add_timeseries_attribute_to_egret_dict(storage_dict, storage_output_dispatch, 'p_discharge')
+
+        elements['storage'] = storage_dict
+
+        fig, _ = graphutils.generate_stack_graph(ModelData(md_dict),
+                                                 bar_width=1,
+                                                 x_tick_frequency=4*(60//options.sced_frequency_minutes),
+                                                 title=str(daily_stats.date))
+        fig.savefig(os.path.join(options.output_directory, "plots","stackgraph_"+str(daily_stats.date)+".png"))
 
     def setup_cost_summary_graph(self, options, stats_manager: StatsManager):
         stats_manager.register_for_overall_stats(
@@ -331,3 +390,18 @@ class ReportingManager(_Manager):
                                                daily_renewables_curtailment,
                                                output_directory=os.path.join(options.output_directory, "plots"))
 
+def _collect_time_assert_equal(input_dict, output_dict):
+    for k,v in input_dict.items():
+        if k not in output_dict:
+            output_dict[k] = v
+        assert output_dict[k] == v
+
+def _collect_time(input_dict, output_dict):
+    for k,v in input_dict.items():
+        if k not in output_dict:
+            output_dict[k] = []
+        output_dict[k].append(v)
+
+def _add_timeseries_attribute_to_egret_dict(egret_dict, attribute_dict, egret_attribute_name):
+    for g, vals in attribute_dict.items():
+        egret_dict[g][egret_attribute_name] = _time_series_dict(vals)

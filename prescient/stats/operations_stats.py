@@ -55,9 +55,12 @@ class OperationsStats:
 
     quick_start_additional_costs: float = 0.0
     quick_start_additional_power_generated: float = 0.0
+    quick_start_capable: Dict[G, bool]
     used_as_quickstart: Dict[G, int]
 
     event_annotations: Sequence[str]
+
+    generator_fuels: Dict[G, str]
 
     observed_thermal_dispatch_levels: Dict[G, float]
     observed_thermal_headroom_levels: Dict[G, float]
@@ -76,6 +79,7 @@ class OperationsStats:
     storage_input_dispatch_levels: Dict[S, Sequence[float]]
     storage_output_dispatch_levels: Dict[S, Sequence[float]]
     storage_soc_dispatch_levels: Dict[S, Sequence[float]]
+    storage_types: Dict[S, Sequence[float]]
 
     reserve_requirement: float = 0.0
     reserve_RT_price: float = 0.0
@@ -183,7 +187,10 @@ class OperationsStats:
 
         self.quick_start_additional_costs = extractor.get_additional_quickstart_costs(pre_quickstart_cache, sced)
         self.quick_start_additional_power_generated = extractor.get_additional_quickstart_power_generated(pre_quickstart_cache, sced)
+        self.quick_start_capable = extractor.get_all_thermal_quickstart_capable_flag(sced)
         self.used_as_quickstart = extractor.get_generator_quickstart_usage(pre_quickstart_cache, sced)
+
+        self.generator_fuels = extractor.get_all_generator_fuels(sced)
 
         self.observed_thermal_dispatch_levels = extractor.get_all_thermal_dispatch_levels(sced)
         self.observed_thermal_headroom_levels = extractor.get_all_thermal_headroom_levels(sced)
@@ -202,6 +209,7 @@ class OperationsStats:
         self.storage_input_dispatch_levels = extractor.get_all_storage_input_dispatch_levels(sced)
         self.storage_output_dispatch_levels = extractor.get_all_storage_output_dispatch_levels(sced)
         self.storage_soc_dispatch_levels = extractor.get_all_storage_soc_dispatch_levels(sced)
+        self.storage_types = extractor.get_all_storage_types(sced)
 
         self.reserve_requirement = extractor.get_reserve_requirement(sced)
 
