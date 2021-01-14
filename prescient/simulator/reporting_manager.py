@@ -365,11 +365,13 @@ class ReportingManager(_Manager):
 
         elements['storage'] = storage_dict
 
-        fig, _ = graphutils.generate_stack_graph(ModelData(md_dict),
-                                                 bar_width=1,
-                                                 x_tick_frequency=4*(60//options.sced_frequency_minutes),
-                                                 title=str(daily_stats.date))
-        fig.savefig(os.path.join(options.output_directory, "plots","stackgraph_"+str(daily_stats.date)+".png"))
+        figure_path = os.path.join(options.output_directory, "plots","stackgraph_"+str(daily_stats.date)+".png")
+
+        graphutils.generate_stack_graph(ModelData(md_dict),
+                                        bar_width=1,
+                                        x_tick_frequency=4*(60//options.sced_frequency_minutes),
+                                        title=str(daily_stats.date),
+                                        save_fig=figure_path)
 
     def setup_cost_summary_graph(self, options, stats_manager: StatsManager):
         stats_manager.register_for_overall_stats(
