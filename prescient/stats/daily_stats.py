@@ -103,6 +103,9 @@ class DailyStats:
     def this_date_average_payments(self):
         return 0.0 if self.this_date_demand == 0.0 else self.this_date_total_payments / self.this_date_demand
 
+    def operations_stats(self):
+        yield from (opstat for hrstat in self.hourly_stats for opstat in hrstat.operations_stats)
+
     def __init__(self, options, day: date):
         self.date = day
         self.hourly_stats = []

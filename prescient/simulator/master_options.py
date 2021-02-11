@@ -969,6 +969,12 @@ def _construct_inner_options_parser():
     guiOverride['--output-max-decimal-place'] = {}
     guiOverride['--output-max-decimal-place']['bpa'] = False
 
+    output_simulation_options.add_option('--disable-stackgraphs',
+                                         help="Disable stackgraph generation",
+                                         action='store_true',
+                                         dest='disable_stackgraphs',
+                                         default=False)
+
 
                               
 # # PRESCIENT_OTHER_OPTIONS

@@ -183,7 +183,6 @@ class EgretEngine(ModelingEngine):
             raise
 
         ptdf_manager.update_active(sced_results)
-        self._attach_fake_pyomo_objects(sced_results)
         self._last_sced_pyo_model = pyo_model
         self._last_sced_pyo_solver = pyo_solver
 
@@ -216,7 +215,6 @@ class EgretEngine(ModelingEngine):
             raise
 
         self._ptdf_manager.update_active(sced_results)
-        self._attach_fake_pyomo_objects(sced_results)
         self._last_sced_pyo_model = pyo_model
         self._last_sced_pyo_solver = pyo_solver
 
@@ -270,8 +268,6 @@ class EgretEngine(ModelingEngine):
             print(f"Problematic LMP SCED written to {quickstart_uc_filename}")
             raise
 
-        self._attach_fake_pyomo_objects(lmp_sced_results)
-
         return lmp_sced_results
 
     def _transform_for_lmp(self, pyo_model, pyo_solver, lmp_sced_instance):
@@ -299,25 +295,6 @@ class EgretEngine(ModelingEngine):
 
         if update_obj and isinstance(pyo_solver, PersistentSolver):
             pyo_solver.set_objective(pyo_model.TotalCostObjective)
-
-    def _attach_fake_pyomo_objects(self,md):
-
-        md.ThermalGeneratorType = dict()
-        md.NondispatchableGeneratorType = dict()
-
-        md.ThermalGenerators = list()
-        md.AllNondispatchableGenerators = list()
-
-        thermal_generators = md.elements(element_type='generator', generator_type='thermal')
-        renewable_generators = md.elements(element_type='generator', generator_type='renewable')
-
-        for g, gdict in thermal_generators:
-            md.ThermalGenerators.append(g)
-            md.ThermalGeneratorType[g] = gdict['fuel']
-
-        for r, rdict in renewable_generators:
-            md.AllNondispatchableGenerators.append(r)
-            md.NondispatchableGeneratorType[r] = rdict['fuel']
 
     def _print_sced_info(self,
                          sced_instance: OperationsSced,
