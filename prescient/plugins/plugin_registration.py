@@ -113,7 +113,7 @@ def register_before_ruc_generation_callback(callback):
         The callback will be called once for each forecast/actuals RUC pair.  It is
         called before the RUC generation process has started.
     '''
-    pass
+    raise RuntimeError("This callback is not yet implemented")
 
 def register_before_new_forecast_ruc_callback(callback):
     ''' Register a callback to be called just before a forecast RUC is generated.
@@ -122,7 +122,7 @@ def register_before_new_forecast_ruc_callback(callback):
         initial conditions have been identified (i.e., the projected_sced is available),
         but before the forecast RUC is created and solved.
     '''
-    pass
+    raise RuntimeError("This callback is not yet implemented")
 
 def register_before_new_actuals_ruc_callback(callback):
     ''' Register a callback to be called just before an actuals RUC is generated.
@@ -131,7 +131,7 @@ def register_before_new_actuals_ruc_callback(callback):
         the corresponding forecast RUC has been created and solved, but before the 
         actuals RUC is created and solved.
     '''
-    pass
+    raise RuntimeError("This callback is not yet implemented")
 
 def register_before_ruc_activation_callback(callback):
     ''' Register a callback to be called before activating a RUC.
@@ -139,18 +139,7 @@ def register_before_ruc_activation_callback(callback):
         The callback is called just before the most recently generated RUC
         pair becomes the active RUC pair.
     '''
-    pass
-
-def register_after_ruc_activation_callback(callback):
-    ''' Register a callback to be called after activating a RUC.
-
-        We probably don't need this one; before activation is probably enough.
-        All activation really does is swap some pointers.
-
-        The callback is called just after the most recently generated RUC
-        pair becomes the active RUC pair.
-    '''
-    pass
+    raise RuntimeError("This callback is not yet implemented")
 
 def register_before_operations_callback(callback):
     ''' Register a callback to be called before an operations model is created and solved.
@@ -158,8 +147,9 @@ def register_before_operations_callback(callback):
         Called just before an operations model is created and solved.  The active RUC is
         already in place.
     '''
+    raise RuntimeError("This callback is not yet implemented")
 
-def register_dispatch_level_provider(callback):
+def register_dispatch_level_provider_callback(callback):
     ''' Register a method that provides requested dispatch levels.
 
         This one has a different flavor than the other callbacks.  Prescient "pulls" the
@@ -167,7 +157,7 @@ def register_dispatch_level_provider(callback):
         the model when given the opportunity.  It's here as a discussion point, as some
         have expressed a preference for pull-style code over push-style code.
     '''
-    pass
+    raise RuntimeError("This callback is not yet implemented")
 
 def register_after_lmp_callback(callback):
     ''' Register a callback to be called after the LMP has been calculated.
@@ -175,4 +165,4 @@ def register_after_lmp_callback(callback):
         Called after the LMP model has been solved, but before operations and LMP
         statistics have been collected.
     '''
-    pass
+    raise RuntimeError("This callback is not yet implemented")
