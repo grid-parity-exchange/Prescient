@@ -182,6 +182,11 @@ def create_sced_instance(data_provider:DataProvider,
         for t in range(sced_horizon):
             fixed_commitment[t] = current_state.get_generator_commitment(g,t)
 
+    if not options.enforce_sced_shutdown_ramprate:
+        for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
+            # make sure the generator can immediately turn off
+            g_dict['shutdown_capacity'] = max(g_dict['shutdown_capacity'], (60./options.sced_frequency_minutes)*g_dict['initial_p_output'] + 1.)
+
     return sced_md
 
 

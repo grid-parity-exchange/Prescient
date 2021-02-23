@@ -208,7 +208,7 @@ class OracleManager(_Manager):
         print("")
         print("Solving SCED instance")
 
-        sced_horizon_timesteps = options.sced_horizon * 60 // options.sced_frequency_minutes
+        sced_horizon_timesteps = options.sced_horizon
         current_sced_instance = self.engine.create_sced_instance(
             options,
             self.data_manager.current_state.get_state_with_step_length(options.sced_frequency_minutes),
