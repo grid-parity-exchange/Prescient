@@ -26,9 +26,17 @@ StorageSoc = NamedTuple('StorageSoc', [('storage',S),
 
 def get_generator_states_at_sced_offset(original_state:SimulationState,
                                         sced:EgretModel, sced_index:int) -> Iterable[GeneratorState]:
+    # We'll be converting between time periods and hours.
+    # Make the data type of hours_per_period an int if it's an integer number of hours, float if fractional
+    minutes_per_period = sced.data['system']['time_period_length_minutes']
+    hours_per_period = minutes_per_period // 60 if minutes_per_period % 60 == 0 \
+                       else minutes_per_period / 60
+
     for g, g_dict in sced.elements('generator', generator_type='thermal'):
         ### Get generator state (whether on or off, and for how long) ###
         init_state = original_state.get_initial_generator_state(g)
+        # state is in hours, convert to integer number of time periods
+        init_state = round(init_state / hours_per_period)
         state_duration = abs(init_state)
         unit_on = init_state > 0
         g_commit = g_dict['commitment']['values']
@@ -44,6 +52,9 @@ def get_generator_states_at_sced_offset(original_state:SimulationState,
 
         if not unit_on:
             state_duration = -state_duration
+
+        # Convert duration back into hours
+        state_duration *= hours_per_period
 
         ### Get how much power was generated, within bounds ###
         power_generated = g_dict['pg']['values'][sced_index]
