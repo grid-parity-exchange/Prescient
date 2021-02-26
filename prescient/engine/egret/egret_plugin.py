@@ -141,8 +141,8 @@ def create_sced_instance(data_provider:DataProvider,
     if forecast_error_method is ForecastErrorMethod.PRESCIENT:
         # Warning: This method can see into the future!
         future_actuals = current_state.get_future_actuals()
-        sced_forecastables, = get_forecastables(sced_md)
-        for future,sced_data in zip(future_actuals, sced_actuals):
+        sced_forecastables = get_forecastables(sced_md)
+        for future, (sced_data,) in zip(future_actuals, sced_forecastables):
             for t in range(sced_horizon):
                 sced_data[t] = future[t]
 
@@ -369,7 +369,7 @@ def create_deterministic_ruc(options,
 
     # Populate the T0 data
     if current_state is None or current_state.timestep_count == 0:
-        data_provider.populate_initial_state_data(options, start_day, md)
+        data_provider.populate_initial_state_data(options, md)
     else:
         _copy_initial_state_into_model(options, current_state, md)
 
@@ -383,8 +383,8 @@ def create_deterministic_ruc(options,
     ruc_delay = -(options.ruc_execution_hour%(-options.ruc_every_hours))
     if options.ruc_prescience_hour > ruc_delay + 1:
         improved_hour_count = options.ruc_prescience_hour - ruc_delay - 1
-        for forecast, actuals in zip(get_forecastables(md),
-                                     current_state.get_future_actuals()):
+        for (forecast,), actuals in zip(get_forecastables(md),
+                                        current_state.get_future_actuals()):
             for t in range(0, improved_hour_count):
                 forecast_portion = (ruc_delay+t)/options.ruc_prescience_hour
                 actuals_portion = 1-forecast_portion
@@ -623,7 +623,6 @@ def create_simulation_actuals(
     md = data_provider.get_initial_model(options, total_step_count, step_size_minutes)
 
     # Fill it in with data
-    data_provider.populate_initial_state_data(options, start_time.date(), md)
     if this_hour == 0:
         get_data_func(options, start_time, total_step_count, step_size_minutes, md)
     else:

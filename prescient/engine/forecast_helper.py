@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .abstract_types import EgretModel
-    from typing import Iterable, Tuple, MutableSequence
+    from typing import Iterable, Tuple, MutableSequence, Any
 
 def get_forecastables(*models: EgretModel) -> Iterable[ Tuple[MutableSequence[float]] ]:
     ''' Get all data that are predicted by forecasting, for any number of models.
@@ -36,3 +36,32 @@ def get_forecastables(*models: EgretModel) -> Iterable[ Tuple[MutableSequence[fl
     yield tuple(m.data['system']['reserve_requirement']['values'] for m in models)
 
     return
+
+def ensure_forecastable_storage(*model:EgretModel, num_entries:int) -> None:
+    """ Ensure that the model has an array allocated for every type of forecastable data
+    """
+    def _get_forecastable_locations(model):
+        """ get all locations where data[key]['values'] is expected to return a forecastable's value array
+
+        Returns
+        -------
+        data:dict
+            Parent dict with an entry that points to a forecastable time series
+        key:Any
+            Key into data where forecastable time series is expected
+        """
+        # Generators
+        for gen, gdata in model.elements('generator', generator_type='renewable'):
+            yield (gdata, 'p_min')
+            yield (gdata, 'p_max')
+        # Loads
+        for bus, bdata in model.elements('load'):
+            yield (bdata, 'p_load')
+        # Reserve requirement
+        yield (model.data['system'], 'reserve_requirement')
+
+    for data, key in _get_forecastable_locations(model):
+        if type(data[key]) is not dict or data[key]['data_type'] != 'time_series' or len(data[key]['values'] != num_entries):
+            data[key] = { 'data_type': 'time_series',
+                          'values': [None]*num_entries}
+

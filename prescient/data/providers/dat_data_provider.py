@@ -85,9 +85,8 @@ class DatDataProvider():
         return new_model
 
     def populate_initial_state_data(self, options:Options,
-                                    day:date,
                                     model: EgretModel) -> None:
-        ''' Populate an existing model with initial state data for the requested day
+        ''' Populate an existing model with initial state data for the first day
 
         Sets T0 information from actuals:
           * initial_state_of_charge for each storage element
@@ -98,17 +97,10 @@ class DatDataProvider():
         ---------
         options:
             Option values
-        day:date
-            The day whose initial state will be saved in the model
         model: EgretModel
             The model whose values will be modifed
         '''
-        if day < self._first_day:
-            day = self._first_day
-        elif day > self._final_day:
-            day = self._final_day
-
-        actuals = self._get_actuals_by_date(day)
+        actuals = self._get_actuals_by_date(self._first_day)
 
         for s, sdict in model.elements('storage'):
             soc = actuals.data['elements']['storage'][s]['initial_state_of_charge']
