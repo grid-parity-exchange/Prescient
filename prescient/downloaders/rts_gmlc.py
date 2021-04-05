@@ -46,8 +46,6 @@ def download(branch='HEAD'):
         The commit tag to check out after cloning.  Default is "HEAD".
     '''
     
-    copy_templates()
-
     cur_path = os.getcwd()
 
     if branch == 'HEAD':
@@ -82,5 +80,6 @@ def download(branch='HEAD'):
 
 if __name__ == '__main__':
     download()
+    copy_templates()
     populate_input_data()
     print('Set up RTS-GMLC data in {0}'.format(rts_download_path))
