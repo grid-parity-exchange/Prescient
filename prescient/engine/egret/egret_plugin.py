@@ -205,19 +205,32 @@ def create_sced_instance(data_provider:DataProvider,
             if 'shutdown_curve' in g_dict:
                 continue
             ramp_down_rate_sced = g_dict['ramp_down_60min'] * (current_state.minutes_per_step)/60.
-            if 'shutdown_capacity' not in g_dict:
-                if isinstance(g_dict['p_min'], dict):
-                    sced_shutdown_capacity = [p_min+ramp_down_rate_sced/2. for p_min in g_dict['p_min']['values']]
-                    sced_startup_capacity = sum(sced_startup_capacity)/len(sced_startup_capacity)
+            power_t0 = g_dict['initial_p_output']
+            if options.enforce_sced_shutdown_ramprate or power_t0 <= 0.:
+                if 'shutdown_capacity' not in g_dict:
+                    if isinstance(g_dict['p_min'], dict):
+                        sced_shutdown_capacity = [p_min+ramp_down_rate_sced/2. for p_min in g_dict['p_min']['values']]
+                        sced_startup_capacity = sum(sced_startup_capacity)/len(sced_startup_capacity)
+                    else:
+                        sced_shutdown_capacity = g_dict['p_min'] + ramp_down_rate_sced/2.
                 else:
-                    sced_shutdown_capacity = g_dict['p_min'] + ramp_down_rate_sced/2.
-            else:
-                # TODO: generalize to time-varying pmin/shutdown capacity
-                sced_shutdown_capacity = (g_dict['shutdown_capacity'] - g_dict['p_min'])*(current_state.minutes_per_step/60.) + g_dict['p_min']
+                    # TODO: generalize to time-varying pmin/shutdown capacity
+                    sced_shutdown_capacity = (g_dict['shutdown_capacity'] - g_dict['p_min'])*(current_state.minutes_per_step/60.) + g_dict['p_min']
 
-            g_dict['shutdown_curve'] = [ sced_shutdown_capacity - i*ramp_down_rate_sced \
-                                         for i in range(1,int(math.ceil(sced_shutdown_capacity/ramp_down_rate_sced))) ]
-            #print(f"{g} : p_min: {g_dict['p_min']}, shutdown_curve: {g_dict['shutdown_curve']}")
+                g_dict['shutdown_curve'] = [ sced_shutdown_capacity - i*ramp_down_rate_sced \
+                                             for i in range(1,int(math.ceil(sced_shutdown_capacity/ramp_down_rate_sced))) ]
+                #print(f"{g} : p_min: {g_dict['p_min']}, shutdown_curve: {g_dict['shutdown_curve']}")
+            else:
+                ## infer the shutdown curve from the output status
+                initial_status = g_dict['initial_status']
+                if initial_status > 0.:
+                    time_periods_off = 0
+                else:
+                    time_periods_off = int(math.ceil(-initial_status*60./current_state.minutes_per_step))
+                g_dict['shutdown_curve'] = [ power_t0 + i*ramp_down_rate_sced for i in range(time_periods_off-1,-1,-1) ] + \
+                                           [ power_t0 - i*ramp_down_rate_sced for i in range(1,int(math.ceil(power_t0/ramp_down_rate_sced))) ]
+                #print(f"{g} : initial_status: {initial_status}, initial_p_output: {power_t0}, shutdown_curve: {g_dict['shutdown_curve']}")
+
 
     if not options.enforce_sced_shutdown_ramprate:
         for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
