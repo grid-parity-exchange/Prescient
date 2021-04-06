@@ -535,8 +535,9 @@ def _construct_inner_options_parser():
     guiOverride["--ruc-horizon"]['bpa'] = False
 
     input_simulation_options.add_option('--sced-horizon',
-                                        help="Specifies the number of look-ahead time periods "
-                                             "when each SCED process is executed.",
+                                        help="Specifies the number of time periods "
+                                             "when each SCED process is executed. "
+                                             "Must be at least 1.",
                                         action='store',
                                         dest='sced_horizon',
                                         type='int',

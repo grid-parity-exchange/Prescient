@@ -172,7 +172,8 @@ def create_sced_instance(data_provider:DataProvider,
     ## if relaxing initial ramping, we need to relax it in the first SCED as well
     assert options.relax_t0_ramping_initial_day is False
 
-    # Set generator commitments
+    # Set generator commitments & future state
+    #print(f"current_state.timestep_count: {current_state.timestep_count}")
     for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
         # Start by preparing an empty array of the correct size for each generator
         fixed_commitment = [None]*sced_horizon
@@ -181,6 +182,23 @@ def create_sced_instance(data_provider:DataProvider,
         # Now fill it in with data
         for t in range(sced_horizon):
             fixed_commitment[t] = current_state.get_generator_commitment(g,t)
+
+        # Look as far into the future as we can for future startups / shutdowns
+        last_commitment = fixed_commitment[-1]
+        for t in range(sced_horizon, current_state.timestep_count):
+            this_commitment = current_state.get_generator_commitment(g,t)
+            if (this_commitment - last_commitment) > 0.5:
+                # future startup
+                future_status_time_steps = ( t - sced_horizon + 1 )
+                break
+            elif (last_commitment - this_commitment) > 0.5:
+                # future shutdown
+                future_status_time_steps = -( t - sced_horizon + 1 )
+                break
+        else: # no break
+            future_status_time_steps = 0
+        g_dict['future_status'] = (current_state.minutes_per_step/60.) * future_status_time_steps
+        #print(f"g: {g}, future_status: {g_dict['future_status']}")
 
     if not options.no_startup_shutdown_curves:
         for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
@@ -206,7 +224,17 @@ def create_sced_instance(data_provider:DataProvider,
                 continue
             ramp_down_rate_sced = g_dict['ramp_down_60min'] * (current_state.minutes_per_step)/60.
             power_t0 = g_dict['initial_p_output']
-            if options.enforce_sced_shutdown_ramprate or power_t0 <= 0.:
+            initial_status = g_dict['initial_status']
+            if initial_status > 0.:
+                time_periods_off = 0
+            else:
+                time_periods_off = int(math.ceil(-initial_status*60./current_state.minutes_per_step))
+            if options.enforce_sced_shutdown_ramprate or \
+                    (power_t0 <= 0.) or \
+                    ((power_t0 + (time_periods_off-1)*ramp_down_rate_sced) > g_dict['p_max']):
+                # in the first case, the generator will shut-down around the shut-down power
+                # in the second case, the generator is *definitely not* in shut-down process
+                # in the third case, the generator is *definitely* in the *start-up* process
                 if 'shutdown_capacity' not in g_dict:
                     if isinstance(g_dict['p_min'], dict):
                         sced_shutdown_capacity = [p_min+ramp_down_rate_sced/2. for p_min in g_dict['p_min']['values']]
@@ -222,11 +250,6 @@ def create_sced_instance(data_provider:DataProvider,
                 #print(f"{g} : p_min: {g_dict['p_min']}, shutdown_curve: {g_dict['shutdown_curve']}")
             else:
                 ## infer the shutdown curve from the output status
-                initial_status = g_dict['initial_status']
-                if initial_status > 0.:
-                    time_periods_off = 0
-                else:
-                    time_periods_off = int(math.ceil(-initial_status*60./current_state.minutes_per_step))
                 g_dict['shutdown_curve'] = [ power_t0 + i*ramp_down_rate_sced for i in range(time_periods_off-1,-1,-1) ] + \
                                            [ power_t0 - i*ramp_down_rate_sced for i in range(1,int(math.ceil(power_t0/ramp_down_rate_sced))) ]
                 #print(f"{g} : initial_status: {initial_status}, initial_p_output: {power_t0}, shutdown_curve: {g_dict['shutdown_curve']}")
