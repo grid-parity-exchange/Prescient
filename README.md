@@ -14,7 +14,7 @@ Code base for Prescient production cost model / scenario generation / prediction
   * Commercial: CPLEX, Gurobi, Xpress, ...
 
 ### Installation
-1. Install EGRET according to the instructions [here](https://github.com/grid-parity-exchange/Egret/blob/master/README.md).
+1. Install EGRET according to the instructions [here](https://github.com/grid-parity-exchange/Egret/blob/main/README.md).
 2. Clone or download/extract the Prescient repository.
 3. The root of the repository will contain a `setup.py` file. In the command prompt or terminal, change your working directory to the root of the repository. Execute the following command:
 ```
@@ -124,7 +124,7 @@ and similarily for Gurobi (`gurobi`) and CPLEX (`cplex`).
 You can watch the progress of the simulator as it is printed to the console. After a period of time, the simulation will be complete. The results will be found a in a new folder `deterministic_with_network_simulation_output`. In that directory, there will be a number of .csv files containing simulation results. An additional folder `plots` contains stack graphs for each day in the simulation, summarizing generation and demand at each time step.
 
 ### (For developers) Regression tests
-A unit test for testing a simulator run on the based on a single-zone of the RTS-GMLC data is located [here](https://github.com/grid-parity-exchange/prescient/blob/master/tests/simulator_tests/test_sim_rts_mod.py):
+A unit test for testing a simulator run on the based on a single-zone of the RTS-GMLC data is located [here](https://github.com/grid-parity-exchange/prescient/blob/main/tests/simulator_tests/test_sim_rts_mod.py):
 
 ```
 tests/simulator_tests/test_sim_rts_mod.py
