@@ -37,7 +37,7 @@ def get_forecastables(*models: EgretModel) -> Iterable[ Tuple[MutableSequence[fl
 
     return
 
-def ensure_forecastable_storage(*model:EgretModel, num_entries:int) -> None:
+def ensure_forecastable_storage(num_entries:int, model:EgretModel) -> None:
     """ Ensure that the model has an array allocated for every type of forecastable data
     """
     def _get_forecastable_locations(model):
@@ -57,11 +57,15 @@ def ensure_forecastable_storage(*model:EgretModel, num_entries:int) -> None:
         # Loads
         for bus, bdata in model.elements('load'):
             yield (bdata, 'p_load')
-        # Reserve requirement
-        yield (model.data['system'], 'reserve_requirement')
+        # Reserve requirement (if present, this is optional)
+        if 'reserve_requirement' in model.data['system']:
+            yield (model.data['system'], 'reserve_requirement')
 
     for data, key in _get_forecastable_locations(model):
-        if type(data[key]) is not dict or data[key]['data_type'] != 'time_series' or len(data[key]['values'] != num_entries):
+        if (not key in data or \
+            type(data[key]) is not dict or \
+            data[key]['data_type'] != 'time_series' or \
+            len(data[key]['values'] != num_entries)
+           ):
             data[key] = { 'data_type': 'time_series',
                           'values': [None]*num_entries}
-
