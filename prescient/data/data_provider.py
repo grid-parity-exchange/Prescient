@@ -22,12 +22,6 @@ class DataProvider(ABC):
     '''
 
     @abstractmethod
-    def initialize(self, options: Options) -> None:
-        ''' Do one-time initial setup
-        '''
-        pass
-
-    @abstractmethod
     def negotiate_data_frequency(self, desired_frequency_minutes:int):
         ''' Get the number of minutes between each timestep of actuals data this provider will supply,
             given the requested frequency.

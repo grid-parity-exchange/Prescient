@@ -28,9 +28,7 @@ class DatDataProvider():
     ''' Provides data from pyomo DAT files
     '''
 
-    def initialize(self, options: Options) -> None:
-        ''' Do one-time initial setup
-        '''
+    def __init__(self, options:Options):
         self._uc_model_template = get_uc_model()
         self._instance_directory_name = os.path.join(os.path.expanduser(options.data_directory), 
                                                      "pyspdir_twostage")

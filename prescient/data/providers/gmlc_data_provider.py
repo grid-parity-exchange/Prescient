@@ -18,7 +18,7 @@ from datetime import datetime, date, timedelta
 import dateutil.parser
 import copy
 
-from egret.parsers.rts_gmlc_parser import parser
+from egret.parsers import rts_gmlc_parser as parser
 from egret.data.model_data import ModelData as EgretModel
 
 from ..data_provider import DataProvider
@@ -28,11 +28,9 @@ class GmlcDataProvider(DataProvider):
     ''' Provides data from pyomo DAT files
     '''
 
-    def initialize(self, options: Options) -> None:
-        ''' Do one-time initial setup
-        '''
+    def __init__(self, options:Options):
         self._start_time = dateutil.parser.parse(options.start_date)
-        self._end_time = self._start_date + timedelta(days=options.num_days)
+        self._end_time = self._start_time + timedelta(days=options.num_days)
         self._cache = parser.parse_to_cache(options.data_directory, self._start_time, self._end_time)
 
     def negotiate_data_frequency(self, desired_frequency_minutes:int):
@@ -77,8 +75,8 @@ class GmlcDataProvider(DataProvider):
         data['system']['time_period_length_minutes'] = minutes_per_timestep
         data['system']['time_keys'] = list(range(1,num_time_steps+1))
         md = EgretModel(data)
-        forecast_helper.ensure_forecastable_storage(md, num_time_steps)
-        return new_model
+        forecast_helper.ensure_forecastable_storage(num_time_steps, md)
+        return md
 
     def populate_initial_state_data(self, options:Options,
                                     model: EgretModel) -> None:
