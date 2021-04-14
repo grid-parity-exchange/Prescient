@@ -27,7 +27,7 @@ from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
 from prescient.simulator.data_manager import RucMarket
 from ..modeling_engine import ForecastErrorMethod
-from ..forecast_helper import get_forecastables
+from ..forecast_helper import get_forecastables, get_forecastables_with_inferral_method, InferralType
 from . import reporting
 
 from typing import TYPE_CHECKING
@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     from typing import Optional
     from egret.data.model_data import ModelData as EgretModel
 
-uc_abstract_data_model = get_uc_model()
 
 ########################################################################################
 # a utility to find the "nearest" - quantified via Euclidean distance - scenario among #
@@ -374,8 +373,8 @@ def create_deterministic_ruc(options,
         _copy_initial_state_into_model(options, current_state, md)
 
     # Populate forecasts
-    copy_first_day = (not use_next_day_in_ruc) and (this_hour != 0)
-    forecast_request_count = 24 if copy_first_day else ruc_horizon 
+    infer_second_day = (not use_next_day_in_ruc)
+    forecast_request_count = 24 if infer_second_day else ruc_horizon 
     data_provider.populate_with_forecast_data(options, start_time, forecast_request_count, 
                                               60, md)
 
@@ -394,11 +393,15 @@ def create_deterministic_ruc(options,
     # Ensure the reserve requirement is satisfied
     _ensure_reserve_factor_honored(options, md, range(forecast_request_count))
 
-    # Copy from first 24 to second 24, if necessary
-    if copy_first_day:
-        for vals, in get_forecastables(md):
+    if infer_second_day:
+        for infer_type, vals in get_forecastables_with_inferral_method(md):
             for t in range(24, ruc_horizon):
-                vals[t] = vals[t-24]
+                if infer_type == InferralType.COPY_FIRST_DAY:
+                    # Copy from first 24 to second 24
+                    vals[t] = vals[t-24]
+                else:
+                    # Repeat the final value from day 1
+                    vals[t] = vals[23]
 
     return md
 

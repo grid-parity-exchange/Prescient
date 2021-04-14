@@ -145,11 +145,9 @@ class DatDataProvider():
         will be saved.  If arrays are larger than the number of requested time 
         steps, the remaining array elements will be left unchanged.
 
-        If start_time is midnight of any day, all data comes from the DAT file for
-        the starting day.  Otherwise, forecast data is taken from the file matching 
-        the date of the time step.  In other words, if requesting data starting at 
-        midnight, all data in the first day's DAT file will be available, but otherwise
-        only the first 24 hours of each DAT file will be used.
+        All data comes from the DAT file for the date of the time step.  This means
+        only the first 24 hours of each DAT file will be used, even if the DAT file
+        contains data that extends into the next day.
 
         Note that this method has the same signature as populate_with_actuals.
         '''
@@ -192,11 +190,9 @@ class DatDataProvider():
         will be saved.  If arrays are larger than the number of requested time 
         steps, the remaining array elements will be left unchanged.
 
-        If start_time is midnight of any day, all data comes from the DAT file for
-        the starting day.  Otherwise, data is taken from the file matching 
-        the date of the time step.  In other words, if requesting data starting at 
-        midnight, all data in the first day's DAT file will be available, but otherwise
-        only the first 24 hours of each DAT file will be used.
+        All data comes from the DAT file for the date of the time step.  This means
+        only the first 24 hours of each DAT file will be used, even if the DAT file
+        contains data that extends into the next day.
 
         Note that this method has the same signature as populate_with_forecast_data.
         '''
@@ -228,33 +224,16 @@ class DatDataProvider():
         # Find the ratio of native step length to requested step length
         src_step_length_minutes = identify_dat(start_day).data['system']['time_period_length_minutes']
         step_ratio = int(time_period_length_minutes) // src_step_length_minutes
+        steps_per_day = 24*60//src_step_length_minutes
 
         # Loop through each time step
         for step_index in range(0, num_time_periods):
             step_time = start_time + step_delta*step_index
             day = step_time.date()
 
-            # 0-based hour, useable as index into forecast arrays
-            src_step_index = step_index * step_ratio
-
-            # How we handle crossing midnight depends on whether we
-            # started at time 0
-            if day != start_day:
-                if start_hour == 0 :
-                    # For data starting at time 0, we collect tomorrow's 
-                    # data from today's dat file
-                    day = start_day
-                else:
-                    # Otherwise we need to subtract off one day's worth of samples
-                    src_step_index -= 24*60/src_step_length_minutes
-            ### Note that we will never be asked to cross midnight more than once.
-            ### That's because any data request that starts mid-day will only request
-            ### 24 hours of data and then copy it as needed to fill out the horizon.
-            ### If that ever changes, the code above will need to change.
-
-            # If request is beyond the last day, just repeat the final day's values
-            if day > self._final_day:
-                day = self._final_day
+            # 0-based hour, useable as index into forecast arrays.
+            # Note that it's the index within the step's day
+            src_step_index = (step_index * step_ratio) % steps_per_day
 
             dat = identify_dat(day)
 
@@ -293,6 +272,21 @@ class DatDataProvider():
         path_to_dat = os.path.join(self._instance_directory_name,
                                    date_str,
                                    dat_filename)
+
+        # if requested day does not exist, use the last day's data instead
+        if not os.path.exists(path_to_dat):
+            # Pull it from the cache, if present
+            if self._final_day in cache_dict:
+                day_model = cache_dict[self._final_day]
+                cache_dict[requested_date] = day_model
+                return day_model
+
+            # Or set the dat path to the final day, if it's not in the cache
+            else:
+                date_str = str(self._final_day)
+                path_to_dat = os.path.join(self._instance_directory_name,
+                                           date_str,
+                                           dat_filename)
 
         day_pyomo = self._uc_model_template.create_instance(path_to_dat)
         day_dict = create_model_data_dict_params(day_pyomo, True)

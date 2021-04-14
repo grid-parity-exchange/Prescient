@@ -13,6 +13,22 @@ if TYPE_CHECKING:
     from .abstract_types import EgretModel
     from typing import Iterable, Tuple, MutableSequence, Any
 
+from enum import Enum, auto
+from typing import NamedTuple
+
+class InferralType(Enum):
+    ''' The method used to infer forecast values past the first 24 hours
+    '''
+    COPY_FIRST_DAY=auto()
+    REPEAT_LAST=auto()
+
+class InferrableForecastable(NamedTuple):
+    '''A single forecastable value array, with the method to infer values beyond the first 24 hours
+    '''
+    inferral_type: InferralType
+    forecastable: MutableSequence[float]
+
+
 def get_forecastables(*models: EgretModel) -> Iterable[ Tuple[MutableSequence[float]] ]:
     ''' Get all data that are predicted by forecasting, for any number of models.
 
@@ -36,6 +52,26 @@ def get_forecastables(*models: EgretModel) -> Iterable[ Tuple[MutableSequence[fl
     yield tuple(m.data['system']['reserve_requirement']['values'] for m in models)
 
     return
+
+def get_forecastables_with_inferral_method(model:EgretModel) -> Iterable[InferrableForecastable]:
+    """ Get all data predicted by forecasting in a model, with the method used to infer values after the first day
+    """
+    # Renewables limits
+    for gen, gdata in model.elements('generator', generator_type='renewable'):
+        how_to_infer = InferralType.REPEAT_LAST if gdata['fuel'] == 'W' else InferralType.COPY_FIRST_DAY
+        yield InferrableForecastable(how_to_infer, gdata['p_min']['values'])
+        yield InferrableForecastable(how_to_infer, gdata['p_max']['values'])
+
+    # Loads
+    for bus, bdata in model.elements('load'):
+        yield InferrableForecastable(InferralType.COPY_FIRST_DAY, bdata['p_load']['values'])
+
+    # Reserve requirement
+    if 'reserve_requirement' in model.data['system']:
+        yield InferrableForecastable(InferralType.COPY_FIRST_DAY, model.data['system']['reserve_requirement']['values'])
+
+    return
+
 
 def ensure_forecastable_storage(num_entries:int, model:EgretModel) -> None:
     """ Ensure that the model has an array allocated for every type of forecastable data
