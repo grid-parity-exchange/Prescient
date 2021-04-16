@@ -27,14 +27,11 @@ def populate_input_data():
                    file_name= os.path.join(rts_download_path,os.path.normcase('templates/rts_with_network_template_hotstart.dat')))
 
 def copy_templates():
-    import shutil
+    from distutils.dir_util import copy_tree
     cur_path = os.path.join(this_file_path,os.path.normcase('rts_gmlc_prescient/runners'))
     new_path = rts_download_path
 
-    if os.path.exists(new_path):
-        return
-
-    shutil.copytree(cur_path, new_path)
+    copy_tree(cur_path, new_path)
 
 def download(branch='HEAD'):
     '''
@@ -57,7 +54,7 @@ def download(branch='HEAD'):
 
     if os.path.exists(rtsgmlc_path):
         print('RTS-GMLC already downloaded to {0}. If you would like re-download it, delete the directory {0}.'.format(rtsgmlc_path))
-        return
+        return False
 
     print('Downloading RTS-GMLC into '+rtsgmlc_path)
 
@@ -76,10 +73,12 @@ def download(branch='HEAD'):
         raise Exception('Issue checking out {}; see message above.'.format(branch))
 
     os.chdir(cur_path)
+    return True
 
 
 if __name__ == '__main__':
-    download()
-    copy_templates()
+    did_download = download()
+    if did_download:
+        copy_templates()
     populate_input_data()
     print('Set up RTS-GMLC data in {0}'.format(rts_download_path))
