@@ -84,7 +84,7 @@ class OverallStats(object):
 
     @property
     def total_payments(self):
-        return self.total_energy_payments + self.total_uplift_payments
+        return self.total_energy_payments + self.total_uplift_payments + self.total_reserve_payments
 
     def __init__(self, options):
         self.daily_stats = []
