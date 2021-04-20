@@ -46,12 +46,12 @@ class ReportingManager(_Manager):
             # fail if you don't wait for the file system to catch up
             time.sleep(0.1)
         os.mkdir(options.output_directory)
-    
+
         # create an output directory for plot data.
         # for now, it's only a single directory - not per-day.
         os.mkdir(os.path.join(options.output_directory,"plots"))
 
-    
+
     def setup_default_reporting(self, options, stats_manager: StatsManager):
         self.setup_runtimes(options, stats_manager)
         self.setup_thermal_detail(options, stats_manager)
@@ -78,7 +78,7 @@ class ReportingManager(_Manager):
                                "Solve Time": lambda ops: ops.sced_runtime}
         ops_runtime_writer = CsvReporter.from_dict(runtime_file, ops_runtime_columns)
         stats_manager.register_for_sced_stats(ops_runtime_writer.write_record)
-        
+
         if options.sced_frequency_minutes != 60:
             hr_runtime_columns = {"Date":       lambda hourly: str(hourly.date),
                                   "Hour":       lambda hourly: hourly.hour,
@@ -140,7 +140,7 @@ class ReportingManager(_Manager):
             'Hour':       lambda ops,b: ops.timestamp.hour,
             'Minute':     lambda ops,b: ops.timestamp.minute,
             'Bus':        lambda ops,b: b,
-            'Demand':     lambda ops,b: ops.bus_demands[b],                       
+            'Demand':     lambda ops,b: ops.bus_demands[b],
             'Shortfall':  lambda ops,b: ops.observed_bus_mismatches[b] if ops.observed_bus_mismatches[b] > 0.0 else 0.0,
             'Overgeneration':  lambda ops,b: -ops.observed_bus_mismatches[b] if ops.observed_bus_mismatches[b] < 0.0 else 0.0,
             'LMP':        lambda ops,b: ops.observed_bus_LMPs[b],
@@ -255,7 +255,7 @@ class ReportingManager(_Manager):
                             'Overall renewables penetration rate': lambda overall: overall.overall_renewables_penetration_rate,
                             'Cumulative average price':lambda overall: overall.cumulative_average_price}
             if options.compute_market_settlements:
-                overall_cols.update({'Total energy payments': lambda overall: overall.total_thermal_energy_payments,
+                overall_cols.update({'Total energy payments': lambda overall: overall.total_energy_payments,
                                      'Total reserve payments':lambda overall: overall.total_reserve_payments,
                                      'Total uplift payments': lambda overall: overall.total_uplift_payments,
                                      'Total payments':        lambda overall: overall.total_payments,
