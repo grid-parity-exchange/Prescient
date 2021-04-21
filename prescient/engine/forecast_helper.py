@@ -49,7 +49,8 @@ def get_forecastables(*models: EgretModel) -> Iterable[ Tuple[MutableSequence[fl
         yield tuple(m.data['elements']['load'][bus]['p_load']['values'] for m in models)
 
     # Reserve requirement
-    yield tuple(m.data['system']['reserve_requirement']['values'] for m in models)
+    if 'reserve_requirement' in model1.data['system']:
+        yield tuple(m.data['system']['reserve_requirement']['values'] for m in models)
 
     return
 
