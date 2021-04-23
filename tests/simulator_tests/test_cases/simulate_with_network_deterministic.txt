@@ -11,5 +11,8 @@ command/exec simulator.py
 --reserve-factor=0.0 
 --deterministic-ruc-solver=cbc
 --deterministic-ruc-solver-options="feas=off DivingG=on"
+--sced-frequency-minutes=60
 --sced-solver=cbc
 --ruc-horizon=36
+--enforce-sced-shutdown-ramprate
+--no-startup-shutdown-curves
