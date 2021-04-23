@@ -554,8 +554,10 @@ def _construct_inner_options_parser():
                                         default=60)
 
     input_simulation_options.add_option("--enforce-sced-shutdown-ramprate",
-                                        help="Relaxes the shutdown ramp rate in the SCED, "
-                                             "allowing for short look-ahead problems to be use.",
+                                        help="Enforces shutdown ramp-rate constraints in the SCED. "
+                                             "Enabling this options requires a long SCED look-ahead "
+                                             "(at least an hour) to ensure the shutdown ramp-rate "
+                                             "constraints can be statisfied.",
                                         action="store_true",
                                         dest="enforce_sced_shutdown_ramprate",
                                         default=False)
