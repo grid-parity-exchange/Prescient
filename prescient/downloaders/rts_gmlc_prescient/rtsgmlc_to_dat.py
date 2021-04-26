@@ -13,6 +13,7 @@ import sys
 import os
 import pandas as pd
 import math
+import pathlib
 
 from collections import namedtuple
 
@@ -158,6 +159,9 @@ def write_template( rts_gmlc_dir, file_name, copper_sheet = False, reserve_facto
     minutes_per_time_period = 60
     ## we'll bring the ramping down by this factor
     ramp_scaling_factor = 1.
+
+    # make the directory for the file if it does not exist
+    pathlib.Path(file_name).parent.mkdir(parents=True, exist_ok=True)
     
     dat_file = open(file_name,"w")
     
