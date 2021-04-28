@@ -183,7 +183,7 @@ class OperationsStats:
 
         self.on_offs, self.sum_on_off_ramps, self.sum_nominal_ramps = extractor.get_on_off_and_ramps(sced)
 
-        self.price = extractor.get_price(self.total_demand, self.fixed_costs, self.variable_costs)
+        self.price = extractor.get_price(self.sced_duration_minutes, self.total_demand, self.fixed_costs, self.variable_costs)
 
         self.quick_start_additional_costs = extractor.get_additional_quickstart_costs(pre_quickstart_cache, sced)
         self.quick_start_additional_power_generated = extractor.get_additional_quickstart_power_generated(pre_quickstart_cache, sced)
