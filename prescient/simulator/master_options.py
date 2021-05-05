@@ -536,7 +536,7 @@ def _construct_inner_options_parser():
 
     input_simulation_options.add_option('--sced-horizon',
                                         help="Specifies the number of time periods "
-                                             "when each SCED process is executed. "
+                                             "in the look-ahead horizon for each SCED. "
                                              "Must be at least 1.",
                                         action='store',
                                         dest='sced_horizon',
