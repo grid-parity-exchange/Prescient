@@ -10,7 +10,6 @@ dependencies:
 - nose
 - numpy
 - pandas
-- ply
 - python-dateutil
 - pyomo>=5.7.1
 - scipy
