@@ -16,5 +16,4 @@ dependencies:
 - pytz
 - pyomo>=5.7.1
 - scipy
-- six
 - ipopt
