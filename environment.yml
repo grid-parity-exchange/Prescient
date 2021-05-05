@@ -4,6 +4,7 @@ channels:
 - defaults
 dependencies:
 - python>=3.7
+- jupyter
 - networkx
 - numpy
 - pandas
