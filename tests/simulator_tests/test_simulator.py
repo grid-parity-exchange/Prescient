@@ -26,7 +26,7 @@ base_options = [
                 '--sced-horizon=4',
                 '--traceback',
                 '--random-seed=10',
-                '--output-max-decimal-place=4',
+                '--output-max-decimal-places=4',
                 '--output-sced-initial-conditions',
                 '--output-sced-demands',
                 '--output-sced-solutions',

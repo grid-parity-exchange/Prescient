@@ -959,15 +959,15 @@ def _construct_inner_options_parser():
     guiOverride['--output-solver-logs'] = {}
     guiOverride['--output-solver-logs']['bpa'] = False
 
-    output_simulation_options.add_option('--output-max-decimal-place',
+    output_simulation_options.add_option('--output-max-decimal-places',
                                          help="When writing summary files, this rounds the output to the "
                                               "specified accuracy. Default is 6.",
                                          action='store',
                                          type='int',
-                                         dest='output_max_decimal_place',
+                                         dest='output_max_decimal_places',
                                          default=6)
-    guiOverride['--output-max-decimal-place'] = {}
-    guiOverride['--output-max-decimal-place']['bpa'] = False
+    guiOverride['--output-max-decimal-places'] = {}
+    guiOverride['--output-max-decimal-places']['bpa'] = False
 
     output_simulation_options.add_option('--disable-stackgraphs',
                                          help="Disable stackgraph generation",
