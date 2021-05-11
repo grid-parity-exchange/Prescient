@@ -4,17 +4,11 @@ channels:
 - defaults
 dependencies:
 - python>=3.7
-- appdirs
-- decorator
+- jupyter
 - networkx
-- nose
 - numpy
 - pandas
-# - pkg-resources
-- ply
 - python-dateutil
-- pytz
 - pyomo>=5.7.1
 - scipy
-- six
 - ipopt

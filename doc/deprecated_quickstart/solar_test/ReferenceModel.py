@@ -59,7 +59,6 @@ from __future__ import division
 from pyomo.environ import *
 
 import math
-import six 
 
 # in optimization contexts, we don't need mutable parameters - but in simulation contexts, we do!
 # keep defaulted to True - although it incurs a performance hit, we don't know how to change these
@@ -107,7 +106,7 @@ model.Buses = Set()
 model.Zones = Set(initialize=['SingleZone'])
 
 def buildBusZone(m):
-    an_element = six.next(m.Zones.__iter__())
+    an_element = next(m.Zones.__iter__())
     if len(m.Zones) == 1 and an_element == 'SingleZone':
         for b in m.Buses:
             m.BusZone[b] = an_element
@@ -1053,7 +1052,7 @@ model.MaximumPowerAvailable = Var(model.ThermalGenerators, model.TimePeriods, wi
 model.Angle = Var(model.Buses, model.TimePeriods, within=Reals, bounds=(-3.14159265,3.14159265))
 
 def fix_first_angle_rule(m,t):
-    first_bus = six.next(m.Buses.__iter__())
+    first_bus = next(m.Buses.__iter__())
     return m.Angle[first_bus,t] == 0.0
 model.FixFirstAngle = Constraint(model.TimePeriods, rule=fix_first_angle_rule)
 
