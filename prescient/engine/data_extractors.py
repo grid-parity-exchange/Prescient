@@ -377,10 +377,10 @@ class ScedDataExtractor(ABC):
                               for g in self.get_nondispatchable_generators(sced))
         return renewables_used
 
-    def get_price(self, demand: float, fixed_costs: float, variable_costs: float) -> float:
+    def get_price(self, sced_duration_minutes: int, demand: float, fixed_costs: float, variable_costs: float) -> float:
         # 0 demand can happen, in some odd circumstances (not at the ISO level!).
-        return 0.0 if demand == 0 else (fixed_costs + variable_costs) / demand
-
+        sceds_per_hr = 60 / sced_duration_minutes
+        return 0.0 if demand == 0 else ((fixed_costs + variable_costs) / demand)*sceds_per_hr
 
     def get_cost_per_generator(self, sced: OperationsModel) -> Dict[G, float]:
         """ get the cost to operate each thermal generator """
