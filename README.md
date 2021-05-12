@@ -1,4 +1,4 @@
-![GitHub CI](https://github.com/grid-parity-exchange/Prescient/workflows/GitHub%20CI/badge.svg?event=schedule)
+[![GitHub CI](https://github.com/grid-parity-exchange/Prescient/workflows/GitHub%20CI/badge.svg?event=schedule)](https://github.com/grid-parity-exchange/Prescient/actions/workflows/master_tests.yml)
 
 # Prescient
 Code base for Prescient production cost model / scenario generation / prediction interval capabilities.
