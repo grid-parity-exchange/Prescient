@@ -75,8 +75,9 @@ def get_generator_states_at_sced_offset(original_state:SimulationState,
                 
         # TBD: Eventually make the 1e-5 an user-settable option.
         if unit_on == 0:
-            # if the unit is off, then the power generated at t0 must be equal to 0
-            power_generated = 0.0
+            # if the unit is off, then the power generated at 
+            # t0 must be greater than or equal to 0 (Egret #219)
+            power_generated = max(power_generated, 0.0)
         elif math.isclose(min_power_output, power_generated, rel_tol=0, abs_tol=1e-5):
             power_generated = min_power_output
         elif math.isclose(max_power_output, power_generated, rel_tol=0, abs_tol=1e-5):

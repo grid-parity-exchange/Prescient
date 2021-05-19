@@ -535,12 +535,13 @@ def _construct_inner_options_parser():
     guiOverride["--ruc-horizon"]['bpa'] = False
 
     input_simulation_options.add_option('--sced-horizon',
-                                        help="Specifies the number of hours in the look-ahead horizon "
-                                             "when each SCED process is executed.",
+                                        help="Specifies the number of time periods "
+                                             "in the look-ahead horizon for each SCED. "
+                                             "Must be at least 1.",
                                         action='store',
                                         dest='sced_horizon',
                                         type='int',
-                                        default=24)
+                                        default=1)
     guiOverride['--sced-horizon'] = {}
     guiOverride['--sced-horizon']['bpa'] = False
 
@@ -551,6 +552,26 @@ def _construct_inner_options_parser():
                                         dest='sced_frequency_minutes',
                                         type='int',
                                         default=60)
+
+    input_simulation_options.add_option("--enforce-sced-shutdown-ramprate",
+                                        help="Enforces shutdown ramp-rate constraints in the SCED. "
+                                             "Enabling this options requires a long SCED look-ahead "
+                                             "(at least an hour) to ensure the shutdown ramp-rate "
+                                             "constraints can be statisfied.",
+                                        action="store_true",
+                                        dest="enforce_sced_shutdown_ramprate",
+                                        default=False)
+    guiOverride["--enforce-sced-shutdown-ramprate"] = {}
+    guiOverride["--enforce-sced-shutdown-ramprate"]["--enforce-sced-shutdown-ramprate"] = False
+
+    input_simulation_options.add_option("--no-startup-shutdown-curves",
+                                        help="For thermal generators, do not infer startup/shutdown "
+                                             "ramping curves when starting-up and shutting-down.",
+                                        action="store_true",
+                                        dest="no_startup_shutdown_curves",
+                                        default=False)
+    guiOverride["--no-startup-shutdown-curves"] = {}
+    guiOverride["--no-startup-shutdown-curves"]["--no-startup-shutdown-curves"] = False
 
     input_simulation_options.add_option("--random-seed",
                                         help="Seed the random number generator used in the simulation. "

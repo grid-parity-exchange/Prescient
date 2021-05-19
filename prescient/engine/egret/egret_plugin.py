@@ -125,9 +125,9 @@ def create_sced_instance(data_provider:DataProvider,
                          sced_horizon,
                          forecast_error_method = ForecastErrorMethod.PRESCIENT
                          ):
-    ''' Create an hourly deterministic economic dispatch instance, given current forecasts and commitments.
+    ''' Create a deterministic economic dispatch instance, given current forecasts and commitments.
     '''
-    assert current_state != None
+    assert current_state is not None
 
     sced_md = data_provider.get_initial_model(options, sced_horizon, current_state.minutes_per_step)
 
@@ -172,7 +172,7 @@ def create_sced_instance(data_provider:DataProvider,
     ## if relaxing initial ramping, we need to relax it in the first SCED as well
     assert options.relax_t0_ramping_initial_day is False
 
-    # Set generator commitments
+    # Set generator commitments & future state
     for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
         # Start by preparing an empty array of the correct size for each generator
         fixed_commitment = [None]*sced_horizon
@@ -182,7 +182,100 @@ def create_sced_instance(data_provider:DataProvider,
         for t in range(sced_horizon):
             fixed_commitment[t] = current_state.get_generator_commitment(g,t)
 
+        # Look as far into the future as we can for future startups / shutdowns
+        last_commitment = fixed_commitment[-1]
+        for t in range(sced_horizon, current_state.timestep_count):
+            this_commitment = current_state.get_generator_commitment(g,t)
+            if (this_commitment - last_commitment) > 0.5:
+                # future startup
+                future_status_time_steps = ( t - sced_horizon + 1 )
+                break
+            elif (last_commitment - this_commitment) > 0.5:
+                # future shutdown
+                future_status_time_steps = -( t - sced_horizon + 1 )
+                break
+        else: # no break
+            future_status_time_steps = 0
+        g_dict['future_status'] = (current_state.minutes_per_step/60.) * future_status_time_steps
+
+    if not options.no_startup_shutdown_curves:
+        minutes_per_step = current_state.minutes_per_step
+        for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
+            if 'startup_curve' in g_dict:
+                continue
+            ramp_up_rate_sced = g_dict['ramp_up_60min'] * minutes_per_step/60.
+            if 'startup_capacity' not in g_dict:
+                sced_startup_capacity = _calculate_sced_startup_shutdown_capacity_from_none(
+                                            g_dict['p_min'], ramp_up_rate_sced)
+            else:
+                sced_startup_capacity = _calculate_sced_startup_shutdown_capacity_from_existing(
+                                            g_dict['startup_capacity'], g_dict['p_min'], minutes_per_step)
+
+            g_dict['startup_curve'] = [ sced_startup_capacity - i*ramp_up_rate_sced \
+                                        for i in range(1,int(math.ceil(sced_startup_capacity/ramp_up_rate_sced))) ]
+
+        for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
+            if 'shutdown_curve' in g_dict:
+                continue
+
+            ramp_down_rate_sced = g_dict['ramp_down_60min'] * minutes_per_step/60.
+            # compute a new shutdown curve if we go from "on" to "off"
+            if g_dict['initial_status'] > 0 and g_dict['fixed_commitment']['values'][0] == 0:
+                power_t0 = g_dict['initial_p_output']
+                # if we end up using a historical curve, it's important
+                # for the time-horizons to match, particularly since this
+                # function is also used to create long-horizon look-ahead
+                # SCEDs for the unit commitment process
+                create_sced_instance.shutdown_curves[g, minutes_per_step] = \
+                        [ power_t0 - i*ramp_down_rate_sced for i in range(1,int(math.ceil(power_t0/ramp_down_rate_sced))) ]
+
+            if (g,minutes_per_step) in create_sced_instance.shutdown_curves:
+                g_dict['shutdown_curve'] = create_sced_instance.shutdown_curves[g,minutes_per_step]
+            else:
+                if 'shutdown_capacity' not in g_dict:
+                    sced_shutdown_capacity = _calculate_sced_startup_shutdown_capacity_from_none(
+                                                g_dict['p_min'], ramp_down_rate_sced)
+                else:
+                    sced_shutdown_capacity = _calculate_sced_startup_shutdown_capacity_from_existing(
+                                                g_dict['shutdown_capacity'], g_dict['p_min'], minutes_per_step)
+
+                g_dict['shutdown_curve'] = [ sced_shutdown_capacity - i*ramp_down_rate_sced \
+                                             for i in range(1,int(math.ceil(sced_shutdown_capacity/ramp_down_rate_sced))) ]
+
+    if not options.enforce_sced_shutdown_ramprate:
+        for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
+            # make sure the generator can immediately turn off
+            g_dict['shutdown_capacity'] = max(g_dict['shutdown_capacity'], (60./current_state.minutes_per_step)*g_dict['initial_p_output'] + 1.)
+
     return sced_md
+
+# cache for shutdown curves
+create_sced_instance.shutdown_curves = dict()
+
+def _calculate_sced_startup_shutdown_capacity_from_none(p_min, ramp_rate_sced):
+    if isinstance(p_min, dict):
+        sced_susd_capacity = [pm+ramp_rate_sced/2. for pm in p_min['values']]
+        return sum(sced_susd_capacity)/len(sced_susd_capacity)
+    else:
+        return p_min + ramp_rate_sced/2.
+
+def _calculate_sced_startup_shutdown_capacity_from_existing(startup_shutdown, p_min, minutes_per_step):
+    susd_capacity_time_varying = isinstance(startup_shutdown, dict)
+    p_min_time_varying = isinstance(p_min, dict)
+    if p_min_time_varying and susd_capacity_time_varying:
+        sced_susd_capacity = [ (susd - pm)*(minutes_per_step/60.) + pm \
+                                    for pm, susd in zip(p_min['values'], startup_shutdown['values']) ]
+        return sum(sced_susd_capacity)/len(sced_susd_capacity)
+    elif p_min_time_varying:
+        sced_susd_capacity = [ (startup_shutdown - pm)*(minutes_per_step/60.) + pm \
+                                    for pm in p_min['values'] ]
+        return sum(sced_susd_capacity)/len(sced_susd_capacity)
+    elif susd_capacity_time_varying:
+        sced_susd_capacity = [ (susd - p_min)*(minutes_per_step/60.) + p_min \
+                                    for susd in startup_shutdown['values'] ]
+        return sum(sced_susd_capacity)/len(sced_susd_capacity)
+    else:
+        return (startup_shutdown - p_min)*(minutes_per_step/60.) + p_min
 
 
 ##### BEGIN Deterministic RUC solvers and helper functions ########
