@@ -617,10 +617,9 @@ def create_simulation_actuals(
     if options.simulate_out_of_sample:
         get_data_func = data_provider.populate_with_actuals
     else:
-        if options.run_deterministic_ruc:
-            print("")
-            print("***WARNING: Simulating the forecast scenario when running deterministic RUC - "
-                  "time consistency across midnight boundaries is not guaranteed, and may lead to threshold events.")
+        print("")
+        print("***WARNING: Simulating the forecast scenario when running deterministic RUC - "
+              "time consistency across midnight boundaries is not guaranteed, and may lead to threshold events.")
         get_data_func = data_provider.populate_with_forecast_data
 
     # Get a new model

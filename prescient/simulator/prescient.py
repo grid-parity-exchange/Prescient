@@ -124,7 +124,7 @@ def main(args=None):
     # Parse command-line options.
     #
     try:
-        options_parser, guiOverride = MasterOptions.construct_options_parser()
+        options_parser = MasterOptions.construct_options_parser()
         (options, args) = options_parser.parse_args(args=args)
     except SystemExit:
         # the parser throws a system exit if "-h" is specified - catch

@@ -371,7 +371,6 @@ class EgretEngine(ModelingEngine):
                 print("%-30s %12.2f" % (b, total_min_nondispatchable_power[b]))
 
     def _setup_solvers(self, options: Options):
-        assert options.python_io is False
 
         def _get_solver_list(name):
             return [ name+s for s in ['', '_direct', '_persistent']]
