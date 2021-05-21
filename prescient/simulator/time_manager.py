@@ -95,10 +95,7 @@ class TimeManager(manager._Manager):
         # Compute RUC delay
         self._ruc_delay = -(options.ruc_execution_hour%-self._ruc_every_hours)
 
-        self._run_ruc = options.disable_ruc == False
-
-        if self._run_ruc:
-            print("Final RUC date:", str(self._stop_date - timedelta(days=1)))
+        print("Final RUC date:", str(self._stop_date - timedelta(days=1)))
 
         self._current_time = None
 
