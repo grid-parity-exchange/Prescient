@@ -386,13 +386,6 @@ def _construct_inner_options_parser():
 
 # # PRESCIENT_OUTPUT_OPTIONS
 
-    output_simulation_options.add_option('--verbose',
-                                         help='Generate verbose output, beyond the usual status output. '
-                                              'Default is False.',
-                                         action='store_true',
-                                         dest='verbose',
-                                         default=False)
-
     output_simulation_options.add_option('--output-ruc-initial-conditions',
                                          help="Output ruc (deterministic or stochastic) initial conditions prior "
                                               "to each solve. Default is False.",
