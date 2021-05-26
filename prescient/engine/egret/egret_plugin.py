@@ -168,10 +168,6 @@ def create_sced_instance(data_provider:DataProvider,
 
     _ensure_reserve_factor_honored(options, sced_md, range(sced_horizon))
 
-    ## TODO: propogate relax_t0_ramping_initial_day into this function
-    ## if relaxing initial ramping, we need to relax it in the first SCED as well
-    assert options.relax_t0_ramping_initial_day is False
-
     # Set generator commitments & future state
     for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
         # Start by preparing an empty array of the correct size for each generator

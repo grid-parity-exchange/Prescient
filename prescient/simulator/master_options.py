@@ -384,13 +384,6 @@ def _construct_inner_options_parser():
                                          type='string',
                                          default='aCHP')
 
-    solver_simulation_options.add_option('--relax-t0-ramping-initial-day',
-                                         help="Relax t0 ramping for the initial RUC. Ignored for PH.",
-                                         action='store_true',
-                                         dest='relax_t0_ramping_initial_day',
-                                         default=False)
-
-                              
 # # PRESCIENT_OUTPUT_OPTIONS
 
     output_simulation_options.add_option('--verbose',
