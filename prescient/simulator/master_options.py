@@ -400,14 +400,6 @@ def _construct_inner_options_parser():
                                          dest='output_ruc_solutions',
                                          default=False)
 
-    output_simulation_options.add_option('--output-ruc-dispatches',
-                                         help="Output ruc (deterministic or stochastic) scenario dispatches following "
-                                              "each solve. Default is False. "
-                                              "Only effective if --output-ruc-solutions is enabled.",
-                                         action='store_true',
-                                         dest='output_ruc_dispatches',
-                                         default=False)
-
     output_simulation_options.add_option('--output-sced-initial-conditions',
                                          help='Output sced initial conditions prior to each solve. Default is False.',
                                          action='store_true',
@@ -418,12 +410,6 @@ def _construct_inner_options_parser():
                                          help='Output sced demands prior to each solve. Default is False.',
                                          action='store_true',
                                          dest='output_sced_demands',
-                                         default=False)
-
-    output_simulation_options.add_option('--output-sced-solutions',
-                                         help='Output sced solutions following each solve. Default is False.',
-                                         action='store_true',
-                                         dest='output_sced_solutions',
                                          default=False)
 
     output_simulation_options.add_option('--output-solver-logs',
