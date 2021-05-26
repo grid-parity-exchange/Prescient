@@ -40,7 +40,6 @@ import json
 from collections import OrderedDict
 
 import networkx
-import pyomo.pysp.scenariotree.tree_structure_model as ptm
 
 #==============================================================================
 class Raw_Node_Data:
@@ -641,42 +640,6 @@ class PySP_Tree:
                 f.write("   "+scen.name+' '+self.LeafNode[scen.name]+'\n')
             f.write(";\n")
 
-    #====================
-    def as_concrete_model(self):
-        """ This returns the scenario tree as a concrete Pyomo model.
-        ASSUMES that the scenario template is a dictionary.
-        """
-        if not isinstance(self.template.templatedata, dict):
-            raise RuntimeError (
-                "Attempt to construct a concrete tree model from non-dict")
-
-        G = networkx.DiGraph()
-        for nname in self.NodeNames:
-            if len(self.NodeKids[nname]) > 0:
-                G.add_node(nname)
-            else:
-                G.add_node(nname, scenario = self.ScenForLeaf[nname])
-        for nname in self.NodeNames:
-            for kidname in self.NodeKids[nname]:
-                G.add_edge(nname, kidname, probability = self.NodeProb[kidname])
-
-        tree_model = ptm.ScenarioTreeModelFromNetworkX(
-            G,
-            scenario_name_attribute = "scenario",
-            stage_names = self.template.templatedata["Stages"])
-
-        ttSV = self.template.templatedata["StageVariables"]
-        for stagename in self.template.templatedata["Stages"]:
-            stagenum = self.template.StageNames.index(stagename)+1
-            stageobject = tree_model.Stages[stagenum]
-            if stagename in ttSV:  # not all stages have Vars sometimes
-                for varstring in ttSV[stagename]:
-                    tree_model.StageVariables[stageobject].add(varstring)
-            tree_model.StageCost[stageobject] \
-                = self.template.templatedata["StageCost"][stagename]
-
-        return tree_model
-
 #=========================================================================
 def do_2Stage_AMPL_dir(DirName,
                       TreeTemplateFileName, \
@@ -724,60 +687,4 @@ def do_2Stage_AMPL_dir(DirName,
         
     tree = PySP_Tree(treetemp, pyspscenlist, rawnodelist)
     tree.Write_ScenarioStructure_dat_file(os.path.join(DirName,'ScenarioStructure.dat'))
-
-#=========================================================================
-def Tree_2Stage_json_dir(DirName,
-                      TreeTemplateFileName, \
-                      ScenTemplateFileName = None):
-    """ DirName gives a directory, which is scanned for raw node data
-    to process along with template files given by the repsective args.
-    SIDE EFFECT: creates a scenario json file for each scenario named
-    scenarioname.json
-    where scenarioname is replaced by the scenario name.
-    Assumes that there is no ROOT data file.
-    As of Dec 2016, assume there is no template for the scenarios, either.
-    Returns the scenario tree as a concrete model.
-    """
-    # the use of shutil.copy in the function is the trouble as of Dec 2016
-    if ScenTemplateFileName is not None:
-        raise RuntimeError('ScenTemplateFileName used where not supported.')
-        
-    treetemp = PySP_Tree_Template()
-    spec = os.path.join(DirName, TreeTemplateFileName)
-    treetemp.read_json_template(spec)
-    
-    rawnodelist = []  # so we can give them to the tree constructor
-    rawfilelist = []  # so we can copy them
-    for filename in os.listdir(DirName):
-        if filename.startswith("NODE") and filename.endswith(".json"):
-            rawnodelist.append(Raw_Node_Data(os.path.join(DirName, filename)))
-            rawfilelist.append(filename)
-
-    # Since this is two stages and there is no ROOT file
-    # we don't need to put together the raw nodes to make raw
-    # scenarios; each node is a scenario.
-
-    # Not much is done during construction of PySP scenarios in this case,
-    # but the tree constructor wants the list of objects, so we make it.
-    pyspscenlist = []
-    for i in range(len(rawnodelist)):
-        innerlist = [] # going to be a singleton
-        innerlist.append(rawnodelist[i])  # so silly to append
-        rs = Raw_Scenario_Data(innerlist)
-        PySPScen = PySP_Scenario(raw = rs, template = None)
-        pyspscenlist.append(PySPScen)
-        # Do the "side effect" file copy
-        sourcename = os.path.join(DirName, rawfilelist[i])
-        targetname = os.path.join(DirName, PySPScen.name + ".json")
-        print ('Debug: copy',sourcename, targetname)
-        shutil.copy(sourcename, targetname)
-
-    # Note that there was no need to keep the raw scenario for
-    # our purposes, but we need the raw nodes along with the PySP scenarios.
-
-    tree = PySP_Tree(treetemp, pyspscenlist, rawnodelist)
-    tree_model = tree.as_concrete_model()
-
-    return tree_model
-
 
