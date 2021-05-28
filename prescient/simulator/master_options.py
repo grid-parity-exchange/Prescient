@@ -74,25 +74,15 @@ def construct_options_parser() -> Tuple[OptionParser, Dict[str, Dict[str, bool]]
 def _construct_inner_options_parser():
 
     parser = OptionParser()
-    guiOverride = {}  # a dictionary of dictionaries to facilitate gui creation
-    # guiOverride can also indicate that an option is not intended for user input
     
-    directory_options = OptionGroup(parser, "Directory Options")
-    structure_options = OptionGroup(parser, "Structure Options")
-    solver_options = OptionGroup(parser, "Solver Options")
     populator_options = OptionGroup(parser, "Populator Options")
-    MSSimulator_options = OptionGroup(parser, "MMSimulator Options")
     input_simulation_options = OptionGroup(parser, "InputSimulation Options")
     solver_simulation_options = OptionGroup(parser, "SolverSimulation Options")
     output_simulation_options = OptionGroup(parser, "OutputSimulation Options")
     extension_options = OptionGroup(parser, "Extension Options")
     other_simulation_options = OptionGroup(parser, "OtherSimulation Options")
 
-    parser.add_option_group(directory_options)
-    parser.add_option_group(structure_options)
-    parser.add_option_group(solver_options)
     parser.add_option_group(populator_options)
-    parser.add_option_group(MSSimulator_options)
     parser.add_option_group(input_simulation_options)
     parser.add_option_group(solver_simulation_options)
     parser.add_option_group(output_simulation_options)
@@ -367,11 +357,11 @@ def _construct_inner_options_parser():
                                          dest='symbolic_solver_labels',
                                          default=False)
 
-    solver_options.add_option('--enable-quick-start-generator-commitment',
-                              help="Allows quick start generators to be committed if load shedding occurs",
-                              action="store_true",
-                              dest="enable_quick_start_generator_commitment",
-                              default=False)
+    solver_simulation_options.add_option('--enable-quick-start-generator-commitment',
+                                         help="Allows quick start generators to be committed if load shedding occurs",
+                                         action="store_true",
+                                         dest="enable_quick_start_generator_commitment",
+                                         default=False)
 
     solver_simulation_options.add_option('--day-ahead-pricing',
                                          help="Choose the pricing mechanism for the day-ahead market. Choices are "
