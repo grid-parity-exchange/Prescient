@@ -118,14 +118,14 @@ def main_prescient(options: Options):
 
 def main(args=None):
     if args is None:
-        args = sys.argv
+        args = sys.argv[1:]
 
     #
     # Parse command-line options.
     #
     try:
         options_parser = MasterOptions.construct_options_parser()
-        (options, args) = options_parser.parse_args(args=args)
+        options = options_parser.parse_args(args=args)
     except SystemExit:
         # the parser throws a system exit if "-h" is specified - catch
         # it to exit gracefully.
