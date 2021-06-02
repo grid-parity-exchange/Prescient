@@ -33,7 +33,7 @@ def construct_options_parser() -> Tuple[OptionParser, Dict[str, Dict[str, bool]]
     '''
 
     # To support the ability to add new command line options to the line that
-    # is currently being parsed, we convert a standard OptionParser into a
+    # is currently being parsed, we convert a standard ArgumentParser into a
     # two-pass parser by replacing the parser's parse_args method with a
     # modified version.  In the modified parse_args, a first pass through the
     # command line finds any --plugin arguments and allows the plugin to 
