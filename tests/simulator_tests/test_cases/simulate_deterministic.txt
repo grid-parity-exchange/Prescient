@@ -16,3 +16,5 @@ command/exec simulator.py
 --traceback
 --enforce-sced-shutdown-ramprate
 --no-startup-shutdown-curves
+--plugin=test_plugin.py
+--print-callback-message
