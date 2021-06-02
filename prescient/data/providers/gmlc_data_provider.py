@@ -73,7 +73,7 @@ class GmlcDataProvider(DataProvider):
         '''
         data = self._cache.get_new_skeleton()
         data['system']['time_period_length_minutes'] = minutes_per_timestep
-        data['system']['time_keys'] = list(range(1,num_time_steps+1))
+        data['system']['time_keys'] = [str(i) for i in range(1,num_time_steps+1)]
         md = EgretModel(data)
         forecast_helper.ensure_forecastable_storage(num_time_steps, md)
         return md
