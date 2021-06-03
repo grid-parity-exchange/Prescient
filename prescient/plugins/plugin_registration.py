@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from optparse import Option
     from typing import Callable
     from prescient.simulator.options import Options
     from prescient.stats import DailyStats, HourlyStats, OverallStats, OperationsStats
@@ -9,16 +8,18 @@ if TYPE_CHECKING:
     from prescient.engine.abstract_types import OperationsModel, RucModel
 from . import get_active_plugin_manager
 
-def add_custom_commandline_option(option: Option) -> None:
+def add_custom_commandline_argument(*args, **kwargs) -> None:
     '''
     To add custom command-line options to Prescient, create a file that
     calls this function and include that file as a plugin on the command
     line (--plugin=my_file).
+
+    Arguments to this function are passed directly into the Prescient
+    instance of argparse.ArgumentParser's add_argument method
     '''
     from .internal import active_parser
-    active_parser.add_option(option)
+    active_parser.add_argument(*args, **kwargs)
 
-   
 def register_for_hourly_stats(callback: Callable[[HourlyStats], None]) -> None:
     '''
     Called during plugin registration to request a subscription to hourly stats updates.

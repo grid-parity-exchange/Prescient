@@ -3,7 +3,6 @@ command/exec simulator.py
 --simulate-out-of-sample 
 --run-sced-with-persistent-forecast-errors 
 --output-directory=deterministic_simulation_output
---run-deterministic-ruc 
 --start-date=07-10-2020
 --num-days=7
 --sced-horizon=4
@@ -17,3 +16,5 @@ command/exec simulator.py
 --traceback
 --enforce-sced-shutdown-ramprate
 --no-startup-shutdown-curves
+--plugin=test_plugin.py
+--print-callback-message
