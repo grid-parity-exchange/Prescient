@@ -193,12 +193,13 @@ class GmlcDataProvider(DataProvider):
         else:
             copy_from = self._cache.generate_model(sim_type, start_time, end_time)
             _recurse_copy_at_ratio(copy_from.data, model.data, step_ratio)
-            # Fill in the times
-            time_labels = model.data['system']['time_keys']
-            delta = timedelta(minutes=time_period_length_minutes)
-            for i in range(len(time_labels)):
-                dt = start_time + i*delta
-                time_labels[i] = dt.strftime('%Y-%m-%d %H:%M')
+
+        # Fill in the times
+        time_labels = model.data['system']['time_keys']
+        delta = timedelta(minutes=time_period_length_minutes)
+        for i in range(len(time_labels)):
+            dt = start_time + i*delta
+            time_labels[i] = dt.strftime('%Y-%m-%d %H:%M')
 
 def _recurse_copy_at_ratio(src:dict[str, Any], target:dict[str, Any], ratio:int) -> None:
     ''' Copy every Nth value from a src dict's time_series values into corresponding arrays in a target dict.
