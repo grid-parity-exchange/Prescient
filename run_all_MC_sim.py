@@ -52,7 +52,7 @@ file_paths_test = ['./timeseries_data_files/101_PV_1_forecasts_actuals.csv','./t
 def read_files(file_paths):
     # file_paths: list of strings indicating file paths that are to be read in
     # output: data_lst - list of data frames containing all the information in each file
-    # Note: we add to a list and then concatenate as this is faster and takes less memory than growing the dataframe
+    # Note: we add  to a list and then concatenate as this is faster and takes less memory than growing the dataframe
     # each time
 
     data_lst = []
