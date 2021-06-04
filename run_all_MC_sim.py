@@ -6,6 +6,7 @@ import pandas as pd
 import shutil
 
 # the download function has the path Prescient/downloads/rts_gmlc hard-coded.
+# We don't need the code below as long as we've already downloaded the RTS data into the repo (or run rts_gmlc.py)
 # All it does is a 'git clone' of the RTS-GMLC repo
 # rts_downloader.download()
 # did_download = rts_downloader.download()
@@ -80,9 +81,6 @@ all_data = pd.concat(read_files(file_paths_zone1), axis=1)  # read in the data i
 all_data.to_csv('test.csv')  # print out results as a test
 
 
-#print(all_data)
-# helper functions
-
 def run_prescient(index, populate='populate_with_network_deterministic.txt',
                   simulate='simulate_with_network_deterministic.txt'):
     with open(simulate, "r") as file:
@@ -115,30 +113,3 @@ def copy_directory(index):
         shutil.copytree(dir_path, new_path)
     else:
         shutil.copytree(dir_path, new_path)
-
-
-# def run(i):
-#     copy_directory(i)
-#     os.chdir("./working")
-#     modify_file("./timeseries_data_files/101_PV_" + str(i + 1) + "_forecasts_actuals.csv")
-#     run_prescient(i)
-#     os.chdir("..")
-#     src = './working/output'
-#     dst = './scenario_' + str(i + 1)
-#     if os.path.exists(dst):
-#        shutil.rmtree(dst)
-#        shutil.copytree(src, dst)
-#     else:
-#        shutil.copytree('./working/output', './scenario_' + str(i + 1))
-#     shutil.rmtree('./working')
-
-
-# for i in range(runs):
-#     run(i)
-
-# Iterate over each source file and tweak
-# try by making one solar asset zero
-
-# run prescient for each using two lines above
-
-# copy all the csv outputs to conserve the data -> label with input

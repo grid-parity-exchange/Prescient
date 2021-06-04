@@ -50,7 +50,11 @@ def modify_file(path):
 
 
 def copy_directory(index):
-    shutil.copytree(dir_path, new_path)
+    if os.path.exists(new_path):
+        shutil.rmtree(new_path)
+        shutil.copytree(dir_path, new_path)
+    else:
+        shutil.copytree(dir_path, new_path)
 
 
 def run(i):
