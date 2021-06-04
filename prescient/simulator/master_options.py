@@ -117,14 +117,21 @@ def _construct_inner_options_parser():
 # # PRESCIENT_INPUT_OPTIONS
 
     input_simulation_options.add_argument('--data-directory',
-                                        help='Specifies the directory to pull data from for confcomp.',
+                                        help='Specifies the directory to pull data from.',
                                         action='store',
                                         dest='data_directory',
                                         type=str,
                                         default="confcomp_data")
 
+    input_simulation_options.add_argument('--input-format',
+                                          help='Indicate the format input data is in.',
+                                          action='store',
+                                          dest='input_format',
+                                          type=str,
+                                          default='dat')
+
     input_simulation_options.add_argument('--run-deterministic-ruc',
-                                        help='DEPRECATED, must be used. Invokes deterministic instead '
+                                        help='DEPRECATED, always true. Invokes deterministic instead '
                                              'of stochastic reliability unit commitment during simulation.',
                                         action='store_true',
                                         dest='run_deterministic_ruc',

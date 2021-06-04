@@ -27,7 +27,7 @@ from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
 from prescient.simulator.data_manager import RucMarket
 from ..modeling_engine import ForecastErrorMethod
-from ..forecast_helper import get_forecastables
+from ..forecast_helper import get_forecastables, get_forecastables_with_inferral_method, InferralType
 from . import reporting
 
 from typing import TYPE_CHECKING
@@ -37,7 +37,6 @@ if TYPE_CHECKING:
     from typing import Optional
     from egret.data.model_data import ModelData as EgretModel
 
-uc_abstract_data_model = get_uc_model()
 
 ########################################################################################
 # a utility to find the "nearest" - quantified via Euclidean distance - scenario among #
@@ -141,8 +140,8 @@ def create_sced_instance(data_provider:DataProvider,
     if forecast_error_method is ForecastErrorMethod.PRESCIENT:
         # Warning: This method can see into the future!
         future_actuals = current_state.get_future_actuals()
-        sced_forecastables, = get_forecastables(sced_md)
-        for future,sced_data in zip(future_actuals, sced_actuals):
+        sced_forecastables = get_forecastables(sced_md)
+        for future, (sced_data,) in zip(future_actuals, sced_forecastables):
             for t in range(sced_horizon):
                 sced_data[t] = future[t]
 
@@ -369,13 +368,13 @@ def create_deterministic_ruc(options,
 
     # Populate the T0 data
     if current_state is None or current_state.timestep_count == 0:
-        data_provider.populate_initial_state_data(options, start_day, md)
+        data_provider.populate_initial_state_data(options, md)
     else:
         _copy_initial_state_into_model(options, current_state, md)
 
     # Populate forecasts
-    copy_first_day = (not use_next_day_in_ruc) and (this_hour != 0)
-    forecast_request_count = 24 if copy_first_day else ruc_horizon 
+    infer_second_day = (not use_next_day_in_ruc)
+    forecast_request_count = 24 if infer_second_day else ruc_horizon 
     data_provider.populate_with_forecast_data(options, start_time, forecast_request_count, 
                                               60, md)
 
@@ -383,8 +382,8 @@ def create_deterministic_ruc(options,
     ruc_delay = -(options.ruc_execution_hour%(-options.ruc_every_hours))
     if options.ruc_prescience_hour > ruc_delay + 1:
         improved_hour_count = options.ruc_prescience_hour - ruc_delay - 1
-        for forecast, actuals in zip(get_forecastables(md),
-                                     current_state.get_future_actuals()):
+        for (forecast,), actuals in zip(get_forecastables(md),
+                                        current_state.get_future_actuals()):
             for t in range(0, improved_hour_count):
                 forecast_portion = (ruc_delay+t)/options.ruc_prescience_hour
                 actuals_portion = 1-forecast_portion
@@ -394,11 +393,15 @@ def create_deterministic_ruc(options,
     # Ensure the reserve requirement is satisfied
     _ensure_reserve_factor_honored(options, md, range(forecast_request_count))
 
-    # Copy from first 24 to second 24, if necessary
-    if copy_first_day:
-        for vals, in get_forecastables(md):
+    if infer_second_day:
+        for infer_type, vals in get_forecastables_with_inferral_method(md):
             for t in range(24, ruc_horizon):
-                vals[t] = vals[t-24]
+                if infer_type == InferralType.COPY_FIRST_DAY:
+                    # Copy from first 24 to second 24
+                    vals[t] = vals[t-24]
+                else:
+                    # Repeat the final value from day 1
+                    vals[t] = vals[23]
 
     return md
 
@@ -623,7 +626,6 @@ def create_simulation_actuals(
     md = data_provider.get_initial_model(options, total_step_count, step_size_minutes)
 
     # Fill it in with data
-    data_provider.populate_initial_state_data(options, start_time.date(), md)
     if this_hour == 0:
         get_data_func(options, start_time, total_step_count, step_size_minutes, md)
     else:

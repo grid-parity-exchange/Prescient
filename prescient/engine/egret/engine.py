@@ -20,7 +20,7 @@ import pyomo.environ as pe
 
 from prescient.engine.modeling_engine import ModelingEngine, ForecastErrorMethod
 from prescient.simulator.data_manager import RucMarket
-from prescient.data.providers.dat_data_provider import DatDataProvider
+import prescient.data.data_provider_factory as data_provider_factory
 
 from .data_extractors import ScedDataExtractor, RucDataExtractor
 from .ptdf_manager import PTDFManager
@@ -60,8 +60,7 @@ class EgretEngine(ModelingEngine):
         self._ptdf_manager = PTDFManager()
         self._last_sced_pyo_model = None
         self._last_sced_pyo_solver = None
-        self._data_provider = DatDataProvider()
-        self._data_provider.initialize(options)
+        self._data_provider = data_provider_factory.get_data_provider(options)
         self._actuals_step_frequency = 60 if not options.simulate_out_of_sample \
                                        else self._data_provider.negotiate_data_frequency(options.sced_frequency_minutes)
 

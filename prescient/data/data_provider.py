@@ -22,12 +22,6 @@ class DataProvider(ABC):
     '''
 
     @abstractmethod
-    def initialize(self, options: Options) -> None:
-        ''' Do one-time initial setup
-        '''
-        pass
-
-    @abstractmethod
     def negotiate_data_frequency(self, desired_frequency_minutes:int):
         ''' Get the number of minutes between each timestep of actuals data this provider will supply,
             given the requested frequency.
@@ -66,9 +60,8 @@ class DataProvider(ABC):
 
     @abstractmethod
     def populate_initial_state_data(self, options:Options,
-                                    day:date,
                                     model: EgretModel) -> None:
-        ''' Populate an existing model with initial state data for the requested day
+        ''' Populate an existing model with initial state data for the first day
 
         Sets T0 information from actuals:
             * initial_state_of_charge for each storage element
@@ -79,8 +72,6 @@ class DataProvider(ABC):
         ---------
         options:
             Option values
-        day:date
-            The day whose initial state will be saved in the model
         model: EgretModel
             The model whose initial state data will be modifed
         '''

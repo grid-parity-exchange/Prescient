@@ -1,0 +1,2 @@
+Bus ID,Bus Name,BaseKV,Bus Type,MW Load,MVAR Load,V Mag,V Angle,MW Shunt G,MVAR Shunt B,Area,Zone
+CopperSheet,CopperSheet,1000,Ref,1,0,1,0,0,0,CopperSheet,CopperSheet

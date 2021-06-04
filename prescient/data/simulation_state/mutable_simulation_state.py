@@ -233,9 +233,9 @@ def _save_forecastables(options, ruc, where_to_store):
         else:
             forecast = where_to_store[idx]
 
-            # This puts the first "ruc_delay" items at the end of the list.
-            # As we add our new items, all other old items will roll off the end of the list.
-            forecast.rotate(-ruc_delay)
+            # Pop until the first "ruc_delay" items are the only items in the list
+            for _ in range(len(forecast) - ruc_delay):
+                forecast.pop()
 
-        # Put the new values into the new value queue
+        # Put the new values into the value queue
         forecast.extend(new_ruc_vals) 

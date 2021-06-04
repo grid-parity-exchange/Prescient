@@ -11,7 +11,23 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .abstract_types import EgretModel
-    from typing import Iterable, Tuple, MutableSequence
+    from typing import Iterable, Tuple, MutableSequence, Any
+
+from enum import Enum, auto
+from typing import NamedTuple
+
+class InferralType(Enum):
+    ''' The method used to infer forecast values past the first 24 hours
+    '''
+    COPY_FIRST_DAY=auto()
+    REPEAT_LAST=auto()
+
+class InferrableForecastable(NamedTuple):
+    '''A single forecastable value array, with the method to infer values beyond the first 24 hours
+    '''
+    inferral_type: InferralType
+    forecastable: MutableSequence[float]
+
 
 def get_forecastables(*models: EgretModel) -> Iterable[ Tuple[MutableSequence[float]] ]:
     ''' Get all data that are predicted by forecasting, for any number of models.
@@ -33,6 +49,60 @@ def get_forecastables(*models: EgretModel) -> Iterable[ Tuple[MutableSequence[fl
         yield tuple(m.data['elements']['load'][bus]['p_load']['values'] for m in models)
 
     # Reserve requirement
-    yield tuple(m.data['system']['reserve_requirement']['values'] for m in models)
+    if 'reserve_requirement' in model1.data['system']:
+        yield tuple(m.data['system']['reserve_requirement']['values'] for m in models)
 
     return
+
+def get_forecastables_with_inferral_method(model:EgretModel) -> Iterable[InferrableForecastable]:
+    """ Get all data predicted by forecasting in a model, with the method used to infer values after the first day
+    """
+    # Renewables limits
+    for gen, gdata in model.elements('generator', generator_type='renewable'):
+        how_to_infer = InferralType.REPEAT_LAST if gdata['fuel'] == 'W' else InferralType.COPY_FIRST_DAY
+        yield InferrableForecastable(how_to_infer, gdata['p_min']['values'])
+        yield InferrableForecastable(how_to_infer, gdata['p_max']['values'])
+
+    # Loads
+    for bus, bdata in model.elements('load'):
+        yield InferrableForecastable(InferralType.COPY_FIRST_DAY, bdata['p_load']['values'])
+
+    # Reserve requirement
+    if 'reserve_requirement' in model.data['system']:
+        yield InferrableForecastable(InferralType.COPY_FIRST_DAY, model.data['system']['reserve_requirement']['values'])
+
+    return
+
+
+def ensure_forecastable_storage(num_entries:int, model:EgretModel) -> None:
+    """ Ensure that the model has an array allocated for every type of forecastable data
+    """
+    def _get_forecastable_locations(model):
+        """ get all locations where data[key]['values'] is expected to return a forecastable's value array
+
+        Returns
+        -------
+        data:dict
+            Parent dict with an entry that points to a forecastable time series
+        key:Any
+            Key into data where forecastable time series is expected
+        """
+        # Generators
+        for gen, gdata in model.elements('generator', generator_type='renewable'):
+            yield (gdata, 'p_min')
+            yield (gdata, 'p_max')
+        # Loads
+        for bus, bdata in model.elements('load'):
+            yield (bdata, 'p_load')
+        # Reserve requirement (if present, this is optional)
+        if 'reserve_requirement' in model.data['system']:
+            yield (model.data['system'], 'reserve_requirement')
+
+    for data, key in _get_forecastable_locations(model):
+        if (not key in data or \
+            type(data[key]) is not dict or \
+            data[key]['data_type'] != 'time_series' or \
+            len(data[key]['values'] != num_entries)
+           ):
+            data[key] = { 'data_type': 'time_series',
+                          'values': [None]*num_entries}
