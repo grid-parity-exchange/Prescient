@@ -46,19 +46,77 @@ file_paths_zone1 = ['./timeseries_data_files/101_PV_1_forecasts_actuals.csv','./
               './timeseries_data_files/Bus_121_Load_zone1_forecasts_actuals.csv','./timeseries_data_files/Bus_122_Load_zone1_forecasts_actuals.csv',
               './timeseries_data_files/Bus_123_Load_zone1_forecasts_actuals.csv','./timeseries_data_files/Bus_124_Load_zone1_forecasts_actuals.csv' ]
 
+file_paths_zone2 = ['./timeseries_data_files/Bus_214_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_223_Load_zone2_forecasts_actuals.csv',
+ './timeseries_data_files/215_PV_1_forecasts_actuals.csv', './timeseries_data_files/Bus_210_Load_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/213_RTPV_1_forecasts_actuals.csv', './timeseries_data_files/Bus_218_Load_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/222_HYDRO_2_forecasts_actuals.csv', './timeseries_data_files/Bus_207_Load_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/201_HYDRO_4_forecasts_actuals.csv', './timeseries_data_files/Bus_203_Load_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/Bus_204_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/RTPV_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/215_HYDRO_3_forecasts_actuals.csv', './timeseries_data_files/Hydro_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/222_HYDRO_4_forecasts_actuals.csv', './timeseries_data_files/215_HYDRO_1_forecasts_actuals.csv', 
+ './timeseries_data_files/Bus_217_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_220_Load_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/Bus_208_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/222_HYDRO_6_forecasts_actuals.csv', 
+ './timeseries_data_files/Bus_213_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_224_Load_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/Bus_202_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_219_Load_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/Bus_206_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/222_HYDRO_1_forecasts_actuals.csv', 
+ './timeseries_data_files/Bus_211_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/222_HYDRO_3_forecasts_actuals.csv', 
+ './timeseries_data_files/Bus_222_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_215_Load_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/222_HYDRO_5_forecasts_actuals.csv', './timeseries_data_files/Bus_212_Load_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/Bus_221_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_216_Load_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/PV_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_209_Load_zone2_forecasts_actuals.csv', 
+ './timeseries_data_files/215_HYDRO_2_forecasts_actuals.csv', './timeseries_data_files/Load_zone2_forecasts_actuals.csv', 
+'./timeseries_data_files/Bus_201_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_205_Load_zone2_forecasts_actuals.csv']
+
+file_paths_zone3 = ['./timeseries_data_files/Bus_309_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/320_RTPV_2_forecasts_actuals.csv',
+ './timeseries_data_files/Bus_316_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/Bus_321_Load_zone3_forecasts_actuals.csv', 
+ './timeseries_data_files/313_PV_2_forecasts_actuals.csv', './timeseries_data_files/313_RTPV_7_forecasts_actuals.csv',
+ './timeseries_data_files/313_RTPV_10_forecasts_actuals.csv', './timeseries_data_files/310_PV_1_forecasts_actuals.csv',
+ './timeseries_data_files/Bus_312_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/Bus_325_Load_zone3_forecasts_actuals.csv',
+ './timeseries_data_files/Bus_305_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/309_WIND_1_forecasts_actuals.csv',
+ './timeseries_data_files/313_RTPV_5_forecasts_actuals.csv', './timeseries_data_files/313_RTPV_12_forecasts_actuals.csv',
+ './timeseries_data_files/314_PV_2_forecasts_actuals.csv', './timeseries_data_files/Bus_301_Load_zone3_forecasts_actuals.csv', 
+ './timeseries_data_files/314_PV_4_forecasts_actuals.csv', './timeseries_data_files/PV_zone3_forecasts_actuals.csv',
+'./timeseries_data_files/Bus_306_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/313_RTPV_3_forecasts_actuals.csv',
+'./timeseries_data_files/Bus_319_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/322_HYDRO_1_forecasts_actuals.csv',
+'./timeseries_data_files/320_RTPV_6_forecasts_actuals.csv', './timeseries_data_files/324_PV_3_forecasts_actuals.csv',
+'./timeseries_data_files/Bus_302_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/Bus_315_Load_zone3_forecasts_actuals.csv',
+'./timeseries_data_files/Bus_322_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/313_RTPV_1_forecasts_actuals.csv',
+'./timeseries_data_files/308_RTPV_1_forecasts_actuals.csv', './timeseries_data_files/322_HYDRO_3_forecasts_actuals.csv',
+'./timeseries_data_files/324_PV_1_forecasts_actuals.csv', './timeseries_data_files/317_WIND_1_forecasts_actuals.csv', 
+'./timeseries_data_files/313_RTPV_9_forecasts_actuals.csv', './timeseries_data_files/Bus_311_Load_zone3_forecasts_actuals.csv', 
+'./timeseries_data_files/320_RTPV_4_forecasts_actuals.csv', './timeseries_data_files/Load_zone3_forecasts_actuals.csv', 
+'./timeseries_data_files/322_HYDRO_4_forecasts_actuals.csv', './timeseries_data_files/313_RTPV_6_forecasts_actuals.csv',
+'./timeseries_data_files/314_PV_1_forecasts_actuals.csv', './timeseries_data_files/313_RTPV_11_forecasts_actuals.csv',
+'./timeseries_data_files/303_WIND_1_forecasts_actuals.csv', './timeseries_data_files/320_RTPV_3_forecasts_actuals.csv', 
+'./timeseries_data_files/Bus_304_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/Bus_324_Load_zone3_forecasts_actuals.csv', 
+'./timeseries_data_files/WIND_zone3_forecasts_actuals.csv', './timeseries_data_files/Bus_313_Load_zone3_forecasts_actuals.csv',
+'./timeseries_data_files/310_PV_2_forecasts_actuals.csv', './timeseries_data_files/313_RTPV_4_forecasts_actuals.csv', 
+'./timeseries_data_files/313_RTPV_13_forecasts_actuals.csv', './timeseries_data_files/314_PV_3_forecasts_actuals.csv',
+'./timeseries_data_files/Bus_308_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/Bus_320_Load_zone3_forecasts_actuals.csv',
+'./timeseries_data_files/Bus_317_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/320_RTPV_1_forecasts_actuals.csv',
+'./timeseries_data_files/313_PV_1_forecasts_actuals.csv', './timeseries_data_files/324_PV_2_forecasts_actuals.csv',
+'./timeseries_data_files/Hydro_zone3_forecasts_actuals.csv', './timeseries_data_files/Bus_310_Load_zone3_forecasts_actuals.csv',
+'./timeseries_data_files/Bus_323_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/Bus_314_Load_zone3_forecasts_actuals.csv', 
+'./timeseries_data_files/313_RTPV_2_forecasts_actuals.csv', './timeseries_data_files/RTPV_zone3_forecasts_actuals.csv', 
+'./timeseries_data_files/312_PV_1_forecasts_actuals.csv', './timeseries_data_files/319_PV_1_forecasts_actuals.csv', 
+'./timeseries_data_files/320_PV_1_forecasts_actuals.csv', './timeseries_data_files/313_RTPV_8_forecasts_actuals.csv', 
+'./timeseries_data_files/320_RTPV_5_forecasts_actuals.csv', './timeseries_data_files/Bus_303_Load_zone3_forecasts_actuals.csv', 
+'./timeseries_data_files/Bus_307_Load_zone3_forecasts_actuals.csv', 
+'./timeseries_data_files/Bus_318_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/322_HYDRO_2_forecasts_actuals.csv']
+
 # smaller set for testing
 file_paths_test = ['./timeseries_data_files/101_PV_1_forecasts_actuals.csv','./timeseries_data_files/101_PV_2_forecasts_actuals.csv']
 
-bus_names = [] # global variable that will contain a list of bus names. this will be populated in read_files and used elsewhere
+
 
 def read_files(file_paths):
     # file_paths: list of strings indicating file paths that are to be read in
     # output: data_lst - list of data frames containing all the information in each file
     # Note: we add  to a list and then concatenate as this is faster and takes less memory than growing the dataframe
     # each time
-
     data_lst = []
     i = 0
+    bus_names = []
     # iterate across file paths
     for path in file_paths:
         data = pd.read_csv(path) # read in the file
@@ -76,17 +134,16 @@ def read_files(file_paths):
         else:
             data_lst.append(data[[path[24:-22]+'_forecasts', path[24:-22]+'_actuals']])
         i += 1
-    return data_lst
+    return data_lst, bus_names
 
 
-def filter_no_solar(combined_data):
+def filter_no_solar(combined_data, determining_solar_plant):
     # combined_data: data frame of all forecasts and actuals for a list of buses
     # output: two data frames called s_data and ns_data.
     # This function filters all data into two parts - one where solars are active and one where solars are inactive
     # we will do this in a pretty naive way, simply based on one of the solar plants, which we are going to hard code
     # this is not ideal, but it should do for now
 
-    determining_solar_plant = '101_PV_1'  # this is the solar plant that will determine the 'no solar' case
 
     ns_data = combined_data[combined_data[determining_solar_plant + '_forecasts'] == 0]
     #ns_data.to_csv('zz_no_solar_data.csv')  # print out results as a test
@@ -97,7 +154,7 @@ def filter_no_solar(combined_data):
     return ns_data, s_data
 
 
-def compute_actual_forecast_quotient(data):
+def compute_actual_forecast_quotient(data, bus_names):
     # data: data frame of forecasts and actuals, in the pattern of: forecast, actual
     # output: modified version of data containing additional columns with the quotient of actual / forecasts
 
@@ -111,6 +168,10 @@ def compute_actual_forecast_quotient(data):
     # NaNs arise when we have 0/0, Infs arrive when we have x / 0, where x > 0
     data.fillna(0, inplace=True)
     data.replace(np.inf, 0, inplace=True)
+    # add in the basic structure with a cap, value is arbitrary
+    for col in data:
+        if (col != "Time"):
+            data.loc[data[col] >= 1.5, col] = 1.5
     return data
 
 
@@ -129,11 +190,11 @@ def sample_quotients(pre_sunrise_hrs, post_sunset_hrs, s_data, ns_data):
     day_sample = pd.concat(frames)
     return day_sample
 
-def apply_day_quotients(quotients, day):
+def apply_day_quotients(quotients, day, file_paths):
     # quotients: dataframe with all the quotients to apply
     # day: string version of what day to modify with the quotients in form YYYY-MM-DD
     # output: directly modify the time series files to apply the quotients
-    for path in file_paths_zone1:
+    for path in file_paths:
         file_data = pd.read_csv(path)
         count = 0
         for index, row in file_data.iterrows():
@@ -143,22 +204,61 @@ def apply_day_quotients(quotients, day):
                 file_data.iloc[index,:] = row
         file_data.to_csv(path, index=False)
 
-
-all_data = pd.concat(read_files(file_paths_zone1), axis=1)  # read in the data into a the data frame
+temp, bus_names_1 = read_files(file_paths_zone1)
+all_data_1 = pd.concat(temp, axis=1)  # read in the data into a the data frame
 #all_data.to_csv('zz_all_data.csv')  # print out results as a test
-no_solar_data, solar_data = filter_no_solar(all_data)
-solar_data = compute_actual_forecast_quotient(solar_data)
-no_solar_data = compute_actual_forecast_quotient(no_solar_data)
+no_solar_data_1, solar_data_1 = filter_no_solar(all_data_1, "101_PV_1")
+solar_data_1 = compute_actual_forecast_quotient(solar_data_1, bus_names_1)
+solar_data_1.to_csv()
+no_solar_data_1 = compute_actual_forecast_quotient(no_solar_data_1, bus_names_1)
 
-quotients_0710 = sample_quotients(6, 5, solar_data, no_solar_data)  # sampling the day in question
-quotients_0709 = sample_quotients(6, 5, solar_data, no_solar_data)  # sampling the day before
-quotients_0711 = sample_quotients(6, 5, solar_data, no_solar_data)  # sampling the day after
+quotients_0710_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day in question
+quotients_0709_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day before
+quotients_0711_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day after
+
 
 # need to apply the quotients to the proper forecasts and write to file in the format that is readable to prescient
 # only need to write 1 day on either end of July 10 for now.
-apply_day_quotients(quotients_0709, "2020-07-09")
-apply_day_quotients(quotients_0710, "2020-07-10")
-apply_day_quotients(quotients_0711, "2020-07-11")
+apply_day_quotients(quotients_0709_1, "2020-07-09", file_paths_zone1)
+apply_day_quotients(quotients_0710_1, "2020-07-10", file_paths_zone1)
+apply_day_quotients(quotients_0711_1, "2020-07-11", file_paths_zone1)
+
+
+# all the same stuff but for zone 2
+temp, bus_names_2 = read_files(file_paths_zone2)
+all_data_2 = pd.concat(temp, axis=1)   # read in the data into a the data frame
+#all_data.to_csv('zz_all_data.csv')  # print out results as a test
+no_solar_data_2, solar_data_2 = filter_no_solar(all_data_2, "215_PV_1")
+solar_data_2 = compute_actual_forecast_quotient(solar_data_2, bus_names_2)
+no_solar_data_2 = compute_actual_forecast_quotient(no_solar_data_2, bus_names_2)
+
+quotients_0710_2 = sample_quotients(6, 5, solar_data_2, no_solar_data_2)  # sampling the day in question
+quotients_0709_2 = sample_quotients(6, 5, solar_data_2, no_solar_data_2)  # sampling the day before
+quotients_0711_2 = sample_quotients(6, 5, solar_data_2, no_solar_data_2)  # sampling the day after
+
+# need to apply the quotients to the proper forecasts and write to file in the format that is readable to prescient
+# only need to write 1 day on either end of July 10 for now.
+apply_day_quotients(quotients_0709_2, "2020-07-09", file_paths_zone2)
+apply_day_quotients(quotients_0710_2, "2020-07-10", file_paths_zone2)
+apply_day_quotients(quotients_0711_2, "2020-07-11", file_paths_zone2)
+
+## ZONE 3
+temp, bus_names_3 = read_files(file_paths_zone3)
+all_data_3 = pd.concat(temp, axis=1)   # read in the data into a the data frame
+#all_data.to_csv('zz_all_data.csv')  # print out results as a test
+no_solar_data_3, solar_data_3 = filter_no_solar(all_data_3, "313_PV_2")
+solar_data_3 = compute_actual_forecast_quotient(solar_data_3, bus_names_3)
+no_solar_data_3 = compute_actual_forecast_quotient(no_solar_data_3, bus_names_3)
+
+quotients_0710_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day in question
+quotients_0709_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day before
+quotients_0711_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day after
+
+# need to apply the quotients to the proper forecasts and write to file in the format that is readable to prescient
+# only need to write 1 day on either end of July 10 for now.
+apply_day_quotients(quotients_0709_3, "2020-07-09", file_paths_zone3)
+apply_day_quotients(quotients_0710_3, "2020-07-10", file_paths_zone3)
+apply_day_quotients(quotients_0711_3, "2020-07-11", file_paths_zone3)
 
 # the functions below are currently not used in the script above, but may be useful when we run prescient with the
 # modified files
@@ -194,3 +294,5 @@ def copy_directory(index):
         shutil.copytree(dir_path, new_path)
     else:
         shutil.copytree(dir_path, new_path)
+
+run_prescient(1)
