@@ -4,6 +4,7 @@ import prescient.scripts.runner as runner
 import os
 import pandas as pd
 import shutil
+import numpy as np
 
 # the download function has the path Prescient/downloads/rts_gmlc hard-coded.
 # We don't need the code below as long as we've already downloaded the RTS data into the repo (or run rts_gmlc.py)
@@ -48,6 +49,7 @@ file_paths_zone1 = ['./timeseries_data_files/101_PV_1_forecasts_actuals.csv','./
 # smaller set for testing
 file_paths_test = ['./timeseries_data_files/101_PV_1_forecasts_actuals.csv','./timeseries_data_files/101_PV_2_forecasts_actuals.csv']
 
+bus_names = [] # global variable that will contain a list of bus names. this will be populated in read_files and used elsewhere
 
 def read_files(file_paths):
     # file_paths: list of strings indicating file paths that are to be read in
@@ -65,7 +67,7 @@ def read_files(file_paths):
         # the numbers below are hard coded for this particular case - they will have to change if the file structure
         # changes too
         data.columns = ['Time', path[24:-22]+'_forecasts', path[24:-22]+'_actuals']
-
+        bus_names.append(path[24:-22]) # gives us a list of bus_names which we can use later on
         # if this is our first one, append all columns (including date/time), otherwise, just append forecasts/actuals
         # note: this assumes that all files have the exact same dates and times, which is supported in this case, but
         # may not be true generally
@@ -77,10 +79,74 @@ def read_files(file_paths):
     return data_lst
 
 
+def filter_no_solar(combined_data):
+    # combined_data: data frame of all forecasts and actuals for a list of buses
+    # output: two data frames called s_data and ns_data.
+    # This function filters all data into two parts - one where solars are active and one where solars are inactive
+    # we will do this in a pretty naive way, simply based on one of the solar plants, which we are going to hard code
+    # this is not ideal, but it should do for now
+
+    determining_solar_plant = '101_PV_1'  # this is the solar plant that will determine the 'no solar' case
+
+    ns_data = combined_data[combined_data[determining_solar_plant + '_forecasts'] == 0]
+    #ns_data.to_csv('zz_no_solar_data.csv')  # print out results as a test
+
+    s_data = combined_data[combined_data[determining_solar_plant + '_forecasts'] != 0]
+    #s_data.to_csv("zz_solar_data.csv")
+
+    return ns_data, s_data
+
+
+def compute_actual_forecast_quotient(data):
+    # data: data frame of forecasts and actuals, in the pattern of: forecast, actual
+    # output: modified version of data containing additional columns with the quotient of actual / forecasts
+
+    # iterate across bus names and take the relevant quotients
+    for name in bus_names:
+        temp_nm = name + '_quotient'
+        data = data.assign(temp_nm=data[name+'_actuals'] / data[name+'_forecasts'])
+        data.rename(columns={'temp_nm':temp_nm}, inplace=True)
+
+    # get rid of NaNs and Infs
+    # NaNs arise when we have 0/0, Infs arrive when we have x / 0, where x > 0
+    data.fillna(0, inplace=True)
+    data.replace(np.inf, 0, inplace=True)
+    return data
+
+
+def sample_quotients(pre_sunrise_hrs, post_sunset_hrs, s_data, ns_data):
+    # pre_sunrise_hrs: number of hours before sunrise for the day we want to sample
+    # post_sunset_hrs: number of hours after sunset for the day we want to sample
+    # s_data: data frame of the active solar hours
+    # ns_data: data frame of the inactive solar hours
+    ns_quotients = ns_data.filter(regex='quotient$', axis=1)
+    s_quotients = s_data.filter(regex='quotient$', axis=1)
+    pre_sunrise_sample = ns_quotients.sample(pre_sunrise_hrs, replace=True)  # samples quotients for pre sunrise hours
+    post_sunset_sample = ns_quotients.sample(post_sunset_hrs, replace=True)  # samples quotients for post sunset hours
+    # samples quotients for daylight hours
+    daylight_sample = s_quotients.sample(24 - pre_sunrise_hrs - post_sunset_hrs, replace=True)
+    frames = [pre_sunrise_sample, daylight_sample, post_sunset_sample]
+    day_sample = pd.concat(frames)
+    return day_sample
+
+
+
 all_data = pd.concat(read_files(file_paths_zone1), axis=1)  # read in the data into a the data frame
-all_data.to_csv('test.csv')  # print out results as a test
+#all_data.to_csv('zz_all_data.csv')  # print out results as a test
+no_solar_data, solar_data = filter_no_solar(all_data)
+solar_data = compute_actual_forecast_quotient(solar_data)
+no_solar_data = compute_actual_forecast_quotient(no_solar_data)
+
+quotients_0710 = sample_quotients(6, 5, solar_data, no_solar_data)  # sampling the day in question
+quotients_0709 = sample_quotients(6, 5, solar_data, no_solar_data)  # sampling the day before
+quotients_0711 = sample_quotients(6, 5, solar_data, no_solar_data)  # sampling the day after
+
+# need to apply the quotients to the proper forecasts and write to file in the format that is readable to prescient
+# only need to write 1 day on either end of July 10 for now.
 
 
+# the functions below are currently not used in the script above, but may be useful when we run prescient with the
+# modified files
 def run_prescient(index, populate='populate_with_network_deterministic.txt',
                   simulate='simulate_with_network_deterministic.txt'):
     with open(simulate, "r") as file:
