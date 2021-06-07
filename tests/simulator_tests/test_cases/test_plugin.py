@@ -6,11 +6,11 @@ def msg(callback_name, options=None):
     if options is None or options.print_callback_message:
         print(f"Called plugin function {callback_name}")
 
-pplugins.add_custom_commandline_argument('--print-callback-message',
-                                         help='Print a message when callback is called',
-                                         action='store_true',
-                                         dest='print_callback_message',
-                                         default=False)
+from pyomo.common.config import ConfigValue
+pplugins.add_custom_commandline_argument('print_callback_message', ConfigValue(
+                                         domain=bool,
+                                         description='Print a message when callback is called',
+                                         default=False))
 
 def hourly_stats_callback(hourly_stats):
     msg('hourly_stats_callback')
