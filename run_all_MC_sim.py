@@ -129,6 +129,21 @@ def sample_quotients(pre_sunrise_hrs, post_sunset_hrs, s_data, ns_data):
     day_sample = pd.concat(frames)
     return day_sample
 
+def apply_day_quotients(quotients, day):
+    # quotients: dataframe with all the quotients to apply
+    # day: string version of what day to modify with the quotients in form YYYY-MM-DD
+    # output: directly modify the time series files to apply the quotients
+    #for path in file_paths_zone1:
+    path = './timeseries_data_files/101_PV_1_forecasts_actuals.csv'
+    file_data = pd.read_csv(path)
+    count = 0
+    for index, row in file_data.iterrows():
+        if(row['datetime'].startswith(day)):
+            row['actuals'] = row['forecasts'] * quotients.iloc[count, : ].loc[path[24:-22] + "_quotient"]
+            count += 1
+            print(row['actuals'])
+            file_data.iloc[index,:] = row
+    file_data.to_csv(path, index=False)
 
 
 all_data = pd.concat(read_files(file_paths_zone1), axis=1)  # read in the data into a the data frame
@@ -143,7 +158,10 @@ quotients_0711 = sample_quotients(6, 5, solar_data, no_solar_data)  # sampling t
 
 # need to apply the quotients to the proper forecasts and write to file in the format that is readable to prescient
 # only need to write 1 day on either end of July 10 for now.
-
+print(quotients_0709)
+apply_day_quotients(quotients_0709, "2020-07-09")
+apply_day_quotients(quotients_0710, "2020-07-10")
+apply_day_quotients(quotients_0711, "2020-07-11")
 
 # the functions below are currently not used in the script above, but may be useful when we run prescient with the
 # modified files
