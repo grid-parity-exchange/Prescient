@@ -16,7 +16,7 @@ import sys
 import os
 import pyutilib
 import profile
-from . import master_options as MasterOptions
+from . import config as Config
 from .options import Options
 from .simulator import Simulator
 from .data_manager import DataManager
@@ -124,8 +124,7 @@ def main(args=None):
     # Parse command-line options.
     #
     try:
-        options_parser = MasterOptions.construct_options_parser()
-        options = options_parser.parse_args(args=args)
+        options = Config.parse_args(args=args)
     except SystemExit:
         # the parser throws a system exit if "-h" is specified - catch
         # it to exit gracefully.

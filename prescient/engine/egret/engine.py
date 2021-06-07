@@ -20,6 +20,7 @@ import pyomo.environ as pe
 
 from prescient.engine.modeling_engine import ModelingEngine, ForecastErrorMethod
 from prescient.simulator.data_manager import RucMarket
+from prescient.simulator.config import prescient_solvers, prescient_persistent_solvers
 import prescient.data.data_provider_factory as data_provider_factory
 
 from .data_extractors import ScedDataExtractor, RucDataExtractor
@@ -374,20 +375,16 @@ class EgretEngine(ModelingEngine):
         def _get_solver_list(name):
             return [ name+s for s in ['', '_direct', '_persistent']]
 
-        supported_solvers = _get_solver_list('xpress') + \
-                            _get_solver_list('gurobi') + \
-                            _get_solver_list('cplex') + \
-                            ['cbc', 'glpk']
+        supported_solvers = prescient_solvers
+        supported_persistent_solvers = prescient_persistent_solvers
 
-        supported_persistent_solvers = ('xpress', 'gurobi', 'cplex')
+        if options.deterministic_ruc_solver not in supported_solvers:
+            raise RuntimeError("Unknown solver type=%s specified" % options.deterministic_ruc_solver)
+        if options.sced_solver not in supported_solvers:
+            raise RuntimeError("Unknown solver type=%s specified" % options.deterministic_ruc_solver)
 
-        if options.deterministic_ruc_solver_type not in supported_solvers:
-            raise RuntimeError("Unknown solver type=%s specified" % options.deterministic_ruc_solver_type)
-        if options.sced_solver_type not in supported_solvers:
-            raise RuntimeError("Unknown solver type=%s specified" % options.deterministic_ruc_solver_type)
-
-        self._ruc_solver = options.deterministic_ruc_solver_type
-        self._sced_solver = options.sced_solver_type
+        self._ruc_solver = options.deterministic_ruc_solver
+        self._sced_solver = options.sced_solver
 
         if self._ruc_solver in supported_persistent_solvers:
             try:

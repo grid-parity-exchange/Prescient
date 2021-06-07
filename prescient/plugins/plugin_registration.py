@@ -14,11 +14,21 @@ def add_custom_commandline_argument(*args, **kwargs) -> None:
     calls this function and include that file as a plugin on the command
     line (--plugin=my_file).
 
-    Arguments to this function are passed directly into the Prescient
-    instance of argparse.ArgumentParser's add_argument method
+    Arguments to this function are passed directly into the simulator's
+    ConfigDict object and added to those that will be declared as command
+    line arguements.
+
+    Alternatively, the user can modify Prescient's main pyomo.commn.config.ConfigDict
+    by importing it:
+    ```
+    from prescient.simulator.config import simulator_config
+    ```
+    and modifying it directly. See
+    https://pyomo.readthedocs.io/en/latest/developer_reference/config.html
+    for more details on using Pyomo's configuration system.
     '''
-    from .internal import active_parser
-    active_parser.add_argument(*args, **kwargs)
+    from prescient.simulator.config import simulator_config
+    simulator_config.declare(*args, **kwargs).declare_as_argument()
 
 def register_for_hourly_stats(callback: Callable[[HourlyStats], None]) -> None:
     '''
