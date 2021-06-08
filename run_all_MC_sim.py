@@ -186,14 +186,21 @@ def apply_day_quotients(quotients, day, file_paths):
     # quotients: dataframe with all the quotients to apply
     # day: string version of what day to modify with the quotients in form YYYY-MM-DD
     # output: directly modify the time series files to apply the quotients
+    if (day == "2020-07-09"):
+        beg = 4561
+        end = 4585
+    elif (day == "2020-07-10"):
+        beg = 4585
+        end = 4609
+    elif (day == "2020-07-11"):
+        beg = 4609
+        end = 4633
     for path in file_paths:
         file_data = pd.read_csv(path)
         count = 0
-        for index, row in file_data.iterrows():
-            if(row['datetime'].startswith(day)):
-                row['actuals'] = row['forecasts'] * quotients.iloc[count, : ].loc[path[24:-22] + "_quotient"]
-                count += 1
-                file_data.iloc[index,:] = row
+        for index in range(beg, end):
+            file_data["actuals"].iat[index] = file_data['forecasts'].iat[index] * quotients.iloc[count, : ].loc[path[24:-22] + "_quotient"]
+            count += 1
         file_data.to_csv(path, index=False)
 
 # run all the data perturbation functions as a function call -> should be in downloads when called. Will end up in working
