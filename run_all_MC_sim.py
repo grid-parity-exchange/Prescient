@@ -248,10 +248,6 @@ def save_quotients(file_paths):
     solar_data_1.to_csv("./solar_quotients.csv", index=False)
     no_solar_data_1.to_csv("./no_solar_quotients.csv", index=False)
 
-quotients_0710_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day in question
-quotients_0709_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day before
-quotients_0711_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day after
-
 def run_prescient(index, populate='populate_with_network_deterministic.txt',
                   simulate='simulate_with_network_deterministic.txt'):
     with open(simulate, "r") as file:
@@ -289,12 +285,17 @@ def copy_directory(index):
     else:
         shutil.copytree(dir_path, new_path)
 
+
 def run(i):
     copy_directory(i)
     perturb_data(file_paths_combined, "./solar_quotients.csv", "./no_solar_quotients.csv")
     run_prescient(i)
     os.chdir("..")
-    shutil.copytree('./working/output', './scenario_'+str(i+1))
+    if os.path.exists('./scenario_'+str(i+1)):
+        shutil.rmtree('./scenario_'+str(i+1))
+        shutil.copytree('./working/output', './scenario_'+str(i+1))
+    else:
+        shutil.copytree('./working/output', './scenario_'+str(i+1))
     shutil.rmtree('./working')
 
 os.chdir("downloads")
