@@ -16,14 +16,13 @@ import numpy as np
 # rts_downloader.populate_input_data()
 
 # variables to adjust:
-runs = 1
+runs = 5
 directory_out = "--output-directory=output"
 dir_path = "./rts_gmlc"
 new_path = "./working"
-os.chdir("downloads/rts_gmlc")
 
 # all zone 1 file paths
-file_paths_zone1 = ['./timeseries_data_files/101_PV_1_forecasts_actuals.csv','./timeseries_data_files/101_PV_2_forecasts_actuals.csv',
+file_paths_combined = ['./timeseries_data_files/101_PV_1_forecasts_actuals.csv','./timeseries_data_files/101_PV_2_forecasts_actuals.csv',
               './timeseries_data_files/101_PV_3_forecasts_actuals.csv','./timeseries_data_files/101_PV_4_forecasts_actuals.csv',
               './timeseries_data_files/102_PV_1_forecasts_actuals.csv','./timeseries_data_files/102_PV_2_forecasts_actuals.csv',
               './timeseries_data_files/103_PV_1_forecasts_actuals.csv','./timeseries_data_files/104_PV_1_forecasts_actuals.csv',
@@ -44,9 +43,7 @@ file_paths_zone1 = ['./timeseries_data_files/101_PV_1_forecasts_actuals.csv','./
               './timeseries_data_files/Bus_117_Load_zone1_forecasts_actuals.csv','./timeseries_data_files/Bus_118_Load_zone1_forecasts_actuals.csv',
               './timeseries_data_files/Bus_119_Load_zone1_forecasts_actuals.csv','./timeseries_data_files/Bus_120_Load_zone1_forecasts_actuals.csv',
               './timeseries_data_files/Bus_121_Load_zone1_forecasts_actuals.csv','./timeseries_data_files/Bus_122_Load_zone1_forecasts_actuals.csv',
-              './timeseries_data_files/Bus_123_Load_zone1_forecasts_actuals.csv','./timeseries_data_files/Bus_124_Load_zone1_forecasts_actuals.csv' ]
-
-file_paths_zone2 = ['./timeseries_data_files/Bus_214_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_223_Load_zone2_forecasts_actuals.csv',
+              './timeseries_data_files/Bus_123_Load_zone1_forecasts_actuals.csv','./timeseries_data_files/Bus_124_Load_zone1_forecasts_actuals.csv','./timeseries_data_files/Bus_214_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_223_Load_zone2_forecasts_actuals.csv',
  './timeseries_data_files/215_PV_1_forecasts_actuals.csv', './timeseries_data_files/Bus_210_Load_zone2_forecasts_actuals.csv', 
  './timeseries_data_files/213_RTPV_1_forecasts_actuals.csv', './timeseries_data_files/Bus_218_Load_zone2_forecasts_actuals.csv', 
  './timeseries_data_files/222_HYDRO_2_forecasts_actuals.csv', './timeseries_data_files/Bus_207_Load_zone2_forecasts_actuals.csv', 
@@ -65,9 +62,8 @@ file_paths_zone2 = ['./timeseries_data_files/Bus_214_Load_zone2_forecasts_actual
  './timeseries_data_files/Bus_221_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_216_Load_zone2_forecasts_actuals.csv', 
  './timeseries_data_files/PV_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_209_Load_zone2_forecasts_actuals.csv', 
  './timeseries_data_files/215_HYDRO_2_forecasts_actuals.csv', './timeseries_data_files/Load_zone2_forecasts_actuals.csv', 
-'./timeseries_data_files/Bus_201_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_205_Load_zone2_forecasts_actuals.csv']
-
-file_paths_zone3 = ['./timeseries_data_files/Bus_309_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/320_RTPV_2_forecasts_actuals.csv',
+'./timeseries_data_files/Bus_201_Load_zone2_forecasts_actuals.csv', './timeseries_data_files/Bus_205_Load_zone2_forecasts_actuals.csv',
+'./timeseries_data_files/Bus_309_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/320_RTPV_2_forecasts_actuals.csv',
  './timeseries_data_files/Bus_316_Load_zone3_forecasts_actuals.csv', './timeseries_data_files/Bus_321_Load_zone3_forecasts_actuals.csv', 
  './timeseries_data_files/313_PV_2_forecasts_actuals.csv', './timeseries_data_files/313_RTPV_7_forecasts_actuals.csv',
  './timeseries_data_files/313_RTPV_10_forecasts_actuals.csv', './timeseries_data_files/310_PV_1_forecasts_actuals.csv',
@@ -161,17 +157,13 @@ def compute_actual_forecast_quotient(data, bus_names):
     # iterate across bus names and take the relevant quotients
     for name in bus_names:
         temp_nm = name + '_quotient'
-        data = data.assign(temp_nm=data[name+'_actuals'] / data[name+'_forecasts'])
+        data = data.assign(temp_nm=np.minimum(data[name+'_actuals'] / data[name+'_forecasts'], 1.5))
         data.rename(columns={'temp_nm':temp_nm}, inplace=True)
 
     # get rid of NaNs and Infs
     # NaNs arise when we have 0/0, Infs arrive when we have x / 0, where x > 0
     data.fillna(0, inplace=True)
     data.replace(np.inf, 0, inplace=True)
-    # add in the basic structure with a cap, value is arbitrary
-    for col in data:
-        if (col != "Time"):
-            data.loc[data[col] >= 1.5, col] = 1.5
     return data
 
 
@@ -204,26 +196,36 @@ def apply_day_quotients(quotients, day, file_paths):
                 file_data.iloc[index,:] = row
         file_data.to_csv(path, index=False)
 
-temp, bus_names_1 = read_files(file_paths_zone1)
-all_data_1 = pd.concat(temp, axis=1)  # read in the data into a the data frame
-#all_data.to_csv('zz_all_data.csv')  # print out results as a test
-no_solar_data_1, solar_data_1 = filter_no_solar(all_data_1, "101_PV_1")
-solar_data_1 = compute_actual_forecast_quotient(solar_data_1, bus_names_1)
-solar_data_1.to_csv()
-no_solar_data_1 = compute_actual_forecast_quotient(no_solar_data_1, bus_names_1)
+# run all the data perturbation functions as a function call -> should be in downloads when called. Will end up in working
+def perturb_data(file_paths, solar_path, no_solar_path):
+    solar_data_1 = pd.read_csv(solar_path)
+    no_solar_data_1 = pd.read_csv(no_solar_path)
+    os.chdir("./working")
 
-quotients_0710_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day in question
-quotients_0709_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day before
-quotients_0711_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day after
+    quotients_0710_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day in question
+    quotients_0709_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day before
+    quotients_0711_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day after
 
 
-# need to apply the quotients to the proper forecasts and write to file in the format that is readable to prescient
-# only need to write 1 day on either end of July 10 for now.
-apply_day_quotients(quotients_0709_1, "2020-07-09", file_paths_zone1)
-apply_day_quotients(quotients_0710_1, "2020-07-10", file_paths_zone1)
-apply_day_quotients(quotients_0711_1, "2020-07-11", file_paths_zone1)
+    # need to apply the quotients to the proper forecasts and write to file in the format that is readable to prescient
+    # only need to write 1 day on either end of July 10 for now.
+    apply_day_quotients(quotients_0709_1, "2020-07-09", file_paths)
+    apply_day_quotients(quotients_0710_1, "2020-07-10", file_paths)
+    apply_day_quotients(quotients_0711_1, "2020-07-11", file_paths)
 
-
+# should be in directory "/downloads" when called and will stay at that directory
+def save_quotients(file_paths):
+    os.chdir("./rts_gmlc")
+    temp, bus_names_1 = read_files(file_paths)
+    all_data_1 = pd.concat(temp, axis=1)  # read in the data into a the data frame
+    #all_data.to_csv('zz_all_data.csv')  # print out results as a test
+    no_solar_data_1, solar_data_1 = filter_no_solar(all_data_1, "101_PV_1")
+    solar_data_1 = compute_actual_forecast_quotient(solar_data_1, bus_names_1)
+    no_solar_data_1 = compute_actual_forecast_quotient(no_solar_data_1, bus_names_1)
+    os.chdir("..")
+    solar_data_1.to_csv("./solar_quotients.csv", index=False)
+    no_solar_data_1.to_csv("./no_solar_quotients.csv", index=False)
+"""
 # all the same stuff but for zone 2
 temp, bus_names_2 = read_files(file_paths_zone2)
 all_data_2 = pd.concat(temp, axis=1)   # read in the data into a the data frame
@@ -259,6 +261,7 @@ quotients_0711_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # samp
 apply_day_quotients(quotients_0709_3, "2020-07-09", file_paths_zone3)
 apply_day_quotients(quotients_0710_3, "2020-07-10", file_paths_zone3)
 apply_day_quotients(quotients_0711_3, "2020-07-11", file_paths_zone3)
+"""
 
 # the functions below are currently not used in the script above, but may be useful when we run prescient with the
 # modified files
@@ -295,4 +298,19 @@ def copy_directory(index):
     else:
         shutil.copytree(dir_path, new_path)
 
-run_prescient(1)
+def run(i):
+    copy_directory(i)
+    perturb_data(file_paths_combined, "./solar_quotients.csv", "./no_solar_quotients.csv")
+    run_prescient(i)
+    os.chdir("..")
+    shutil.copytree('./working/output', './scenario_'+str(i+1))
+    shutil.rmtree('./working')
+
+os.chdir("downloads")
+
+# check for the quotients data and if not then recalculate it
+if (not os.path.exists("./solar_quotients.csv") or not os.path.exists("./no_solar_quotients.csv")):
+    save_quotients(file_paths_combined)
+
+for i in range(runs):
+    run(i)
