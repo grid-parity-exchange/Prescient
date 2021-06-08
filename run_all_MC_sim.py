@@ -17,7 +17,7 @@ import time
 # rts_downloader.populate_input_data()
 
 # variables to adjust:
-runs = 1
+runs = 5
 directory_out = "--output-directory=output"
 dir_path = "./rts_gmlc"
 new_path = "./working"
@@ -141,11 +141,12 @@ def filter_no_solar(combined_data, determining_solar_plant):
     # we will do this in a pretty naive way, simply based on one of the solar plants, which we are going to hard code
     # this is not ideal, but it should do for now
 
+
     ns_data = combined_data[combined_data[determining_solar_plant + '_forecasts'] == 0]
-    # ns_data.to_csv('zz_no_solar_data.csv')  # print out results as a test
+    #ns_data.to_csv('zz_no_solar_data.csv')  # print out results as a test
 
     s_data = combined_data[combined_data[determining_solar_plant + '_forecasts'] != 0]
-    # s_data.to_csv("zz_solar_data.csv")
+    #s_data.to_csv("zz_solar_data.csv")
 
     return ns_data, s_data
 
@@ -182,7 +183,6 @@ def sample_quotients(pre_sunrise_hrs, post_sunset_hrs, s_data, ns_data):
     day_sample = pd.concat(frames)
     return day_sample
 
-
 def apply_day_quotients(quotients, day, file_paths):
     # quotients: dataframe with all the quotients to apply
     # day: string version of what day to modify with the quotients in form YYYY-MM-DD
@@ -204,17 +204,13 @@ def apply_day_quotients(quotients, day, file_paths):
 
 # run all the data perturbation functions as a function call -> should be in downloads when called. Will end up in working
 def perturb_data(file_paths, solar_path, no_solar_path):
-    # start_of_perturb_data = time.time()
     solar_data_1 = pd.read_csv(solar_path)
     no_solar_data_1 = pd.read_csv(no_solar_path)
     os.chdir("./working")
-    # read_csvs = time.time()
-    # print("Time to read CSVs in perturb_data:", read_csvs - start_of_perturb_data)
+
     quotients_0710_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day in question
     quotients_0709_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day before
     quotients_0711_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day after
-    # sample_qs = time.time()
-    # print("Time to sample quotients in perturb_data:", sample_qs - read_csvs)
 
 
     # need to apply the quotients to the proper forecasts and write to file in the format that is readable to prescient
@@ -222,9 +218,6 @@ def perturb_data(file_paths, solar_path, no_solar_path):
     apply_day_quotients(quotients_0709_1, "2020-07-09", file_paths)
     apply_day_quotients(quotients_0710_1, "2020-07-10", file_paths)
     apply_day_quotients(quotients_0711_1, "2020-07-11", file_paths)
-    # apply_qs = time.time()
-    # print("Time to apply quotients in perturb_data:", apply_qs - sample_qs)
-
 
 # should be in directory "/downloads" when called and will stay at that directory
 def save_quotients(file_paths):
@@ -239,6 +232,9 @@ def save_quotients(file_paths):
     solar_data_1.to_csv("./solar_quotients.csv", index=False)
     no_solar_data_1.to_csv("./no_solar_quotients.csv", index=False)
 
+quotients_0710_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day in question
+quotients_0709_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day before
+quotients_0711_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day after
 
 def run_prescient(index, populate='populate_with_network_deterministic.txt',
                   simulate='simulate_with_network_deterministic.txt'):
@@ -278,35 +274,18 @@ def copy_directory(index):
         shutil.copytree(dir_path, new_path)
 
 def run(i):
-    start_run = time.time()
-    print("Time to start the run:", start_run - check_quotients)
     copy_directory(i)
-    directory_copied = time.time()
-    print("Time to copy the directory:", directory_copied - start_run)
     perturb_data(file_paths_combined, "./solar_quotients.csv", "./no_solar_quotients.csv")
-    paths_perturbed = time.time()
-    print("Time to perturb the paths:", paths_perturbed - directory_copied)
     run_prescient(i)
-    prescient_run = time.time()
-    print("Time to run Prescient:", prescient_run - paths_perturbed)
     os.chdir("..")
-    if os.path.exists('./scenario_'+str(i+1)):
-        shutil.rmtree('./scenario_'+str(i+1))
-        shutil.copytree('./working/output', './scenario_'+str(i+1))
-    else:
-        shutil.copytree('./working/output', './scenario_'+str(i+1))
+    shutil.copytree('./working/output', './scenario_'+str(i+1))
     shutil.rmtree('./working')
-    files_managed = time.time()
-    print("Time to do file management:", files_managed - prescient_run)
 
-
-start = time.time()
 os.chdir("downloads")
 
 # check for the quotients data and if not then recalculate it
 if (not os.path.exists("./solar_quotients.csv") or not os.path.exists("./no_solar_quotients.csv")):
     save_quotients(file_paths_combined)
-check_quotients = time.time()
-print("Time to check if quotients csv exists:", check_quotients - start)
+
 for i in range(runs):
     run(i)
