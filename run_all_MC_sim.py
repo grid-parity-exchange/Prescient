@@ -17,7 +17,7 @@ import time
 # rts_downloader.populate_input_data()
 
 # variables to adjust:
-runs = 5
+runs = 1
 directory_out = "--output-directory=output"
 dir_path = "./rts_gmlc"
 new_path = "./working"
