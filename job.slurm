@@ -12,6 +12,8 @@
 
 module purge
 module load anaconda3/2020.11
+module load gurobi
 conda activate prescient_env
+cd Tests/Prescient
 
 python run_all_Tiger.py
