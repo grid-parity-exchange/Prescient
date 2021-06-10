@@ -197,11 +197,18 @@ def apply_day_quotients(quotients, day, file_paths):
         end = 4633
     for path in file_paths:
         file_data = pd.read_csv(path)
+        # file_data = file_data.set_index('datetime')
+        # dts = pd.Series(pd.date_range(day, periods=24, freq='H'))
+        # t = dts.dt.strftime('%Y-%m-%d %H:%M:%S')
+        # file_data.loc[t, 'actuals'] = file_data.loc[t, 'forecasts'] * quotients[path[24:-22] + "_quotient"].tolist()
         count = 0
         for index in range(beg, end):
             file_data["actuals"].iat[index] = file_data['forecasts'].iat[index] * quotients.iloc[count, : ].loc[path[24:-22] + "_quotient"]
             count += 1
         file_data.to_csv(path, index=False)
+        # file_data.to_csv(path, index=True)
+
+
 
 # run all the data perturbation functions as a function call -> should be in downloads when called. Will end up in working
 def perturb_data(file_paths, solar_path, no_solar_path):
@@ -232,47 +239,11 @@ def save_quotients(file_paths):
     os.chdir("..")
     solar_data_1.to_csv("./solar_quotients.csv", index=False)
     no_solar_data_1.to_csv("./no_solar_quotients.csv", index=False)
-"""
-# all the same stuff but for zone 2
-temp, bus_names_2 = read_files(file_paths_zone2)
-all_data_2 = pd.concat(temp, axis=1)   # read in the data into a the data frame
-#all_data.to_csv('zz_all_data.csv')  # print out results as a test
-no_solar_data_2, solar_data_2 = filter_no_solar(all_data_2, "215_PV_1")
-solar_data_2 = compute_actual_forecast_quotient(solar_data_2, bus_names_2)
-no_solar_data_2 = compute_actual_forecast_quotient(no_solar_data_2, bus_names_2)
 
-quotients_0710_2 = sample_quotients(6, 5, solar_data_2, no_solar_data_2)  # sampling the day in question
-quotients_0709_2 = sample_quotients(6, 5, solar_data_2, no_solar_data_2)  # sampling the day before
-quotients_0711_2 = sample_quotients(6, 5, solar_data_2, no_solar_data_2)  # sampling the day after
-
-# need to apply the quotients to the proper forecasts and write to file in the format that is readable to prescient
-# only need to write 1 day on either end of July 10 for now.
-apply_day_quotients(quotients_0709_2, "2020-07-09", file_paths_zone2)
-apply_day_quotients(quotients_0710_2, "2020-07-10", file_paths_zone2)
-apply_day_quotients(quotients_0711_2, "2020-07-11", file_paths_zone2)
-
-## ZONE 3
-temp, bus_names_3 = read_files(file_paths_zone3)
-all_data_3 = pd.concat(temp, axis=1)   # read in the data into a the data frame
-#all_data.to_csv('zz_all_data.csv')  # print out results as a test
-no_solar_data_3, solar_data_3 = filter_no_solar(all_data_3, "313_PV_2")
-solar_data_3 = compute_actual_forecast_quotient(solar_data_3, bus_names_3)
-no_solar_data_3 = compute_actual_forecast_quotient(no_solar_data_3, bus_names_3)
-
-quotients_0710_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day in question
-quotients_0709_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day before
-quotients_0711_3 = sample_quotients(6, 5, solar_data_3, no_solar_data_3)  # sampling the day after
-
-# need to apply the quotients to the proper forecasts and write to file in the format that is readable to prescient
-# only need to write 1 day on either end of July 10 for now.
-apply_day_quotients(quotients_0709_3, "2020-07-09", file_paths_zone3)
-apply_day_quotients(quotients_0710_3, "2020-07-10", file_paths_zone3)
-apply_day_quotients(quotients_0711_3, "2020-07-11", file_paths_zone3)
-"""
 
 # the functions below are currently not used in the script above, but may be useful when we run prescient with the
 # modified files
-def run_prescient(index, populate='populate_with_network_deterministic.txt',
+def run_prescient(populate='populate_with_network_deterministic.txt',
                   simulate='simulate_with_network_deterministic.txt'):
     with open(simulate, "r") as file:
         lines = file.readlines()
@@ -312,7 +283,7 @@ def copy_directory(index):
 def run(i):
     copy_directory(i)
     perturb_data(file_paths_combined, "./solar_quotients.csv", "./no_solar_quotients.csv")
-    run_prescient(i)
+    run_prescient()
     os.chdir("..")
     shutil.copytree('./working/output', './scenario_'+str(i+1))
     shutil.rmtree('./working')

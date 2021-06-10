@@ -7,6 +7,7 @@ import shutil
 import numpy as np
 import time
 
+
 # the download function has the path Prescient/downloads/rts_gmlc hard-coded.
 # We don't need the code below as long as we've already downloaded the RTS data into the repo (or run rts_gmlc.py)
 # All it does is a 'git clone' of the RTS-GMLC repo
