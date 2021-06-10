@@ -7,6 +7,7 @@ import shutil
 import numpy as np
 import time
 
+
 # the download function has the path Prescient/downloads/rts_gmlc hard-coded.
 # We don't need the code below as long as we've already downloaded the RTS data into the repo (or run rts_gmlc.py)
 # All it does is a 'git clone' of the RTS-GMLC repo
@@ -20,7 +21,7 @@ import time
 runs = 1
 directory_out = "--output-directory=output"
 dir_path = "./rts_gmlc"
-new_path = "./working"
+path_template = "./scenario_"
 
 # all zone 1 file paths
 file_paths_combined = ['./timeseries_data_files/101_PV_1_forecasts_actuals.csv','./timeseries_data_files/101_PV_2_forecasts_actuals.csv',
@@ -218,12 +219,13 @@ def apply_day_quotients(quotients, day, file_paths):
         file_data.to_csv(path, index=True)
 
 
-# run all the data perturbation functions as a function call -> should be in downloads when called. Will end up in working
+# run all the data perturbation functions as a function call -> should be in working directory when called and will remain.
 def perturb_data(file_paths, solar_path, no_solar_path):
+    path = os.getcwd()
+    os.chdir("..")
     solar_data_1 = pd.read_csv(solar_path)
     no_solar_data_1 = pd.read_csv(no_solar_path)
-    os.chdir("./working")
-
+    os.chdir(path)
     quotients_0710_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day in question
     quotients_0709_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day before
     quotients_0711_1 = sample_quotients(6, 5, solar_data_1, no_solar_data_1)  # sampling the day after
@@ -279,6 +281,7 @@ def modify_file(path):
 
 
 def copy_directory(index):
+    new_path = path_template + str(index)
     if os.path.exists(new_path):
         shutil.rmtree(new_path)
         shutil.copytree(dir_path, new_path)
@@ -288,15 +291,10 @@ def copy_directory(index):
 
 def run(i):
     copy_directory(i)
+    os.chdir(path_template+str(i))
     perturb_data(file_paths_combined, "./solar_quotients.csv", "./no_solar_quotients.csv")
     run_prescient(i)
     os.chdir("..")
-    if os.path.exists('./scenario_'+str(i+1)):
-        shutil.rmtree('./scenario_'+str(i+1))
-        shutil.copytree('./working/output', './scenario_'+str(i+1))
-    else:
-        shutil.copytree('./working/output', './scenario_'+str(i+1))
-    shutil.rmtree('./working')
 
 os.chdir("downloads")
 
