@@ -14,6 +14,6 @@ module purge
 module load anaconda3/2020.11
 module load gurobi
 conda activate prescient_env
-cd Tests/Baseline_test
+cd Tests/Baseline_test/Prescient
 
 python baseline.py
