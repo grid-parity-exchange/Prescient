@@ -201,11 +201,12 @@ def apply_day_quotients(quotients, day, file_paths):
     #     end = 4633
     for path in file_paths:
         file_data = pd.read_csv(path)
-        count = 0
+        count = 0 
         file_data = file_data.set_index('datetime')
         dts = pd.Series(pd.date_range(day, periods=24, freq='H'))
         t = dts.dt.strftime('%Y-%m-%d %H:%M:%S')
         file_data.loc[t, 'actuals'] = file_data.loc[t, 'forecasts'] * quotients[path[24:-22] + "_quotient"].tolist()
+        file_data = file_data.truncate(before = '2020-07-09', after = '2020-07-12')
         # for index, row in file_data.iterrows():
         #     if(row['datetime'].startswith(day)):
         #         row['actuals'] = row['forecasts'] * quotients.iloc[count, : ].loc[path[24:-22] + "_quotient"]
@@ -271,6 +272,7 @@ def run_prescient(index, populate='populate_with_network_deterministic.txt',
                 file.write(line)
     runner.run(populate)
     runner.run(simulate)
+    shutil.rmtree("./RTS-GMLC")
 
 
 def modify_file(path):
