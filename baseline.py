@@ -36,11 +36,14 @@ def run_prescient(index, populate='populate_with_network_deterministic.txt',
             elif (line.startswith("--random-seed") or line.startswith("--output-sced-solutions") or line.startswith(
                     "--output-ruc-dispatches")):
                 continue
+            elif (line.startswith("--deterministic-ruc-solver=cbc")):
+                file.write("--deterministic-ruc-solver=gurobi \n")
+            elif (line.startswith("--sced-solver=cbc")):
+                file.write("--sced-solver=gurobi \n") 
             else:
                 file.write(line)
     runner.run(populate)
     runner.run(simulate)
-
 
 def modify_file(path):
     data = pd.read_csv(path)
