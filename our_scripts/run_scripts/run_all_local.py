@@ -1,4 +1,4 @@
-# run_all_tiger.py: simple way to run batch operations on tiger
+# run_all_local.py: way to test on local system with restructured helper functions
 # authors: Ethan Reese
 # email: ereese@princeton.edu
 # created: June 14, 2021
