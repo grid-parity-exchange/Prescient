@@ -11,8 +11,8 @@ frame_list = []
 
 for dir in scenarios:
     if (dir.startswith("scen")):
-        total_output = pd.read_csv(dir+"output/overall_simulation_output.csv")
-        daily_output = pd.read_csv(dir+"output/daily_summary.csv")
+        total_output = pd.read_csv(dir+"/output/overall_simulation_output.csv")
+        daily_output = pd.read_csv(dir+"/output/daily_summary.csv")
         total_output = total_output.join(daily_output[cols_daily])
         frame_list.append(total_output)
 
