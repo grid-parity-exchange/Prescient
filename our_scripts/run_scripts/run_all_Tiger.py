@@ -1,3 +1,8 @@
+# run_all_Tiger.py: version of script to run on tiger with many runs and Gurobi
+# authors: Ethan Reese, Arvind Shrivats
+# email: ereese@princeton.edu, shrivats@princeton.edu
+# created: June 8, 2021
+
 # first, we'll use the built-in function to download the RTS-GMLC system to Prescicent/downloads/rts_gmlc
 import prescient.downloaders.rts_gmlc as rts_downloader
 import prescient.scripts.runner as runner
@@ -7,6 +12,8 @@ import shutil
 import numpy as np
 import time
 
+os.chdir("..")
+os.chdir("..")
 
 # the download function has the path Prescient/downloads/rts_gmlc hard-coded.
 # We don't need the code below as long as we've already downloaded the RTS data into the repo (or run rts_gmlc.py)
@@ -18,7 +25,7 @@ import time
 # rts_downloader.populate_input_data()
 
 # variables to adjust:
-runs = 1
+runs = 750
 directory_out = "--output-directory=output"
 dir_path = "./rts_gmlc"
 path_template = "./scenario_"
@@ -188,7 +195,7 @@ def sample_quotients(pre_sunrise_hrs, post_sunset_hrs, s_data, ns_data):
 def apply_day_quotients(quotients, day, file_paths):
     # quotients: dataframe with all the quotients to apply
     # day: string version of what day to modify with the quotients in form YYYY-MM-DD
-    # output: directly modify the time series files to apply the quotients
+    # output: None - directly modify the time series files to apply the quotients and writes to file
 
     # if (day == "2020-07-09"):
     #     beg = 4561
@@ -222,6 +229,10 @@ def apply_day_quotients(quotients, day, file_paths):
 
 # run all the data perturbation functions as a function call -> should be in working directory when called and will remain.
 def perturb_data(file_paths, solar_path, no_solar_path):
+    # file_paths: list of strings that tell us where the timeseries data files are located
+    # solar_path: file path of the forecast, actuals, and quotients for the active solar hours for the year
+    # no_solar_path: file path of the the forecast, actuals, and quotients for the non-active solar hours for the year
+    # output: None - modifies the timeseries data files in place via apply_day_quotients
     path = os.getcwd()
     os.chdir("..")
     solar_data_1 = pd.read_csv(solar_path)
@@ -240,6 +251,8 @@ def perturb_data(file_paths, solar_path, no_solar_path):
 
 # should be in directory "/downloads" when called and will stay at that directory
 def save_quotients(file_paths):
+    # file_paths: list of strings that tell us where the timeseries data files are located
+    # output: None - saves quotients to csv for potential manual / programmatic use later
     os.chdir("./rts_gmlc")
     temp, bus_names_1 = read_files(file_paths)
     all_data_1 = pd.concat(temp, axis=1)  # read in the data into a the data frame
@@ -251,7 +264,7 @@ def save_quotients(file_paths):
     solar_data_1.to_csv("./solar_quotients.csv", index=False)
     no_solar_data_1.to_csv("./no_solar_quotients.csv", index=False)
 
-def run_prescient(index, populate='populate_with_network_deterministic.txt',
+def run_prescient(populate='populate_with_network_deterministic.txt',
                   simulate='simulate_with_network_deterministic.txt'):
     with open(simulate, "r") as file:
         lines = file.readlines()
@@ -264,10 +277,10 @@ def run_prescient(index, populate='populate_with_network_deterministic.txt',
             elif (line.startswith("--random-seed") or line.startswith("--output-sced-solutions") or line.startswith(
                     "--output-ruc-dispatches")):
                 continue
-            #elif (line.startswith("--deterministic-ruc-solver=cbc")):
-                #file.write("--deterministic-ruc-solver=gurobi \n")
-            #elif (line.startswith("--sced-solver=cbc")):
-                #file.write("--sced-solver=gurobi \n") 
+            elif (line.startswith("--deterministic-ruc-solver=cbc")):
+                file.write("--deterministic-ruc-solver=gurobi \n")
+            elif (line.startswith("--sced-solver=cbc")):
+                file.write("--sced-solver=gurobi \n") 
             else:
                 file.write(line)
     runner.run(populate)
@@ -275,14 +288,19 @@ def run_prescient(index, populate='populate_with_network_deterministic.txt',
     shutil.rmtree("./RTS-GMLC")
 
 
-def modify_file(path):
+def set_actual_equal_forecasts(path):
+    # path: file path for a timeseries file
+    # output: None - modifies the actuals of the timeseries data file to be the same as its forecast
     data = pd.read_csv(path)
     # placeholder modification -> could easily be replaced
-    data['actuals'].values[:] = 0
+    data['actuals'].values[:] = data['forecasts'].values[:]
     data.to_csv(path, index=False)
 
 
 def copy_directory(index):
+    # index: integer to count the run number. used to write the correct directory name
+    # output: None - this copies the rts_gmlc folder to each scenario folder. extraneous items such as the
+    # RTS-GMLC subfolder are later deleted
     new_path = path_template + str(index)
     if os.path.exists(new_path):
         shutil.rmtree(new_path)
@@ -292,10 +310,11 @@ def copy_directory(index):
 
 
 def run(i):
+    # i: counter
     copy_directory(i)
     os.chdir(path_template+str(i))
     perturb_data(file_paths_combined, "./solar_quotients.csv", "./no_solar_quotients.csv")
-    run_prescient(i)
+    run_prescient()
     os.chdir("..")
 
 os.chdir("downloads")
@@ -303,6 +322,6 @@ os.chdir("downloads")
 # check for the quotients data and if not then recalculate it
 if (not os.path.exists("./solar_quotients.csv") or not os.path.exists("./no_solar_quotients.csv")):
     save_quotients(file_paths_combined)
-
+# go through the process of sampling and applying the quotients for each run
 for i in range(runs):
     run(i)

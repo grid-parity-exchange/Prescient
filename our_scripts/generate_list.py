@@ -1,5 +1,13 @@
+# generate_list.py: splits the timeseries filenames apart based on zone -> Unused
+# author: Ethan Reese 
+# email: ereese@princeton.edu
+# created: June 2021
+
 import os
 
+
+os.chdir("..")
+os.chdir("..")
 os.chdir("./downloads/rts_gmlc/timeseries_data_files")
 list = os.listdir()
 list_1 = []
@@ -14,5 +22,8 @@ for item in list:
         list_3.append(str("./timeseries_data_files/" + item))
 
 print("One: ", list_1)
+print("")
 print("Two: ", list_2)
+print("")
 print("Three: ", list_3)
+print("")

@@ -1,3 +1,8 @@
+# run_all_seq.py: testing version of script to run Prescient on local machine with fixed changes
+# authors: Ethan Reese, Arvind Shrivats
+# email: ereese@princeton.edu, shrivats@princeton.edu
+# created: June 8, 2021
+
 # first, we'll use the built-in function to download the RTS-GMLC system to Prescicent/downloads/rts_gmlc
 import prescient.downloaders.rts_gmlc as rts_downloader
 import prescient.scripts.runner as runner
@@ -12,8 +17,8 @@ import shutil
 # if did_download:
 #     rts_downloader.copy_templates()
 # rts_downloader.populate_input_data()
-print(os.getcwd())
-
+os.chdir("..")
+os.chdir("..")
 # variables to adjust:
 runs = 1
 directory_out = "--output-directory=output"
@@ -45,7 +50,7 @@ def run_prescient(index, populate='populate_with_network_deterministic.txt',
 def modify_file(path):
     data = pd.read_csv(path)
     # placeholder modification -> could easily be replaced
-    data['actuals'].values[:] = 0
+    data['actuals'] = data['forecasts']
     data.to_csv(path, index=False)
 
 

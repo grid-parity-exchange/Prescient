@@ -1,10 +1,15 @@
+# analyze_prescient_output.py: creates graphs from collated Prescient data
+# author: Arvind Shrivats
+# email: shrivats@princeton.edu
+# created: June 2021
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-os.chdir("./downloads")
+os.chdir("..")
+os.chdir("./collated_outputs")
 
-output_data = pd.read_csv("collated_output_1.csv")
+output_data = pd.read_csv("collated_output_2.csv")
 
 
 def produce_hist(col_name):

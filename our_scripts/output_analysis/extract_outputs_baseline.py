@@ -1,6 +1,13 @@
+# extract_outputs_baseline.py: collates the outputs from specific baseline 
+# run of prescient into a single csv file
+# author: Ethan Reese
+# email: ereese@princeton.edu
+# created: June 2021
 import pandas as pd
 import os
 
+os.chdir("..")
+os.chdir("..")
 os.chdir("./downloads")
 scenarios = os.listdir()
 
@@ -11,8 +18,8 @@ frame_list = []
 
 for dir in scenarios:
     if (dir.startswith("scen")):
-        total_output = pd.read_csv(dir+"/output/overall_simulation_output.csv")
-        daily_output = pd.read_csv(dir+"/output/daily_summary.csv")
+        total_output = pd.read_csv(dir+"/overall_simulation_output.csv")
+        daily_output = pd.read_csv(dir+"/daily_summary.csv")
         total_output = total_output.join(daily_output[cols_daily])
         frame_list.append(total_output)
 
