@@ -9,14 +9,14 @@ import run_helpers as rh
 path_template = "./scenario_"
 solar_path = "./solar_quotients.csv"
 no_solar_path = "./no_solar_quotients.csv"
-runs = 1
+runs = 1000
 
 
 def run(i):
         rh.copy_directory(i, path_template)
         os.chdir(path_template+str(i))
         rh.perturb_data(rh.file_paths_combined, solar_path, no_solar_path)
-        rh.run_prescient(i, False)
+        rh.run_prescient(i, True)
         os.chdir("..")
 
 
