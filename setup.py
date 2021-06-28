@@ -40,7 +40,7 @@ setup(name='gridx-prescient',
             ]
         },
       package_data={'prescient.downloaders.rts_gmlc_prescient':['runners/*.txt','runners/templates/*']},
-      install_requires=['numpy','matplotlib','pandas','scipy','pyomo>=5.7.1',
+      install_requires=['numpy','matplotlib','pandas','scipy','pyomo>=5.7.2',
                         'pyutilib', 'python-dateutil', 'networkx','jupyter',
                         'gridx-egret @ git+https://github.com/grid-parity-exchange/Egret.git'],
       dependency_links=['git+https://github.com/grid-parity-exchange/Egret.git#egg=gridx-egret'],
