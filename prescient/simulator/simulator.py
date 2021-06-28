@@ -60,10 +60,10 @@ class Simulator:
         self.stats_manager = stats_manager
         self.reporting_manager = reporting_manager
 
-        self.plugin_manager = prescient.plugins.get_active_plugin_manager()
-
 
     def simulate(self, options):
+
+        self.plugin_manager = prescient.plugins.get_active_plugin_manager()
 
         engine = self.engine
         time_manager = self.time_manager

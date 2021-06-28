@@ -18,6 +18,8 @@ from prescient.downloaders import rts_gmlc
 from prescient.scripts import runner
 from tests.simulator_tests import simulator_diff
 
+from prescient.simulator.prescient import Prescient
+
 this_file_path = os.path.dirname(os.path.realpath(__file__))
 
 class _SimulatorModRTSGMLC:
@@ -124,23 +126,59 @@ class _SimulatorModRTSGMLC:
             diff = df_a[column_name].equals(df_b[column_name])
             assert diff, f"Column: '{column_name}' of File: '{filename}.csv' diverges."
 
-class TestSimulatorModRTSGMLCNetwork(_SimulatorModRTSGMLC, unittest.TestCase):
-    def _set_names(self):
-        self.simulator_config_filename = 'simulate_with_network_deterministic.txt'
-        self.results_dir_name = 'deterministic_with_network_simulation_output'
-        self.baseline_dir_name = 'deterministic_with_network_simulation_output_baseline'
 
-class TestSimulatorModRTSGMLCCopperSheet(_SimulatorModRTSGMLC, unittest.TestCase):
-    def _set_names(self):
-        self.simulator_config_filename = 'simulate_deterministic.txt'
-        self.results_dir_name = 'deterministic_simulation_output'
-        self.baseline_dir_name = 'deterministic_simulation_output_baseline'
-        
 class TestSimulatorModRtsGmlcCopperSheet_csv(_SimulatorModRTSGMLC, unittest.TestCase):
     def _set_names(self):
         self.simulator_config_filename = 'simulate_deterministic_csv.txt'
         self.results_dir_name = 'deterministic_simulation_csv_output'
         self.baseline_dir_name = 'deterministic_simulation_output_baseline'
+
+# Python API tests
+base_options = {'simulate_out_of_sample':True,
+                'run_sced_with_persistent_forecast_errors':True,
+                'start_date':'07-10-2020',
+                'num_days': 7,
+                'sced_horizon':4,
+                'ruc_mipgap':0.0,
+                'reserve_factor':0.0,
+                'deterministic_ruc_solver':'cbc',
+                'deterministic_ruc_solver_options':["feas=off", "DivingF=on", "DivingP=on", "DivingG=on", "DivingS=on", "DivingL=on", "DivingV=on"],
+                'sced_solver':'cbc',
+                'sced_solver_options':["printingOptions=normal"],
+                'output_solver_logs':True,
+                'sced_frequency_minutes':60,
+                'ruc_horizon':36,
+                'enforce_sced_shutdown_ramprate':True,
+                'no_startup_shutdown_curves':True,
+               }
+
+class TestSimulatorModRtsGmlcCopperSheet_python(_SimulatorModRTSGMLC, unittest.TestCase):
+
+    def _set_names(self):
+        self.results_dir_name = 'deterministic_simulation_output_python'
+        self.baseline_dir_name = 'deterministic_simulation_output_baseline'
+
+    def _run_simulator(self):
+        os.chdir(self.test_cases_path)
+        options = {**base_options}
+        options['data_directory'] = 'deterministic_scenarios'
+        options['output_directory'] = 'deterministic_simulation_output_python'
+        options['plugin'] = 'test_plugin.py'
+        options['print_callback_message'] = True
+        Prescient().simulate(**options)
+
+class TestSimulatorModRtsGmlcNetwork_python(_SimulatorModRTSGMLC, unittest.TestCase):
+
+    def _set_names(self):
+        self.results_dir_name = 'deterministic_with_network_simulation_output_python'
+        self.baseline_dir_name = 'deterministic_with_network_simulation_output_baseline'
+
+    def _run_simulator(self):
+        os.chdir(self.test_cases_path)
+        options = {**base_options}
+        options['data_directory'] = 'deterministic_with_network_scenarios'
+        options['output_directory'] = 'deterministic_with_network_simulation_output_python'
+        Prescient().simulate(**options)
 
 if __name__ == '__main__':
     unittest.main()

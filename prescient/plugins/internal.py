@@ -10,6 +10,21 @@ pending_hourly_subscribers = []
 pending_daily_subscribers = []
 pending_overall_subscribers = []
 
+def clear_plugins():
+
+    global active_plugin_manager
+    active_plugin_manager = None
+
+    global pending_hourly_subscribers
+    pending_hourly_subscribers = []
+
+    global pending_daily_subscribers
+    pending_daily_subscribers = []
+
+    global pending_overall_subscribers
+    pending_overall_subscribers = []
+
+
 class PluginCallbackManager():
     '''
     Keeps track of what callback methods have been registered, and
@@ -62,3 +77,4 @@ class PluginCallbackManager():
         for s in pending_overall_subscribers:
             simulator.stats_manager.register_for_overall_stats(s)
         pending_overall_subscribers.clear()
+

@@ -11,12 +11,12 @@
 #                   prescient                      #
 ####################################################
 
-import traceback
 import sys
-import os
-import pyutilib
-import profile
-from . import config as Config
+
+import prescient.plugins.internal
+import prescient.simulator.config
+
+from .config import parse_args, PrescientConfig
 from .options import Options
 from .simulator import Simulator
 from .data_manager import DataManager
@@ -25,112 +25,79 @@ from .oracle_manager import OracleManager
 from .stats_manager import StatsManager
 from .reporting_manager import ReportingManager
 from prescient.stats.overall_stats import OverallStats
-import prescient.plugins 
-
 from prescient.engine.egret import EgretEngine as Engine
 
-try:
-    import pstats
-    pstats_available=True
-except ImportError:
-    pstats_available=False
+from pyutilib.misc import import_file
 
-def create_prescient(options: Options):
-    engine = Engine()
-    time_manager = TimeManager()
-    data_manager = DataManager()
-    oracle_manager = OracleManager()
-    stats_manager = StatsManager()
-    reporting_manager = ReportingManager()
-    prescient = Simulator(engine, time_manager, data_manager, oracle_manager, stats_manager, reporting_manager)
-    return prescient
+class Prescient(Simulator):
 
+    CONFIG = PrescientConfig
 
-def main_prescient(options: Options):
-    ans = None
+    def __init__(self):
 
-    if pstats_available and options.profile > 0:
-        #
-        # Call the main ef writer with profiling.
-        #
-        tfile = pyutilib.services.TempfileManager.create_tempfile(suffix=".profile")
-        tmp = profile.runctx('simulate(options)', globals(), locals(), tfile)
-        p = pstats.Stats(tfile).strip_dirs()
-        p.sort_stats('time', 'cumulative')
-        p = p.print_stats(options.profile)
-        p.print_callers(options.profile)
-        p.print_callees(options.profile)
-        p = p.sort_stats('cumulative', 'calls')
-        p.print_stats(options.profile)
-        p.print_callers(options.profile)
-        p.print_callees(options.profile)
-        p = p.sort_stats('calls')
-        p.print_stats(options.profile)
-        p.print_callers(options.profile)
-        p.print_callees(options.profile)
-        pyutilib.services.TempfileManager.clear_tempfiles()
-        ans = [tmp, None]
+        engine = Engine()
+        time_manager = TimeManager()
+        data_manager = DataManager()
+        oracle_manager = OracleManager()
+        stats_manager = StatsManager()
+        reporting_manager = ReportingManager()
 
-    else:
-        if options.traceback is True:
-            simulator = create_prescient(options)
-            ans = simulator.simulate(options)
+        self.simulate_called = False
+
+        super().__init__(engine, time_manager, data_manager, oracle_manager, stats_manager, reporting_manager)
+
+    def simulate(self, **options):
+        # coming from Python
+        # For safety, in case we re-run Prescient
+        # again in the same Python script
+        # (For the same reason, we don't accept options
+        #  in __init__ above.)
+        prescient.plugins.internal.clear_plugins()
+        prescient.simulator.config.clear_prescient_config()
+
+        if 'plugin' in options:
+            # parse using the Config
+            plugin_options = self.CONFIG({ 'plugin':options['plugin'] })
+            for plugin in plugin_options.plugin:
+                # importing the plugin will update
+                # both the global config and the
+                # global plugin registration
+                import_file(plugin)
+            # to reload after its changed by a plugin
+            from .config import PrescientConfig
+            options = PrescientConfig(options)
         else:
-            errmsg = None
-            try:
-                simulator = create_prescient(options)
-                ans = simulator.simulate(options)
-            except ValueError:
-                err = sys.exc_info()[1]
-                errmsg = 'VALUE ERROR: %s' % err
-            except KeyError:
-                err = sys.exc_info()[1]
-                errmsg = 'KEY ERROR: %s' % err
-            except TypeError:
-                err = sys.exc_info()[1]
-                errmsg = 'TYPE ERROR: %s' % err
-            except NameError:
-                err = sys.exc_info()[1]
-                errmsg = 'NAME ERROR: %s' % err
-            except IOError:
-                err = sys.exc_info()[1]
-                errmsg = 'I/O ERROR: %s' % err
-            #Can't find ConverterError? Commenting out for now.
-            #except ConverterError:
-                #err = sys.exc_info()[1]
-                #errmsg = 'CONVERSION ERROR: %s' % err
-            except RuntimeError:
-                err = sys.exc_info()[1]
-                errmsg = 'RUN-TIME ERROR: %s' % err
-            #pyutilib no attribute named common? Commenting out for now.
-            #except pyutilib.common.ApplicationError:
-                #err = sys.exc_info()[1]
-                #errmsg = 'APPLICATION ERROR: %s' % err
-            except Exception:
-                err = sys.exc_info()[1]
-                errmsg = 'UNKNOWN ERROR: %s' % err
-                traceback.print_exc()
+            options = self.CONFIG(options)
 
-            if errmsg is not None:
-                sys.stderr.write(errmsg + '\n')
+        return self._simulate(options)
 
-    return ans
+    def _simulate(self, options):
+        if self.simulate_called:
+            raise RuntimeError(f"Each instance of Prescient should only be used once. "
+                                "If you wish to simulate again create a new Prescient object.")
+        self.simulate_called = True
+        return super().simulate(options)
 
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
 
+    # For safety, in case we re-run Prescient
+    # again in the same Python script
+    prescient.plugins.internal.clear_plugins()
+    prescient.simulator.config.clear_prescient_config()
+
     #
     # Parse command-line options.
     #
     try:
-        options = Config.parse_args(args=args)
+        options = parse_args(args=args)
     except SystemExit:
         # the parser throws a system exit if "-h" is specified - catch
         # it to exit gracefully.
         return
 
-    main_prescient(options)
+    return Prescient()._simulate(options)
 
 # MAIN ROUTINE STARTS NOW #
 if __name__ == '__main__':

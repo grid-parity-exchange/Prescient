@@ -21,14 +21,14 @@ def add_custom_commandline_argument(*args, **kwargs) -> None:
     Alternatively, the user can modify Prescient's main pyomo.commn.config.ConfigDict
     by importing it:
     ```
-    from prescient.simulator.config import simulator_config
+    from prescient.simulator.config import PrescientConfig
     ```
     and modifying it directly. See
     https://pyomo.readthedocs.io/en/latest/developer_reference/config.html
     for more details on using Pyomo's configuration system.
     '''
-    from prescient.simulator.config import simulator_config
-    simulator_config.declare(*args, **kwargs).declare_as_argument()
+    from prescient.simulator.config import PrescientConfig
+    PrescientConfig.declare(*args, **kwargs).declare_as_argument()
 
 def register_for_hourly_stats(callback: Callable[[HourlyStats], None]) -> None:
     '''
