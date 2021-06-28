@@ -13,7 +13,6 @@ command/exec simulator.py
 --sced-solver=cbc
 --sced-frequency-minutes=60
 --ruc-horizon=36
---traceback
 --enforce-sced-shutdown-ramprate
 --no-startup-shutdown-curves
 --plugin=test_plugin.py
