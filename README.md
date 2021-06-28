@@ -7,7 +7,7 @@ Code base for Prescient production cost model / scenario generation / prediction
 
 ### Requirements
 * Python 3.7 or later
-* Pyomo 5.7.1 or later
+* Pyomo 5.7.2 or later
 * EGRET
 * A mixed-integer linear programming (MILP) solver
   * Open source: CBC, GLPK, SCIP, ...
