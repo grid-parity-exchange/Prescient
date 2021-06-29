@@ -9,7 +9,7 @@ command/exec simulator.py
 --ruc-mipgap=0.00
 --reserve-factor=0.0 
 --deterministic-ruc-solver=cbc
---deterministic-ruc-solver-options="feas=off DivingG=on"
+--deterministic-ruc-solver-options="feas=off DivingG=on DivingF=on DivingP=on DivingS=on DivingL=on DivingV=on"
 --sced-solver=cbc
 --sced-frequency-minutes=60
 --ruc-horizon=36
