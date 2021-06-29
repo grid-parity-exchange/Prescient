@@ -18,7 +18,7 @@ from prescient.downloaders import rts_gmlc
 from prescient.scripts import runner
 from tests.simulator_tests import simulator_diff
 
-from prescient.simulator.prescient import Prescient
+from prescient.simulator import Prescient
 
 this_file_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -126,11 +126,11 @@ class _SimulatorModRTSGMLC:
             diff = df_a[column_name].equals(df_b[column_name])
             assert diff, f"Column: '{column_name}' of File: '{filename}.csv' diverges."
 
-
-class TestSimulatorModRtsGmlcCopperSheet_csv(_SimulatorModRTSGMLC, unittest.TestCase):
+# test runner.py with plugin
+class TestSimulatorModRtsGmlcCopperSheet(_SimulatorModRTSGMLC, unittest.TestCase):
     def _set_names(self):
-        self.simulator_config_filename = 'simulate_deterministic_csv.txt'
-        self.results_dir_name = 'deterministic_simulation_csv_output'
+        self.simulator_config_filename = 'simulate_deterministic.txt'
+        self.results_dir_name = 'deterministic_simulation_output'
         self.baseline_dir_name = 'deterministic_simulation_output_baseline'
 
 # Python API tests
@@ -152,6 +152,19 @@ base_options = {'simulate_out_of_sample':True,
                 'no_startup_shutdown_curves':True,
                }
 
+# test csv / text file configuration
+class TestSimulatorModRtsGmlcCopperSheet_csv_python_config_file(_SimulatorModRTSGMLC, unittest.TestCase):
+    def _set_names(self):
+        self.simulator_config_filename = 'simulate_deterministic_csv.txt'
+        self.results_dir_name = 'deterministic_simulation_csv_output'
+        self.baseline_dir_name = 'deterministic_simulation_output_baseline'
+
+    def _run_simulator(self):
+        os.chdir(self.test_cases_path)
+        options = {'config_file' : self.simulator_config_filename}
+        Prescient().simulate(**options)
+
+# test plugin with Python and *.dat files
 class TestSimulatorModRtsGmlcCopperSheet_python(_SimulatorModRTSGMLC, unittest.TestCase):
 
     def _set_names(self):
@@ -167,6 +180,7 @@ class TestSimulatorModRtsGmlcCopperSheet_python(_SimulatorModRTSGMLC, unittest.T
         options['print_callback_message'] = True
         Prescient().simulate(**options)
 
+# test options are correctly re-freshed, Python, and network
 class TestSimulatorModRtsGmlcNetwork_python(_SimulatorModRTSGMLC, unittest.TestCase):
 
     def _set_names(self):

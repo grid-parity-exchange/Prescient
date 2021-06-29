@@ -24,6 +24,7 @@ from .time_manager import TimeManager
 from .oracle_manager import OracleManager
 from .stats_manager import StatsManager
 from .reporting_manager import ReportingManager
+from prescient.scripts import runner
 from prescient.stats.overall_stats import OverallStats
 from prescient.engine.egret import EgretEngine as Engine
 
@@ -55,7 +56,16 @@ class Prescient(Simulator):
         prescient.plugins.internal.clear_plugins()
         prescient.simulator.config.clear_prescient_config()
 
-        if 'plugin' in options:
+        if 'config_file' in options:
+            config_file = options.pop('config_file')
+            if options:
+                raise RuntimeError(f"If using a config_file, all options must be specified in the configuration file")
+            script, config_options = runner.parse_commands(config_file)
+            if script != 'simulator.py':
+                raise RuntimeError(f"config_file must be a simulator configuration text file, got {script}")
+            options = parse_args(args=config_options)
+
+        elif 'plugin' in options:
             # parse using the Config
             plugin_options = self.CONFIG({ 'plugin':options['plugin'] })
             for plugin in plugin_options.plugin:
