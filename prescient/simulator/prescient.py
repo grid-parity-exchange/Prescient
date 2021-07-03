@@ -16,7 +16,7 @@ import sys
 import prescient.plugins.internal
 import prescient.simulator.config
 
-from .config import parse_args, PrescientConfig
+from .config import PrescientConfig
 from .options import Options
 from .simulator import Simulator
 from .data_manager import DataManager
@@ -25,16 +25,15 @@ from .oracle_manager import OracleManager
 from .stats_manager import StatsManager
 from .reporting_manager import ReportingManager
 from prescient.scripts import runner
-from prescient.stats.overall_stats import OverallStats
 from prescient.engine.egret import EgretEngine as Engine
 
 from pyutilib.misc import import_file
 
 class Prescient(Simulator):
 
-    CONFIG = PrescientConfig
-
     def __init__(self):
+
+        self.config = PrescientConfig()
 
         engine = Engine()
         time_manager = TimeManager()
@@ -45,17 +44,11 @@ class Prescient(Simulator):
 
         self.simulate_called = False
 
-        super().__init__(engine, time_manager, data_manager, oracle_manager, stats_manager, reporting_manager)
+        super().__init__(engine, time_manager, data_manager, oracle_manager, 
+                         stats_manager, reporting_manager, 
+                         self.config.plugin_context.callback_manager)
 
     def simulate(self, **options):
-        # coming from Python
-        # For safety, in case we re-run Prescient
-        # again in the same Python script
-        # (For the same reason, we don't accept options
-        #  in __init__ above.)
-        prescient.plugins.internal.clear_plugins()
-        prescient.simulator.config.clear_prescient_config()
-
         if 'config_file' in options:
             config_file = options.pop('config_file')
             if options:
@@ -63,25 +56,14 @@ class Prescient(Simulator):
             script, config_options = runner.parse_commands(config_file)
             if script != 'simulator.py':
                 raise RuntimeError(f"config_file must be a simulator configuration text file, got {script}")
-            options = parse_args(args=config_options)
+            self.config.parse_args(args=config_options)
 
-        elif 'plugin' in options:
-            # parse using the Config
-            plugin_options = self.CONFIG({ 'plugin':options['plugin'] })
-            for plugin in plugin_options.plugin:
-                # importing the plugin will update
-                # both the global config and the
-                # global plugin registration
-                import_file(plugin)
-            # to reload after its changed by a plugin
-            from .config import PrescientConfig
-            options = PrescientConfig(options)
         else:
-            options = self.CONFIG(options)
+            self.config.set_value(options)
 
-        return self._simulate(options)
+        return self._simulate(self.config)
 
-    def _simulate(self, options):
+    def _simulate(self, options: PrescientConfig):
         if self.simulate_called:
             raise RuntimeError(f"Each instance of Prescient should only be used once. "
                                 "If you wish to simulate again create a new Prescient object.")
@@ -92,22 +74,15 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
 
-    # For safety, in case we re-run Prescient
-    # again in the same Python script
-    prescient.plugins.internal.clear_plugins()
-    prescient.simulator.config.clear_prescient_config()
-
-    #
-    # Parse command-line options.
-    #
     try:
-        options = parse_args(args=args)
+        p = Prescient()
+        p.config.parse_args(args)
     except SystemExit:
         # the parser throws a system exit if "-h" is specified - catch
         # it to exit gracefully.
         return
 
-    return Prescient()._simulate(options)
+    return p.simulate()
 
 # MAIN ROUTINE STARTS NOW #
 if __name__ == '__main__':
