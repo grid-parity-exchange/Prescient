@@ -10,15 +10,18 @@
 ## Abstract classes which define a simulation
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .internal import PluginCallbackManager
+    from .reporting_manager import ReportingManager
+
 import os
 
 from .time_manager import TimeManager
 from .data_manager import DataManager
 from prescient.engine.modeling_engine import ModelingEngine
 from .oracle_manager import OracleManager
-from .reporting_manager import ReportingManager
 from .stats_manager import StatsManager
-import prescient.plugins
 
 ## simulator class
 class Simulator:
@@ -28,7 +31,8 @@ class Simulator:
                        data_manager: DataManager,
                        oracle_manager: OracleManager,
                        stats_manager: StatsManager,
-                       reporting_manager: ReportingManager
+                       reporting_manager: ReportingManager,
+                       plugin_manager: PluginCallbackManager
                        ):
 
         print("Initializing simulation...")
@@ -59,11 +63,10 @@ class Simulator:
         self.oracle_manager = oracle_manager
         self.stats_manager = stats_manager
         self.reporting_manager = reporting_manager
+        self.plugin_manager = plugin_manager
 
 
     def simulate(self, options):
-
-        self.plugin_manager = prescient.plugins.get_active_plugin_manager()
 
         engine = self.engine
         time_manager = self.time_manager
@@ -105,7 +108,7 @@ class Simulator:
 
         stats_manager.end_simulation()
 
-        self.plugin_manager.invoke_finalization_callbacks(options, self)
+        self.callback_manager.invoke_finalization_callbacks(options, self)
 
         print("Simulation Complete")
         import time
