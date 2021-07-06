@@ -36,21 +36,15 @@ prescient_solvers += ["cbc", "glpk"]
 
 class PrescientConfig(ConfigDict):
 
+    __slots__ = ("plugin_context",)
+
     def __init__(self):
         ##########################
         #   CHAIN ONLY OPTIONS   #
         ##########################
         super().__init__()
 
-        # I want to do this:
-        # self.plugin_context = PluginRegistrationContext()
-        # but since I can't figure out how...
-        self.declare("plugin_context", ConfigValue(
-            domain=None,
-            default=PluginRegistrationContext(),
-            description="The object that will handle plugin registration",
-            visibility=100
-        ))
+        self.plugin_context = PluginRegistrationContext()
 
         # We put this first so that plugins will be registered before any other
         # options are applied, which lets them add custom command line options 
@@ -103,14 +97,14 @@ class PrescientConfig(ConfigDict):
             domain=str,
             default=None,
             description="If the user has an alternative methods for the various simulator functions,"
-                        " they should be specified here, e.g., prescient.plugin.my_special_plugin.",
+                        " they should be specified here, e.g., my_special_plugin.py.",
         )).declare_as_argument()
 
         self.declare("deterministic_ruc_solver_plugin", ConfigValue(
             domain=str,
             default=None,
             description="If the user has an alternative method to solve the deterministic RUCs,"
-                        " it should be specified here, e.g., prescient.plugin.my_special_plugin."
+                        " it should be specified here, e.g., my_special_plugin.py."
                         " NOTE: This option is ignored if --simulator-plugin is used."
         )).declare_as_argument()
 
@@ -351,6 +345,12 @@ class PrescientConfig(ConfigDict):
             description="Disable stackgraph generation",
         )).declare_as_argument()
 
+    def __setattr__(self, name, value):
+        if name in PrescientConfig.__slots__:
+            super(ConfigDict, self).__setattr__(name, value)
+        else:
+            ConfigDict.__setattr__(self, name, value)
+
     def parse_args(self, args: List[str]) -> ConfigDict:
         parser = _construct_options_parser(self)
         args = parser.parse_args(args=args)
@@ -450,5 +450,5 @@ class _PluginPath(Path):
 
 
 if __name__ == '__main__':
-    print("master_options.py cannot run from the command line.")
+    print("config.py cannot run from the command line.")
     sys.exit(1)
