@@ -239,15 +239,15 @@ class PrescientConfig(ConfigDict):
             description="The name of the Pyomo solver for RUCs",
         )).declare_as_argument()
 
-        self.declare("sced_solver_options", ConfigList(
-            domain=str,
-            default=[],
+        self.declare("sced_solver_options", ConfigValue(
+            domain=SolverOptions(),
+            default=None,
             description="Solver options applied to all SCED solves",
         )).declare_as_argument()
 
-        self.declare("deterministic_ruc_solver_options", ConfigList(
-            domain=str,
-            default=[],
+        self.declare("deterministic_ruc_solver_options", ConfigValue(
+            domain=SolverOptions(),
+            default=None,
             description="Solver options applied to all deterministic RUC solves",
         )).declare_as_argument()
 
@@ -448,6 +448,27 @@ class _PluginPath(Path):
         self.config.plugin_context.register_plugin(path, self.config)
         return path
 
+class SolverOptions:
+    ''' A basic solver options validator.
+        Converts string options into a dictionary;
+        otherwise requires a dictionary.
+    '''
+    def __call__(self, data):
+        if isinstance(data, str):
+            ans = {}
+            opts = data.split(' ')
+            for opt in opts:
+                option, val = opt.split('=')
+                try:
+                    val = float(val)
+                except:
+                    pass
+                ans[option] = val
+        elif isinstance(data, dict):
+            ans = data
+        else:
+            raise ValueError("Solver options must be a string or dictionary")
+        return ans
 
 if __name__ == '__main__':
     print("config.py cannot run from the command line.")

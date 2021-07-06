@@ -51,20 +51,9 @@ def call_solver(solver,instance,options,solver_options,relaxed=False, set_instan
     symbolic_solver_labels = options.symbolic_solver_labels
     mipgap = options.ruc_mipgap
 
-    solver_options_dict = dict()
-    for s in solver_options:
-        opts = s.split(' ')
-        for opt in opts:
-            option, val = opt.split('=')
-            try:
-                val = float(val)
-            except:
-                pass
-            solver_options_dict[option] = val
-
     m, results, solver = _solve_unit_commitment(instance, solver, mipgap, None,
                                                 tee, symbolic_solver_labels, 
-                                                solver_options_dict, None, relaxed, set_instance=set_instance)
+                                                solver_options, None, relaxed, set_instance=set_instance)
 
     md = _save_uc_results(m, relaxed)
 
