@@ -14,8 +14,7 @@ if TYPE_CHECKING:
     from typing import Dict, Any
 
 import os.path
-from datetime import datetime, date, timedelta
-import dateutil.parser
+from datetime import datetime, timedelta
 import copy
 
 from egret.parsers import rts_gmlc_parser as parser
@@ -29,7 +28,8 @@ class GmlcDataProvider(DataProvider):
     '''
 
     def __init__(self, options:Options):
-        self._start_time = dateutil.parser.parse(options.start_date)
+                                            # midnight start
+        self._start_time = datetime.combine(options.start_date, datetime.min.time())
         self._end_time = self._start_time + timedelta(days=options.num_days)
         self._cache = parser.parse_to_cache(options.data_directory, self._start_time, self._end_time)
 

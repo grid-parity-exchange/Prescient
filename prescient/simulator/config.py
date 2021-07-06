@@ -13,9 +13,11 @@
 
 from __future__ import annotations
 import sys
-from typing import List
+import dateutil.parser
 
+from typing import List
 from argparse import ArgumentParser
+from datetime import date, datetime
 from pyutilib.misc import import_file
 from pyomo.common.config import (ConfigDict,
                                  ConfigValue,
@@ -56,7 +58,7 @@ class PrescientConfig(ConfigDict):
         )).declare_as_argument()
 
         self.declare("start_date", ConfigValue(
-            domain=str,
+            domain=_StartDate,
             default="01-01-2020",
             description="The start date for the simulation - specified in MM-DD-YYYY format. "
                         "Defaults to 01-01-2020.",
@@ -240,13 +242,13 @@ class PrescientConfig(ConfigDict):
         )).declare_as_argument()
 
         self.declare("sced_solver_options", ConfigValue(
-            domain=_SolverOptions(),
+            domain=_SolverOptions,
             default=None,
             description="Solver options applied to all SCED solves",
         )).declare_as_argument()
 
         self.declare("deterministic_ruc_solver_options", ConfigValue(
-            domain=_SolverOptions(),
+            domain=_SolverOptions,
             default=None,
             description="Solver options applied to all deterministic RUC solves",
         )).declare_as_argument()
@@ -448,27 +450,44 @@ class _PluginPath(Path):
         self.config.plugin_context.register_plugin(path, self.config)
         return path
 
-class _SolverOptions:
+def _StartDate(data):
+    ''' A basic start date validator/converter
+    '''
+    if isinstance(data, date):
+        return data
+    elif isinstance(data, datetime):
+        if data.hour != 0 or data.minute != 0:
+            print(f"WARNING: Prescient simulations always begin a midnight; ignoring time {data.time()}")
+        return data.date()
+    try:
+        ans = dateutil.parser.parse(data).date()
+    except ValueError:
+        print(f"***ERROR: Illegally formatted start date={data} supplied!")
+        raise
+    return ans
+
+def _SolverOptions(data):
     ''' A basic solver options validator.
         Converts string options into a dictionary;
         otherwise requires a dictionary.
     '''
-    def __call__(self, data):
-        if isinstance(data, str):
-            ans = {}
-            opts = data.split(' ')
-            for opt in opts:
-                option, val = opt.split('=')
-                try:
-                    val = float(val)
-                except:
-                    pass
-                ans[option] = val
-        elif isinstance(data, dict):
-            ans = data
-        else:
-            raise ValueError("Solver options must be a string or dictionary")
+    if isinstance(data, str):
+        ans = {}
+        opts = data.split(' ')
+        for opt in opts:
+            option, val = opt.split('=')
+            try:
+                val = float(val)
+            except:
+                pass
+            ans[option] = val
         return ans
+    elif isinstance(data, dict):
+        return data
+    elif data is None:
+        return data
+    else:
+        raise ValueError("Solver options must be a string or dictionary")
 
 if __name__ == '__main__':
     print("config.py cannot run from the command line.")
