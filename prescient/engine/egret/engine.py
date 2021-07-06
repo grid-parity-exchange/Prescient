@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 import os
 import pyomo.environ as pe
 
+from pyomo.common.fileutils import import_file
 from prescient.engine.modeling_engine import ModelingEngine, ForecastErrorMethod
 from prescient.simulator.data_manager import RucMarket
 from prescient.simulator.config import prescient_solvers, prescient_persistent_solvers
@@ -446,7 +447,7 @@ class EgretEngine(ModelingEngine):
 
             if options.simulator_plugin != None:
                 try:
-                    simulator_plugin_module = pyutilib.misc.import_file(options.simulator_plugin)
+                    simulator_plugin_module = import_file(options.simulator_plugin)
                 except:
                     raise RuntimeError("Could not locate simulator plugin module=%s" % options.simulator_plugin)
 
@@ -468,7 +469,7 @@ class EgretEngine(ModelingEngine):
 
             elif options.deterministic_ruc_solver_plugin != None:
                 try:
-                    solver_plugin_module = pyutilib.misc.import_file(options.deterministic_ruc_solver_plugin)
+                    solver_plugin_module = import_file(options.deterministic_ruc_solver_plugin)
                 except:
                     raise RuntimeError("Could not locate simulator plugin module=%s" % options.simulator_plugin)
 

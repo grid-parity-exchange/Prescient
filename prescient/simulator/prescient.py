@@ -27,8 +27,6 @@ from .reporting_manager import ReportingManager
 from prescient.scripts import runner
 from prescient.engine.egret import EgretEngine as Engine
 
-from pyutilib.misc import import_file
-
 class Prescient(Simulator):
 
     def __init__(self):

@@ -18,7 +18,7 @@ import dateutil.parser
 from typing import List
 from argparse import ArgumentParser
 from datetime import date, datetime
-from pyutilib.misc import import_file
+from pyomo.common.fileutils import import_file
 from pyomo.common.config import (ConfigDict,
                                  ConfigValue,
                                  ConfigList,
