@@ -24,6 +24,11 @@ class ForecastErrorMethod(Enum):
     PRESCIENT = auto()
     PERSISTENT = auto()
 
+class PricingType(Enum):
+    LMP= auto()
+    ELMP = auto()
+    ACHP = auto()
+
 class ModelingEngine(ABC):
     '''
     Provides model manipulation and solving capabilities

@@ -13,15 +13,18 @@ if TYPE_CHECKING:
     from prescient.simulator.options import Options
     from .data_provider import DataProvider
 
-valid_input_formats = ('rts-gmlc',
-                       'dat')
+from enum import Enum, auto
+
+class InputFormats(Enum):
+    RTS_GMLC = auto()
+    DAT = auto()
 
 def get_data_provider(options:Options) -> DataProvider:
-    if options.input_format == 'rts-gmlc':
+    if options.input_format == InputFormats.RTS_GMLC:
         from .providers.gmlc_data_provider import GmlcDataProvider
         return GmlcDataProvider(options)
 
-    elif options.input_format == 'dat':
+    elif options.input_format == InputFormats.DAT:
         from .providers.dat_data_provider import DatDataProvider
         return DatDataProvider(options)
 

@@ -23,6 +23,7 @@ from pyomo.common.config import (ConfigDict,
                                  ConfigValue,
                                  ConfigList,
                                  In,
+                                 InEnum,
                                  PositiveInt,
                                  NonNegativeInt,
                                  PositiveFloat,
@@ -31,6 +32,8 @@ from pyomo.common.config import (ConfigDict,
                                 )
 
 from prescient.plugins import PluginRegistrationContext
+from prescient.data.data_provider_factory import InputFormats
+from prescient.engine.modeling_engine import PricingType
 
 prescient_persistent_solvers = ("cplex", "gurobi", "xpress")
 prescient_solvers = [ s+sa for sa in ["", "_direct", "_persistent"] for s in prescient_persistent_solvers ]
@@ -90,7 +93,7 @@ class PrescientConfig(ConfigDict):
         )).declare_as_argument()
 
         self.declare("input_format", ConfigValue(
-            domain=In(["dat", "rts-gmlc"]),
+            domain=_InEnumStr(InputFormats),
             default="dat",
             description="Indicate the format input data is in",
         )).declare_as_argument()
@@ -291,7 +294,7 @@ class PrescientConfig(ConfigDict):
         )).declare_as_argument()
 
         self.declare("day_ahead_pricing", ConfigValue(
-            domain=In(["LMP", "EMLP", "aCHP"]),
+            domain=_InEnumStr(PricingType),
             default="aCHP",
             description="Choose the pricing mechanism for the day-ahead market. Choices are "
                         "LMP -- locational marginal price, "
@@ -449,6 +452,14 @@ class _PluginPath(Path):
         path = super().__call__(data)
         self.config.plugin_context.register_plugin(path, self.config)
         return path
+
+class _InEnumStr(InEnum):
+    ''' A bit more forgiving string to enum parser
+    '''
+    def __call__(self, value):
+        if isinstance(value, str):
+            value = value.replace('-', '_').upper()
+        return super().__call__(value)
 
 def _StartDate(data):
     ''' A basic start date validator/converter

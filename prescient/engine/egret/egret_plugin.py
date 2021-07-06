@@ -26,7 +26,7 @@ from egret.models.unit_commitment import _time_series_dict, _preallocated_list, 
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
 from prescient.simulator.data_manager import RucMarket
-from ..modeling_engine import ForecastErrorMethod
+from ..modeling_engine import ForecastErrorMethod, PricingType
 from ..forecast_helper import get_forecastables, get_forecastables_with_inferral_method, InferralType
 from . import reporting
 
@@ -442,16 +442,16 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
     ## create a copy because we want to maintain the solution data
     ## in ruc_results
     pricing_type = options.day_ahead_pricing
-    print("Computing day-ahead prices using method "+pricing_type+".")
+    print("Computing day-ahead prices using method "+pricing_type.name+".")
     
     pricing_instance = ruc_results.clone()
-    if pricing_type == "LMP":
+    if pricing_type == PricingType.LMP:
         for g, g_dict in pricing_instance.elements(element_type='generator', generator_type='thermal'):
             g_dict['fixed_commitment'] = g_dict['commitment']
             if 'reg_provider' in g_dict:
                 g_dict['fixed_regulation'] = g_dict['reg_provider']
         ## TODO: add fixings for storage; need hooks in EGRET
-    elif pricing_type == "ELMP":
+    elif pricing_type == PricingType.ELMP:
         ## for ELMP we fix all commitment binaries that were 0 in the RUC solve
         time_periods = pricing_instance.data['system']['time_keys']
         for g, g_dict in pricing_instance.elements(element_type='generator', generator_type='thermal'):
@@ -461,7 +461,7 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
                 g_dict['fixed_regulation'] = _get_fixed_if_off(g_dict['reg_provider'],
                                                                g_dict.get('fixed_regulation', None))
         ## TODO: add fixings for storage; need hooks in EGRET
-    elif pricing_type == "aCHP":
+    elif pricing_type == PricingType.ACHP:
         # don't do anything
         pass
     else:
