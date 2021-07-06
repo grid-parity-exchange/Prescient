@@ -69,7 +69,7 @@ class PrescientConfig(ConfigDict):
         )).declare_as_argument()
 
         self.declare("output_directory", ConfigValue(
-            domain=str,
+            domain=Path(),
             default="outdir",
             description="The root directory to which all of the generated simulation files and "
                         "associated data are written.",
@@ -82,7 +82,7 @@ class PrescientConfig(ConfigDict):
         # # PRESCIENT_INPUT_OPTIONS
 
         self.declare("data_directory", ConfigValue(
-            domain=str,
+            domain=Path(),
             default="input_data",
             description="Specifies the directory to pull data from",
         )).declare_as_argument()
@@ -94,14 +94,14 @@ class PrescientConfig(ConfigDict):
         )).declare_as_argument()
 
         self.declare("simulator_plugin", ConfigValue(
-            domain=str,
+            domain=Path(),
             default=None,
             description="If the user has an alternative methods for the various simulator functions,"
                         " they should be specified here, e.g., my_special_plugin.py.",
         )).declare_as_argument()
 
         self.declare("deterministic_ruc_solver_plugin", ConfigValue(
-            domain=str,
+            domain=Path(),
             default=None,
             description="If the user has an alternative method to solve the deterministic RUCs,"
                         " it should be specified here, e.g., my_special_plugin.py."
@@ -240,13 +240,13 @@ class PrescientConfig(ConfigDict):
         )).declare_as_argument()
 
         self.declare("sced_solver_options", ConfigValue(
-            domain=SolverOptions(),
+            domain=_SolverOptions(),
             default=None,
             description="Solver options applied to all SCED solves",
         )).declare_as_argument()
 
         self.declare("deterministic_ruc_solver_options", ConfigValue(
-            domain=SolverOptions(),
+            domain=_SolverOptions(),
             default=None,
             description="Solver options applied to all deterministic RUC solves",
         )).declare_as_argument()
@@ -448,7 +448,7 @@ class _PluginPath(Path):
         self.config.plugin_context.register_plugin(path, self.config)
         return path
 
-class SolverOptions:
+class _SolverOptions:
     ''' A basic solver options validator.
         Converts string options into a dictionary;
         otherwise requires a dictionary.
