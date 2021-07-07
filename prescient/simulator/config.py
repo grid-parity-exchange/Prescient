@@ -12,12 +12,15 @@
 ####################################################
 
 from __future__ import annotations
+
 import sys
 import dateutil.parser
 
 from typing import List
 from argparse import ArgumentParser
 from datetime import date, datetime
+from shlex import shlex
+
 from pyomo.common.fileutils import import_file
 from pyomo.common.config import (ConfigDict,
                                  ConfigValue,
@@ -478,28 +481,40 @@ def _StartDate(data):
         print(f"WARNING: Prescient simulations always begin a midnight; ignoring time {data.time()}")
     return data.date()
 
+def _try_float(v):
+    try:
+        return float(v)
+    except:
+        return v
+
 def _SolverOptions(data):
     ''' A basic solver options validator.
         Converts string options into a dictionary;
         otherwise requires a dictionary.
     '''
+    if (data is None) or isinstance(data, dict):
+        return data
+
     if isinstance(data, str):
-        ans = {}
-        opts = data.split(' ')
-        for opt in opts:
-            option, val = opt.split('=')
-            try:
-                val = float(val)
-            except:
-                pass
-            ans[option] = val
-        return ans
-    elif isinstance(data, dict):
-        return data
-    elif data is None:
-        return data
-    else:
-        raise ValueError("Solver options must be a string or dictionary")
+        # idea borrowed from stack overflow:
+        # https://stackoverflow.com/questions/38737250/extracting-key-value-pairs-from-string-with-quotes
+        s = shlex(data, posix=True)
+
+        # add ',' as whitespace for separation
+        # was not supported before, but is easy and useful
+        # other whitespace is ' ', '\t', '\r', '\n'
+        # Spaces in options need to be escaped
+        s.whitespace += ','
+
+        # keep key=value pairs together
+        s.wordchars += '='
+
+        # maxsplit keeps = in value together
+        # (definitely an edge case and is probably nonsensical)
+        data_iter = (w.split('=', maxsplit=1) for w in s)
+        return { k : _try_float(v) for k,v in data_iter }
+
+    raise ValueError("Solver options must be a string or dictionary")
 
 if __name__ == '__main__':
     print("config.py cannot run from the command line.")
