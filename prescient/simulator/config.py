@@ -466,16 +466,17 @@ def _StartDate(data):
     '''
     if isinstance(data, date):
         return data
-    elif isinstance(data, datetime):
-        if data.hour != 0 or data.minute != 0:
-            print(f"WARNING: Prescient simulations always begin a midnight; ignoring time {data.time()}")
-        return data.date()
-    try:
-        ans = dateutil.parser.parse(data).date()
-    except ValueError:
-        print(f"***ERROR: Illegally formatted start date={data} supplied!")
-        raise
-    return ans
+    if isinstance(data, str):
+        try:
+            data = dateutil.parser.parse(data)
+        except ValueError:
+            print(f"***ERROR: Illegally formatted start date={data} supplied!")
+            raise
+    if not isinstance(data, datetime):
+        raise ValueError("start_date must be a string, datetime.date, or datetime.datetime")
+    if data.hour != 0 or data.minute != 0:
+        print(f"WARNING: Prescient simulations always begin a midnight; ignoring time {data.time()}")
+    return data.date()
 
 def _SolverOptions(data):
     ''' A basic solver options validator.
