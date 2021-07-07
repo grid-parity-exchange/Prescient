@@ -24,7 +24,6 @@ base_options = [
                 '--model-directory=..|..|prescient|models|tight',
                 '--run-deterministic-ruc',
                 '--sced-horizon=4',
-                '--traceback',
                 '--random-seed=10',
                 '--output-max-decimal-places=4',
                 '--output-sced-initial-conditions',

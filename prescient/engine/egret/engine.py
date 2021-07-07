@@ -18,8 +18,10 @@ if TYPE_CHECKING:
 import os
 import pyomo.environ as pe
 
+from pyomo.common.fileutils import import_file
 from prescient.engine.modeling_engine import ModelingEngine, ForecastErrorMethod
 from prescient.simulator.data_manager import RucMarket
+from prescient.simulator.config import prescient_solvers, prescient_persistent_solvers
 import prescient.data.data_provider_factory as data_provider_factory
 
 from .data_extractors import ScedDataExtractor, RucDataExtractor
@@ -374,20 +376,16 @@ class EgretEngine(ModelingEngine):
         def _get_solver_list(name):
             return [ name+s for s in ['', '_direct', '_persistent']]
 
-        supported_solvers = _get_solver_list('xpress') + \
-                            _get_solver_list('gurobi') + \
-                            _get_solver_list('cplex') + \
-                            ['cbc', 'glpk']
+        supported_solvers = prescient_solvers
+        supported_persistent_solvers = prescient_persistent_solvers
 
-        supported_persistent_solvers = ('xpress', 'gurobi', 'cplex')
+        if options.deterministic_ruc_solver not in supported_solvers:
+            raise RuntimeError("Unknown solver type=%s specified" % options.deterministic_ruc_solver)
+        if options.sced_solver not in supported_solvers:
+            raise RuntimeError("Unknown solver type=%s specified" % options.deterministic_ruc_solver)
 
-        if options.deterministic_ruc_solver_type not in supported_solvers:
-            raise RuntimeError("Unknown solver type=%s specified" % options.deterministic_ruc_solver_type)
-        if options.sced_solver_type not in supported_solvers:
-            raise RuntimeError("Unknown solver type=%s specified" % options.deterministic_ruc_solver_type)
-
-        self._ruc_solver = options.deterministic_ruc_solver_type
-        self._sced_solver = options.sced_solver_type
+        self._ruc_solver = options.deterministic_ruc_solver
+        self._sced_solver = options.sced_solver
 
         if self._ruc_solver in supported_persistent_solvers:
             try:
@@ -449,7 +447,7 @@ class EgretEngine(ModelingEngine):
 
             if options.simulator_plugin != None:
                 try:
-                    simulator_plugin_module = pyutilib.misc.import_file(options.simulator_plugin)
+                    simulator_plugin_module = import_file(options.simulator_plugin)
                 except:
                     raise RuntimeError("Could not locate simulator plugin module=%s" % options.simulator_plugin)
 
@@ -471,7 +469,7 @@ class EgretEngine(ModelingEngine):
 
             elif options.deterministic_ruc_solver_plugin != None:
                 try:
-                    solver_plugin_module = pyutilib.misc.import_file(options.deterministic_ruc_solver_plugin)
+                    solver_plugin_module = import_file(options.deterministic_ruc_solver_plugin)
                 except:
                     raise RuntimeError("Could not locate simulator plugin module=%s" % options.simulator_plugin)
 

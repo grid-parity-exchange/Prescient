@@ -16,7 +16,6 @@ from egret.data.model_data import ModelData as EgretModel
 
 import os.path
 from datetime import datetime, date, timedelta
-import dateutil.parser
 import copy
 
 from typing import TYPE_CHECKING
@@ -34,7 +33,7 @@ class DatDataProvider():
                                                      "pyspdir_twostage")
         self._actuals_by_date = {}
         self._forecasts_by_date = {}
-        self._first_day = dateutil.parser.parse(options.start_date).date()
+        self._first_day = options.start_date
         self._final_day = self._first_day + timedelta(days=options.num_days-1)
 
     def negotiate_data_frequency(self, desired_frequency_minutes:int):

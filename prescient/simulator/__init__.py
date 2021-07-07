@@ -14,3 +14,4 @@ from .reporting_manager import ReportingManager
 from .stats_manager import StatsManager
 from .time_manager import TimeManager
 from .options import Options
+from .prescient import Prescient

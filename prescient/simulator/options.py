@@ -11,7 +11,7 @@
 # If we ever change options parsers, we can change the options type once here instead of
 # changing it everywhere.
 
-import argparse
+from .config import PrescientConfig
 
-Options = argparse.Namespace
+Options = PrescientConfig
 

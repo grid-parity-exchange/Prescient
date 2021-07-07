@@ -11,12 +11,12 @@
 #                   prescient                      #
 ####################################################
 
-import traceback
 import sys
-import os
-import pyutilib
-import profile
-from . import master_options as MasterOptions
+
+import prescient.plugins.internal
+import prescient.simulator.config
+
+from .config import PrescientConfig
 from .options import Options
 from .simulator import Simulator
 from .data_manager import DataManager
@@ -24,114 +24,63 @@ from .time_manager import TimeManager
 from .oracle_manager import OracleManager
 from .stats_manager import StatsManager
 from .reporting_manager import ReportingManager
-from prescient.stats.overall_stats import OverallStats
-import prescient.plugins 
-
+from prescient.scripts import runner
 from prescient.engine.egret import EgretEngine as Engine
 
-try:
-    import pstats
-    pstats_available=True
-except ImportError:
-    pstats_available=False
+class Prescient(Simulator):
 
-def create_prescient(options: Options):
-    engine = Engine()
-    time_manager = TimeManager()
-    data_manager = DataManager()
-    oracle_manager = OracleManager()
-    stats_manager = StatsManager()
-    reporting_manager = ReportingManager()
-    prescient = Simulator(engine, time_manager, data_manager, oracle_manager, stats_manager, reporting_manager)
-    return prescient
+    def __init__(self):
 
+        self.config = PrescientConfig()
 
-def main_prescient(options: Options):
-    ans = None
+        engine = Engine()
+        time_manager = TimeManager()
+        data_manager = DataManager()
+        oracle_manager = OracleManager()
+        stats_manager = StatsManager()
+        reporting_manager = ReportingManager()
 
-    if pstats_available and options.profile > 0:
-        #
-        # Call the main ef writer with profiling.
-        #
-        tfile = pyutilib.services.TempfileManager.create_tempfile(suffix=".profile")
-        tmp = profile.runctx('simulate(options)', globals(), locals(), tfile)
-        p = pstats.Stats(tfile).strip_dirs()
-        p.sort_stats('time', 'cumulative')
-        p = p.print_stats(options.profile)
-        p.print_callers(options.profile)
-        p.print_callees(options.profile)
-        p = p.sort_stats('cumulative', 'calls')
-        p.print_stats(options.profile)
-        p.print_callers(options.profile)
-        p.print_callees(options.profile)
-        p = p.sort_stats('calls')
-        p.print_stats(options.profile)
-        p.print_callers(options.profile)
-        p.print_callees(options.profile)
-        pyutilib.services.TempfileManager.clear_tempfiles()
-        ans = [tmp, None]
+        self.simulate_called = False
 
-    else:
-        if options.traceback is True:
-            simulator = create_prescient(options)
-            ans = simulator.simulate(options)
+        super().__init__(engine, time_manager, data_manager, oracle_manager, 
+                         stats_manager, reporting_manager, 
+                         self.config.plugin_context.callback_manager)
+
+    def simulate(self, **options):
+        if 'config_file' in options:
+            config_file = options.pop('config_file')
+            if options:
+                raise RuntimeError(f"If using a config_file, all options must be specified in the configuration file")
+            script, config_options = runner.parse_commands(config_file)
+            if script != 'simulator.py':
+                raise RuntimeError(f"config_file must be a simulator configuration text file, got {script}")
+            self.config.parse_args(args=config_options)
+
         else:
-            errmsg = None
-            try:
-                simulator = create_prescient(options)
-                ans = simulator.simulate(options)
-            except ValueError:
-                err = sys.exc_info()[1]
-                errmsg = 'VALUE ERROR: %s' % err
-            except KeyError:
-                err = sys.exc_info()[1]
-                errmsg = 'KEY ERROR: %s' % err
-            except TypeError:
-                err = sys.exc_info()[1]
-                errmsg = 'TYPE ERROR: %s' % err
-            except NameError:
-                err = sys.exc_info()[1]
-                errmsg = 'NAME ERROR: %s' % err
-            except IOError:
-                err = sys.exc_info()[1]
-                errmsg = 'I/O ERROR: %s' % err
-            #Can't find ConverterError? Commenting out for now.
-            #except ConverterError:
-                #err = sys.exc_info()[1]
-                #errmsg = 'CONVERSION ERROR: %s' % err
-            except RuntimeError:
-                err = sys.exc_info()[1]
-                errmsg = 'RUN-TIME ERROR: %s' % err
-            #pyutilib no attribute named common? Commenting out for now.
-            #except pyutilib.common.ApplicationError:
-                #err = sys.exc_info()[1]
-                #errmsg = 'APPLICATION ERROR: %s' % err
-            except Exception:
-                err = sys.exc_info()[1]
-                errmsg = 'UNKNOWN ERROR: %s' % err
-                traceback.print_exc()
+            self.config.set_value(options)
 
-            if errmsg is not None:
-                sys.stderr.write(errmsg + '\n')
+        return self._simulate(self.config)
 
-    return ans
+    def _simulate(self, options: PrescientConfig):
+        if self.simulate_called:
+            raise RuntimeError(f"Each instance of Prescient should only be used once. "
+                                "If you wish to simulate again create a new Prescient object.")
+        self.simulate_called = True
+        return super().simulate(options)
 
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
 
-    #
-    # Parse command-line options.
-    #
     try:
-        options_parser = MasterOptions.construct_options_parser()
-        options = options_parser.parse_args(args=args)
+        p = Prescient()
+        p.config.parse_args(args)
     except SystemExit:
         # the parser throws a system exit if "-h" is specified - catch
         # it to exit gracefully.
         return
 
-    main_prescient(options)
+    return p.simulate()
 
 # MAIN ROUTINE STARTS NOW #
 if __name__ == '__main__':

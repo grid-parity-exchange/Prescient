@@ -6,7 +6,6 @@ command/exec simulator.py
 --start-date=01-02-2020
 --num-days=364
 --sced-horizon=4
---traceback 
 --output-sced-initial-conditions 
 --output-sced-demands 
 --output-ruc-initial-conditions 

@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from datetime import date
 
-import dateutil
 import sys
 from datetime import timedelta, datetime, time
 from typing import Optional, Iterable
@@ -63,12 +62,7 @@ class TimeManager(manager._Manager):
     Provides information about the times included in a simulation, including all times of interest during a simulation
     '''
     def initialize(self, options: Options) -> None:
-        # validate the start date
-        try:
-            self._start_date = dateutil.parser.parse(options.start_date).date()
-        except ValueError:
-            print("***ERROR: Illegally formatted start date=" + options.start_date + " supplied!")
-            sys.exit(1)
+        self._start_date = options.start_date
 
         self._stop_date = self._start_date + timedelta(days=options.num_days)
         print(f"Dates to simulate: {str(self._start_date)} to {str(self._stop_date - timedelta(days=1))}")
