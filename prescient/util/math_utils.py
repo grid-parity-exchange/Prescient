@@ -37,9 +37,11 @@ def interpolate_between(val_before, val_after, fraction_between:float):
     * Any other value returns a float that interpolates (or potentially extrapolates) between the
       two supplied values.
     '''
+    # can happen at the end of the simulation
+    if val_after is None:
+        return val_before
     if fraction_between == 0.0:
         return val_before
     if fraction_between == 1.0:
         return val_after
-    else:
-        return (1.0 - fraction_between)*val_before + fraction_between*val_after
+    return (1.0 - fraction_between)*val_before + fraction_between*val_after

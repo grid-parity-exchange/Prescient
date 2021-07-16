@@ -213,6 +213,8 @@ class ShortcutDataProvider(DataProvider):
                                          time_period_length_minutes: int,
                                          model: EgretModel
                                         ) -> None:
+        #print(f"In _populate_with_forecastable_data, sim_type:{sim_type}, start_time:{start_time}, number_time_periods:{num_time_periods}, time_period_length_minutes:{time_period_length_minutes}")
+        #print(f"Input model: {model.data}")
                                                                                      # pandas is inclusive on ranges
         end_time = start_time + timedelta(minutes=num_time_periods*time_period_length_minutes) - timedelta(seconds=1)
 
@@ -230,7 +232,9 @@ class ShortcutDataProvider(DataProvider):
         else:
             copy_from = model.clone()
             copy_from.data['elements']['generator']['system']['p_cost']['values'] = price_data
-            _recurse_copy_at_ratio(copy_from.data, model.data, step_ratio)
+            # if the data is at a higher frequency, it is more sensible
+            # to average over the time periods for prices
+            _recurse_average_at_ratio(copy_from.data, model.data, step_ratio)
 
         # Fill in times:
         time_labels = model.data['system']['time_keys']
@@ -238,6 +242,9 @@ class ShortcutDataProvider(DataProvider):
         for i in range(len(time_labels)):
             dt = start_time + i*delta
             time_labels[i] = dt.strftime('%Y-%m-%d %H:%M')
+
+        ## debugging
+        # print(f"Returning model: {model.data}")
 
 def _load_generator_characteristics(data_directory):
 
@@ -272,11 +279,6 @@ def _load_historical_prices(data_directory, start_time, end_time):
         df = pd.read_csv(fn, parse_dates=True, index_col=0)
         return df[df.columns[0]]
 
-    # Remove data outside requested time period.
-    # DataFrame slices include the end of the slice, so we need to reduce it slightly to
-    # avoid including an extra value at the end.
-    end_time = end_time - timedelta(seconds=1)
-
     day_ahead = parse_prices(os.path.join(data_directory, 'day_ahead_prices.csv'))[start_time:end_time]
     real_time = parse_prices(os.path.join(data_directory, 'real_time_prices.csv'))[start_time:end_time]
 
@@ -290,3 +292,23 @@ def _load_historical_prices(data_directory, start_time, end_time):
     assert real_time_minutes == ((real_time.index[-1] - real_time.index[-2]).seconds//60)
 
     return {'day_ahead':day_ahead, 'real_time':real_time}, real_time_minutes
+
+def _recurse_average_at_ratio(src:dict[str, Any], target:dict[str, Any], ratio:int) -> None:
+    ''' Average every N-1th to Nth value from a src dict's time_series values into corresponding arrays in a target dict.
+    '''
+    for key, att in src.items():
+        if isinstance(att, dict):
+            if 'data_type' in att and att['data_type'] == 'time_series':
+                src_vals = att['values']
+                if type(target[key]) is dict and target[key]['data_type'] == 'time_series':
+                    # If there is already a value array at the target, fill it in (to preserve array size)
+                    target_vals = target[key]['values']
+                    for s,t in zip(range(0, len(src_vals), ratio), range(len(target_vals))):
+                        target_vals[t] = sum(src_vals[s:s+ratio])/ratio
+                else:
+                    # Otherwise create a new timeseries array
+                    target[key] = { 'data_type': 'time_series',
+                                    'values' : [ sum(src_vals[s:s+ratio])/ratio for i \
+                                                    in range(0, len(src_vals), ratio)] }
+            else:
+                _recurse_average_at_ratio(att, target[key], ratio)

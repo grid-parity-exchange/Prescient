@@ -114,6 +114,12 @@ class TimeManager(manager._Manager):
         next_activation_time = current_time + ruc_delta
         next_planning_time = next_activation_time - timedelta(hours=self._ruc_delay)
 
+        # If the next plan won't be activated until after the simulation has finished,
+        # don't bother generating the plan. Push the next planning time out past the end.
+        # We need this check here in case a single day is simulated
+        if next_planning_time + timedelta(hours=self._ruc_delay) >= stop_time:
+            next_planning_time = stop_time
+
         while current_time < stop_time:
             is_planning_time = current_time == next_planning_time
             if is_planning_time:
