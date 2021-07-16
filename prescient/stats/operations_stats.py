@@ -68,6 +68,7 @@ class OperationsStats:
     observed_costs: Dict[G, float]
     observed_renewables_levels: Dict[G, float] 
     observed_renewables_curtailment: Dict[G, float]
+    observed_virtual_dispatch_levels: Dict[G, float]
 
     observed_flow_levels: Dict[L, float]
 
@@ -198,6 +199,7 @@ class OperationsStats:
         self.observed_costs = extractor.get_cost_per_generator(sced)
         self.observed_renewables_levels = extractor.get_all_nondispatchable_power_used(sced)
         self.observed_renewables_curtailment = extractor.get_all_renewables_curtailment(sced)
+        self.observed_virtual_dispatch_levels = extractor.get_all_virtual_dispatch_levels(sced)
 
         self.observed_flow_levels = extractor.get_all_flow_levels(sced)
 

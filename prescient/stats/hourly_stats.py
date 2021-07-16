@@ -71,6 +71,7 @@ class HourlyStats:
     observed_costs: Dict[G, float]
     observed_renewables_levels: Dict[G, float] 
     observed_renewables_curtailment: Dict[G, float]
+    observed_virtual_dispatch_levels: Dict[G, float]
 
     observed_flow_levels: Dict[L, float]
 
@@ -231,6 +232,7 @@ class HourlyStats:
             'observed_thermal_states',
             'observed_renewables_levels',
             'observed_renewables_curtailment',
+            'observed_virtual_dispatch_levels',
             'observed_flow_levels',
             'bus_demands',
             'observed_bus_mismatches',

@@ -348,6 +348,7 @@ class ReportingManager(_Manager):
         thermal_states = {}
         renewables_dispatch = {}
         renewables_curtailment = {}
+        virtual_dispatch = {}
         storage_input_dispatch = {}
         storage_output_dispatch = {}
         storage_types = {}
@@ -363,6 +364,8 @@ class ReportingManager(_Manager):
             _collect_time(opstats.observed_renewables_levels, renewables_dispatch)
             _collect_time(opstats.observed_renewables_curtailment, renewables_curtailment)
 
+            _collect_time(opstats.observed_virtual_dispatch_levels, virtual_dispatch)
+
             _collect_time(opstats.storage_input_dispatch_levels, storage_input_dispatch)
             _collect_time(opstats.storage_output_dispatch_levels, storage_output_dispatch)
 
@@ -373,6 +376,8 @@ class ReportingManager(_Manager):
         for g, quickstart in thermal_quickstart.items():
             gen_dict[g]['fast_start'] = quickstart
             gen_dict[g]['generator_type'] = 'thermal'
+        for g in virtual_dispatch:
+            gen_dict[g]['generator_type'] = 'virtual'
 
         _add_timeseries_attribute_to_egret_dict(gen_dict, thermal_dispatch, 'pg')
         _add_timeseries_attribute_to_egret_dict(gen_dict, thermal_headroom, 'headroom')
@@ -380,6 +385,9 @@ class ReportingManager(_Manager):
 
         _add_timeseries_attribute_to_egret_dict(gen_dict, renewables_dispatch, 'pg')
         _add_timeseries_attribute_to_egret_dict(gen_dict, renewables_curtailment, 'curtailment')
+
+        _add_timeseries_attribute_to_egret_dict(gen_dict, virtual_dispatch, 'pg')
+
         for g_dict in gen_dict.values():
             if g_dict['generator_type'] == 'renewable':
                 pg = g_dict['pg']['values']

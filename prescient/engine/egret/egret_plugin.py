@@ -503,8 +503,11 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
     ptdf_manager.update_active(pricing_results)
 
     ## Debugging
-    if pricing_results.data['system']['total_cost'] > ruc_results.data['system']['total_cost']*(1.+1.e-06):
+    if pricing_results.data['system']['total_cost'] > ruc_results.data['system']['total_cost'] and not \
+            math.isclose(pricing_results.data['system']['total_cost'],  ruc_results.data['system']['total_cost']):
         print("The pricing run had a higher objective value than the MIP run. This is indicative of a bug.")
+        print(f"pricing run cost: {pricing_results.data['system']['total_cost']}")
+        print(f"MIP run cost    : {ruc_results.data['system']['total_cost']}")
         print("Writing LP pricing_problem.json")
         output_filename = 'pricing_instance.json'
         pricing_results.write(output_filename)
@@ -552,9 +555,9 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
             for g, reserve_vals in g_reserve_values.items():
                 thermal_reserve_cleared_DA[g,t] = reserve_vals[t]*surplus_multiple_t
     else:
-        day_ahead_reserve_prices = { t : 0. for t in enumerate(ruc_results.data['system']['time_keys']) } 
+        day_ahead_reserve_prices = { t : 0. for t,_ in enumerate(ruc_results.data['system']['time_keys']) }
         thermal_reserve_cleared_DA = { (g,t) : 0. \
-                for t in enumerate(ruc_results.data['system']['time_keys']) \
+                for t,_ in enumerate(ruc_results.data['system']['time_keys']) \
                 for g,_ in ruc_results.elements(element_type='generator', generator_type='thermal') }
                
     thermal_gen_cleared_DA = {}
@@ -566,6 +569,9 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
             store_dict = thermal_gen_cleared_DA
         elif g_dict['generator_type'] == 'renewable':
             store_dict = renewable_gen_cleared_DA
+        elif g_dict['generator_type'] == 'virtual':
+            # TODO
+            pass
         else:
             raise RuntimeError(f"Unrecognized generator type {g_dict['generator_type']}")
         for t in range(0,options.ruc_every_hours):

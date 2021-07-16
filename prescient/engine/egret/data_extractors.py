@@ -42,6 +42,10 @@ class ScedDataExtractor(BaseScedExtractor):
         return (g for g,_ in \
                 sced.elements(element_type='generator', generator_type='thermal'))
 
+    def get_virtual_generators(self, sced: OperationsModel) -> Iterable[G]:
+        return (g for g,_ in \
+                sced.elements(element_type='generator', generator_type='virtual'))
+
     def get_nondispatchable_generators(self, sced: OperationsModel) -> Iterable[G]:
         return (g for g,_ in \
                 sced.elements(element_type='generator', generator_type='renewable'))
@@ -134,7 +138,7 @@ class ScedDataExtractor(BaseScedExtractor):
         return sced.data['elements']['generator'][g]['startup_capacity']
 
     def get_generator_fuel(self, sced: OperationsModel, g: G) -> str:
-        return sced.data['elements']['generator'][g]['fuel']
+        return sced.data['elements']['generator'][g].get('fuel', 'Other')
 
     def get_reserve_shortfall(self, sced: OperationsModel) -> float:
         if 'reserve_shortfall' in sced.data['system']:
@@ -195,7 +199,7 @@ class ScedDataExtractor(BaseScedExtractor):
 
     def get_bus_demand(self, sced: OperationsModel, bus: B) -> float:
         ''' get the demand on a bus in a given time period '''
-        return sced.data['elements']['load'][bus]['p_load']['values'][0]
+        return sced.data['elements']['bus'][bus]['pl']['values'][0]
 
     def get_reserve_RT_price(self, lmp_sced: OperationsModel) -> float:
         if 'reserve_price' in lmp_sced.data['system']:  
