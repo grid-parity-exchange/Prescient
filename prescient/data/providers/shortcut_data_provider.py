@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 import os.path
 from datetime import datetime, timedelta
+from collections import defaultdict
 import copy
 import csv
 import pandas as pd
@@ -35,12 +36,10 @@ class ShortcutDataProvider(DataProvider):
         self._start_time = datetime.combine(options.start_date, datetime.min.time())
         self._end_time = self._start_time + timedelta(days=options.num_days)
 
-        rts_cache = parser.parse_to_cache(options.data_directory, self._start_time, self._end_time)
-
         # TODO: option-drive
         self._virtual_bus_capacity = 1e6
 
-        self._generator_characteristics = _load_generator_characteristics(options.data_directory, rts_cache)
+        self._generator_characteristics = _load_generator_characteristics(options.data_directory)
         self._historical_prices, self._frequency_minutes = \
                 _load_historical_prices(options.data_directory, self._start_time, self._end_time)
 
@@ -240,7 +239,7 @@ class ShortcutDataProvider(DataProvider):
             dt = start_time + i*delta
             time_labels[i] = dt.strftime('%Y-%m-%d %H:%M')
 
-def _load_generator_characteristics(data_directory, rts_cache):
+def _load_generator_characteristics(data_directory):
 
     gens = []
     with open(os.path.join(data_directory, 'shortcut_gens.csv'), newline='') as csvfile:
@@ -248,12 +247,22 @@ def _load_generator_characteristics(data_directory, rts_cache):
         for r in genreader:
             gens.extend(r)
     
+    # hack the _read_generators function in the RTS-GMLC parser
+    elements = {'generator': {},
+            'bus' : {'virtual_bus':{'area':'virtual_area', 'zone':'virtual_zone'}},
+            'area': {'virtual_area':{}},
+            'zone': {'virtual_zone':{}},
+            }
+    bus_id_to_names = defaultdict(lambda: 'virtual_bus')
+    parser._read_generators(data_directory, elements, bus_id_to_names)
+
+    md = {'elements':elements}
+    # looks for initial_status.csv itself
+    parser.set_t0_data(md, data_directory)
+
     gen_dict = {}
     for g in gens:
-        gen_dict[g] = rts_cache.skeleton['elements']['generator'][g]
-
-    for g, gd in gen_dict.items():
-        gd['bus'] = 'virtual_bus'
+        gen_dict[g] = elements['generator'][g]
 
     return gen_dict
 
