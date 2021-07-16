@@ -57,6 +57,7 @@ class ReportingManager(_Manager):
         self.setup_runtimes(options, stats_manager)
         self.setup_thermal_detail(options, stats_manager)
         self.setup_renewables_detail(options, stats_manager)
+        self.setup_virtual_detail(options, stats_manager)
         self.setup_bus_detail(options, stats_manager)
         self.setup_line_detail(options, stats_manager)
         self.setup_hourly_gen_summary(options, stats_manager)
@@ -140,6 +141,28 @@ class ReportingManager(_Manager):
         renewables_production_writer = CsvMultiRowReporter.from_dict(renewables_production_file, renewables_production_entries_per_hour, renewables_production_columns)
         stats_manager.register_for_sced_stats(renewables_production_writer.write_record)
         stats_manager.register_for_overall_stats(lambda overall: renewables_production_file.close())
+
+    def setup_virtual_detail(self, options, stats_manager: StatsManager):
+        _round = self._round
+        virtual_production_path = os.path.join(options.output_directory, 'virtual_detail.csv')
+        virtual_production_file = open(virtual_production_path, 'w', newline='')
+        virtual_production_entries_per_hour = lambda ops: ops.observed_virtual_dispatch_levels.keys()
+        virtual_production_columns = {
+            'Date':       lambda ops,g: str(ops.timestamp.date()),
+            'Hour':       lambda ops,g: ops.timestamp.hour,
+            'Minute':     lambda ops,g: ops.timestamp.minute,
+            'Generator':  lambda ops,g: g,
+            'Output':     lambda ops,g: _round(ops.observed_virtual_dispatch_levels[g]),
+            'Output DA':  lambda ops,g: _round(ops.virtual_gen_cleared_DA[g]) \
+                    if options.compute_market_settlements else None,
+            'Unit Market Revenue': lambda ops,g: _round(ops.virtual_gen_revenue[g]) \
+                    if options.compute_market_settlements else None,
+            'Unit Uplift Payment': lambda ops,g: _round(ops.virtual_uplift[g]) \
+                    if options.compute_market_settlements else None,
+           }
+        virtual_production_writer = CsvMultiRowReporter.from_dict(virtual_production_file, virtual_production_entries_per_hour, virtual_production_columns)
+        stats_manager.register_for_sced_stats(virtual_production_writer.write_record)
+        stats_manager.register_for_overall_stats(lambda overall: virtual_production_file.close())
 
     def setup_bus_detail(self, options, stats_manager: StatsManager):
         _round = self._round
@@ -348,6 +371,7 @@ class ReportingManager(_Manager):
         thermal_states = {}
         renewables_dispatch = {}
         renewables_curtailment = {}
+        virtual_dispatch = {}
         storage_input_dispatch = {}
         storage_output_dispatch = {}
         storage_types = {}
@@ -363,6 +387,8 @@ class ReportingManager(_Manager):
             _collect_time(opstats.observed_renewables_levels, renewables_dispatch)
             _collect_time(opstats.observed_renewables_curtailment, renewables_curtailment)
 
+            _collect_time(opstats.observed_virtual_dispatch_levels, virtual_dispatch)
+
             _collect_time(opstats.storage_input_dispatch_levels, storage_input_dispatch)
             _collect_time(opstats.storage_output_dispatch_levels, storage_output_dispatch)
 
@@ -373,6 +399,8 @@ class ReportingManager(_Manager):
         for g, quickstart in thermal_quickstart.items():
             gen_dict[g]['fast_start'] = quickstart
             gen_dict[g]['generator_type'] = 'thermal'
+        for g in virtual_dispatch:
+            gen_dict[g]['generator_type'] = 'virtual'
 
         _add_timeseries_attribute_to_egret_dict(gen_dict, thermal_dispatch, 'pg')
         _add_timeseries_attribute_to_egret_dict(gen_dict, thermal_headroom, 'headroom')
@@ -380,6 +408,9 @@ class ReportingManager(_Manager):
 
         _add_timeseries_attribute_to_egret_dict(gen_dict, renewables_dispatch, 'pg')
         _add_timeseries_attribute_to_egret_dict(gen_dict, renewables_curtailment, 'curtailment')
+
+        _add_timeseries_attribute_to_egret_dict(gen_dict, virtual_dispatch, 'pg')
+
         for g_dict in gen_dict.values():
             if g_dict['generator_type'] == 'renewable':
                 pg = g_dict['pg']['values']

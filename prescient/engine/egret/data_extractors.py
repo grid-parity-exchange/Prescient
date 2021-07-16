@@ -42,6 +42,10 @@ class ScedDataExtractor(BaseScedExtractor):
         return (g for g,_ in \
                 sced.elements(element_type='generator', generator_type='thermal'))
 
+    def get_virtual_generators(self, sced: OperationsModel) -> Iterable[G]:
+        return (g for g,_ in \
+                sced.elements(element_type='generator', generator_type='virtual'))
+
     def get_nondispatchable_generators(self, sced: OperationsModel) -> Iterable[G]:
         return (g for g,_ in \
                 sced.elements(element_type='generator', generator_type='renewable'))
@@ -49,6 +53,10 @@ class ScedDataExtractor(BaseScedExtractor):
     def get_thermal_generators_at_bus(self, sced: OperationsModel, b: B) -> Iterable[G]:
         return (g for g,_ in \
                 sced.elements(element_type='generator', generator_type='thermal', bus=b))
+
+    def get_virtual_generators_at_bus(self, sced: OperationsModel, b: B) -> Iterable[G]:
+        return (g for g,_ in \
+                sced.elements(element_type='generator', generator_type='virtual', bus=b))
 
     def get_nondispatchable_generators_at_bus(self, sced: OperationsModel, b: B) -> Iterable[G]:
         return (g for g,_ in \
@@ -134,7 +142,7 @@ class ScedDataExtractor(BaseScedExtractor):
         return sced.data['elements']['generator'][g]['startup_capacity']
 
     def get_generator_fuel(self, sced: OperationsModel, g: G) -> str:
-        return sced.data['elements']['generator'][g]['fuel']
+        return sced.data['elements']['generator'][g].get('fuel', 'Other')
 
     def get_reserve_shortfall(self, sced: OperationsModel) -> float:
         if 'reserve_shortfall' in sced.data['system']:

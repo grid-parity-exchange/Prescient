@@ -71,6 +71,7 @@ class HourlyStats:
     observed_costs: Dict[G, float]
     observed_renewables_levels: Dict[G, float] 
     observed_renewables_curtailment: Dict[G, float]
+    observed_virtual_dispatch_levels: Dict[G, float]
 
     observed_flow_levels: Dict[L, float]
 
@@ -99,6 +100,10 @@ class HourlyStats:
     renewable_gen_revenue: Dict[G, float]
     renewable_uplift: Dict[G, float]
 
+    virtual_gen_cleared_DA: Dict[G, float]
+    virtual_gen_revenue: Dict[G, float]
+    virtual_uplift: Dict[G, float]
+
     thermal_energy_payments: float #read-only property
     renewable_energy_payments: float #read-only property
     thermal_uplift_payments: float #read-only property
@@ -122,6 +127,12 @@ class HourlyStats:
         return 0.
 
     @property
+    def virtual_energy_payments(self) -> float:
+        if self._options.compute_market_settlements:
+            return sum(self.virtual_gen_revenue.values())
+        return 0.
+
+    @property
     def renewable_energy_payments(self) -> float:
         if self._options.compute_market_settlements:
             return sum(self.renewable_gen_revenue.values())
@@ -131,6 +142,12 @@ class HourlyStats:
     def thermal_uplift_payments(self) -> float:
         if self._options.compute_market_settlements:
             return sum(self.thermal_uplift.values())
+        return 0.
+
+    @property
+    def virtual_uplift_payments(self) -> float:
+        if self._options.compute_market_settlements:
+            return sum(self.virtual_uplift.values())
         return 0.
 
     @property
@@ -181,6 +198,8 @@ class HourlyStats:
             'thermal_uplift',
             'renewable_gen_revenue',
             'renewable_uplift',
+            'virtual_gen_revenue',
+            'virtual_uplift',
            ]
         for field in keyed_summing_fields:
             if not hasattr(ops_stats, field):
@@ -231,6 +250,7 @@ class HourlyStats:
             'observed_thermal_states',
             'observed_renewables_levels',
             'observed_renewables_curtailment',
+            'observed_virtual_dispatch_levels',
             'observed_flow_levels',
             'bus_demands',
             'observed_bus_mismatches',
@@ -242,6 +262,7 @@ class HourlyStats:
             'thermal_gen_cleared_DA',
             'thermal_reserve_cleared_DA',
             'renewable_gen_cleared_DA',
+            'virtual_gen_cleared_DA',
            ]
         for field in keyed_averaging_fields:
             if not hasattr(ops_stats, field):
