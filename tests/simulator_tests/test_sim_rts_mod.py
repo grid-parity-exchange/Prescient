@@ -194,5 +194,17 @@ class TestSimulatorModRtsGmlcNetwork_python(_SimulatorModRTSGMLC, unittest.TestC
         options['output_directory'] = 'deterministic_with_network_simulation_output_python'
         Prescient().simulate(**options)
 
+# test shortcut / text file configuration
+class TestShortcutSimulator_python_config_file(_SimulatorModRTSGMLC, unittest.TestCase):
+    def _set_names(self):
+        self.simulator_config_filename = 'simulate_shortcut.txt'
+        self.results_dir_name = 'deterministic_shortcut_output'
+        self.baseline_dir_name = 'deterministic_shortcut_output_baseline'
+
+    def _run_simulator(self):
+        os.chdir(self.test_cases_path)
+        options = {'config_file' : self.simulator_config_filename}
+        Prescient().simulate(**options)
+
 if __name__ == '__main__':
     unittest.main()
