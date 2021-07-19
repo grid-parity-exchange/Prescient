@@ -470,14 +470,15 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
     ## change the penalty prices to the caps, if necessary
     reserve_requirement = ('reserve_requirement' in pricing_instance.data['system'])
 
+    system = pricing_instance.data['system']
     # In case of demand shortfall, the price skyrockets, so we threshold the value.
-    if pricing_instance.data['system']['load_mismatch_cost'] > options.price_threshold:
-        pricing_instance.data['system']['load_mismatch_cost'] = options.price_threshold
+    if ('load_mismatch_cost' not in system) or (system['load_mismatch_cost'] > options.price_threshold):
+        system['load_mismatch_cost'] = options.price_threshold
 
     # In case of reserve shortfall, the price skyrockets, so we threshold the value.
     if reserve_requirement:
-        if pricing_instance.data['system']['reserve_shortfall_cost'] > options.reserve_price_threshold:
-            pricing_instance.data['system']['reserve_shortfall_cost'] = options.reserve_price_threshold
+        if ('reserve_shortfall_cost' not in system) or (system['reserve_shortfall_cost'] > options.reserve_price_threshold):
+            system['reserve_shortfall_cost'] = options.reserve_price_threshold
 
     ptdf_manager.mark_active(pricing_instance)
     pyo_model = create_pricing_model(pricing_instance, relaxed=True,
