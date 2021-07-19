@@ -79,8 +79,10 @@ class ShortcutDataProvider(DataProvider):
         '''
         native_frequency = self._frequency_minutes
         if desired_frequency_minutes % native_frequency == 0:
+            print(f"returning {desired_frequency_minutes} in negotiate_data_frequency")
             return desired_frequency_minutes
         else:
+            print(f"returning {native_frequency} in negotiate_data_frequency")
             return native_frequency
 
     def get_initial_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
@@ -213,8 +215,6 @@ class ShortcutDataProvider(DataProvider):
                                          time_period_length_minutes: int,
                                          model: EgretModel
                                         ) -> None:
-        #print(f"In _populate_with_forecastable_data, sim_type:{sim_type}, start_time:{start_time}, number_time_periods:{num_time_periods}, time_period_length_minutes:{time_period_length_minutes}")
-        #print(f"Input model: {model.data}")
                                                                                      # pandas is inclusive on ranges
         end_time = start_time + timedelta(minutes=num_time_periods*time_period_length_minutes) - timedelta(seconds=1)
 
@@ -242,9 +242,6 @@ class ShortcutDataProvider(DataProvider):
         for i in range(len(time_labels)):
             dt = start_time + i*delta
             time_labels[i] = dt.strftime('%Y-%m-%d %H:%M')
-
-        ## debugging
-        # print(f"Returning model: {model.data}")
 
 def _load_generator_characteristics(data_directory):
 
