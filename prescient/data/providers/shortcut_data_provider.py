@@ -79,10 +79,8 @@ class ShortcutDataProvider(DataProvider):
         '''
         native_frequency = self._frequency_minutes
         if desired_frequency_minutes % native_frequency == 0:
-            print(f"returning {desired_frequency_minutes} in negotiate_data_frequency")
             return desired_frequency_minutes
         else:
-            print(f"returning {native_frequency} in negotiate_data_frequency")
             return native_frequency
 
     def get_initial_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
@@ -244,12 +242,6 @@ class ShortcutDataProvider(DataProvider):
             time_labels[i] = dt.strftime('%Y-%m-%d %H:%M')
 
 def _load_generator_characteristics(data_directory):
-
-    gens = []
-    with open(os.path.join(data_directory, 'shortcut_gens.csv'), newline='') as csvfile:
-        genreader = csv.reader(csvfile)
-        for r in genreader:
-            gens.extend(r)
     
     # hack the _read_generators function in the RTS-GMLC parser
     elements = {'generator': {},
@@ -264,9 +256,25 @@ def _load_generator_characteristics(data_directory):
     # looks for initial_status.csv itself
     parser.set_t0_data(md, data_directory)
 
-    gen_dict = {}
-    for g in gens:
-        gen_dict[g] = elements['generator'][g]
+    if os.path.exists(os.path.join(data_directory, 'shortcut_gens.csv')):
+        msg_path = "ONLY"
+
+        gens = []
+        with open(os.path.join(data_directory, 'shortcut_gens.csv'), newline='') as csvfile:
+            genreader = csv.reader(csvfile)
+            for r in genreader:
+                gens.extend(r)
+
+        gen_dict = {}
+        for g in gens:
+            gen_dict[g] = elements['generator'][g]
+
+    else:
+        msg_path = "ALL"
+        gen_dict = elements['generator']
+
+    print("Shortcut Simulator loading "+msg_path+" generator(s) " + \
+            ",".join(gen_dict.keys()) + f" from {os.path.join(data_directory, 'gen.csv')}")
 
     return gen_dict
 
