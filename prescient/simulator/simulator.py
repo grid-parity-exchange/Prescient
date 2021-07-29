@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .internal import PluginCallbackManager
+    from prescient.plugins.internal import PluginCallbackManager
     from .reporting_manager import ReportingManager
 
 import os
@@ -31,8 +31,7 @@ class Simulator:
                        data_manager: DataManager,
                        oracle_manager: OracleManager,
                        stats_manager: StatsManager,
-                       reporting_manager: ReportingManager,
-                       plugin_manager: PluginCallbackManager
+                       reporting_manager: ReportingManager
                        ):
 
         print("Initializing simulation...")
@@ -63,7 +62,6 @@ class Simulator:
         self.oracle_manager = oracle_manager
         self.stats_manager = stats_manager
         self.reporting_manager = reporting_manager
-        self.plugin_manager = plugin_manager
 
 
     def simulate(self, options):
@@ -74,8 +72,15 @@ class Simulator:
         oracle_manager = self.oracle_manager
         stats_manager = self.stats_manager
         reporting_manager = self.reporting_manager
+        # This comes from the config rather than being created here 
+        # because non-plugins may have registered for callbacks too.
+        self.callback_manager = options.plugin_context.callback_manager
 
-        self.plugin_manager.invoke_options_preview_callbacks(options)
+        for plugin_config in options.plugin.values():
+            plugin_module = plugin_config.module
+            options.plugin_context.register_plugin(plugin_module, options, plugin_config)
+
+        self.callback_manager.invoke_options_preview_callbacks(options)
 
         engine.initialize(options)
         time_manager.initialize(options)
@@ -84,7 +89,7 @@ class Simulator:
         stats_manager.initialize(options)
         reporting_manager.initialize(options, stats_manager)
 
-        self.plugin_manager.invoke_initialization_callbacks(options, self)
+        self.callback_manager.invoke_initialization_callbacks(options, self)
 
         first_time_step = time_manager.get_first_time_step()
         oracle_manager.call_initialization_oracle(options, first_time_step)

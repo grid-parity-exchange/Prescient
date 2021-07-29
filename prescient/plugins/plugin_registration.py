@@ -11,7 +11,14 @@ if TYPE_CHECKING:
 from pyomo.common.fileutils import import_file
 
 class PluginRegistrationContext:
-    ''' Object that plugins use to register their callbacks
+    ''' Object that plugins and other code use to register their callbacks.
+
+    This class provides a registration-centric view of a PluginCallbackManager.
+    Despite its name, it can be used by more than just plugins. Plugins modules
+    must supply a function called register_plugins; its implementation should
+    register appropriate callbacks on the PluginRegistrationContext provided as
+    an argument to that function. Non-plugin code that wishes to receive callbacks
+    should call the appropriate registration functions as part of simulation setup.
     '''
 
     def __init__(self):
@@ -20,21 +27,22 @@ class PluginRegistrationContext:
 
     def register_plugin(
         self, 
-        path: str, 
-        config: PrescientConfig) -> None:
-        ''' Call the plugin registration method in the specified file
-        '''
-        try:
-            plugin_module = import_file(path)
-        except:
-            import os
-            print(os.getcwd())
-            raise RuntimeError(f"Could not locate plugin module={path}")
+        plugin_module:'module', 
+        config: PrescientConfig,
+        plugin_config: ConfigDict) -> None:
+        ''' Allow a plugin module to register for callbacks
 
+        This method calls the module's register_plugins method, passing
+        this registration context as an argument. The register_plugins
+        method should use the context to register whatever callbacks are
+        appropriate for the plugin. The method is also provided with the
+        PrescientConfig to be used in the simulation, as well as the 
+        plugin-specific portion of the configuration.
+        '''
         register_func = getattr(plugin_module, "register_plugins", None)
         if register_func is None:
-            raise RuntimeError(f"plugin module={path} does not have a required method, register_plugins")
-        register_func(self, config)
+            raise RuntimeError(f"plugin module={plugin_module} does not have a required method, register_plugins")
+        register_func(self, config, plugin_config)
 
     def register_for_hourly_stats(
         self, 
@@ -109,7 +117,7 @@ class PluginRegistrationContext:
         self, 
         callback: Callable[[Options, Simulator, RucPlan, str, int], None]
         ) -> None:
-        ''' Register a callback to be called after each new RUC pair is generated.
+        ''' Register a callback to be called after each new RUC plan is generated.
 
             The callback is called after both the forecast and actuals RUCs have been 
             generated, just before they are stored in the DataManager.
