@@ -13,9 +13,6 @@
 
 import sys
 
-import prescient.plugins.internal
-import prescient.simulator.config
-
 from .config import PrescientConfig
 from .options import Options
 from .simulator import Simulator
@@ -43,8 +40,7 @@ class Prescient(Simulator):
         self.simulate_called = False
 
         super().__init__(engine, time_manager, data_manager, oracle_manager, 
-                         stats_manager, reporting_manager, 
-                         self.config.plugin_context.callback_manager)
+                         stats_manager, reporting_manager)
 
     def simulate(self, **options):
         if 'config_file' in options:

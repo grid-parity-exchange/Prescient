@@ -25,6 +25,8 @@ from pyomo.common.fileutils import import_file
 from pyomo.common.config import (ConfigDict,
                                  ConfigValue,
                                  ConfigList,
+                                 DynamicImplicitDomain,
+                                 Module,
                                  In,
                                  InEnum,
                                  PositiveInt,
@@ -32,6 +34,7 @@ from pyomo.common.config import (ConfigDict,
                                  PositiveFloat,
                                  NonNegativeFloat,
                                  Path,
+                                 MarkImmutable
                                 )
 
 from prescient.plugins import PluginRegistrationContext
@@ -54,14 +57,48 @@ class PrescientConfig(ConfigDict):
 
         self.plugin_context = PluginRegistrationContext()
 
+        def register_plugin(key, value):
+            ''' Handle intial plugin setup
+            Arguments
+            ---------
+            key - str
+                The alias for this plugin in the configuration
+            value - str, module, or dict
+                If a string, the name of the python module or the python file for this plugin.
+                If a module, the plugin's python module.
+                If a dict, the initial values for any properties listed in the dict. One of the
+                dict's keys MUST be 'module', and must be either a module, a string identifying
+                the module, or a string identifying the module's *.py file.
+            '''
+            # Defaults, if value is not a dict
+            mod_spec=value
+            init_values = {}
+
+            # Override defaults if value is a dict
+            if isinstance(value, dict):
+                if 'module' not in value:
+                    raise RuntimeError(f"Attempt to register '{key}' plugin without a module attribute")
+                mod_spec=value['module']
+                init_values = value.copy()
+                del(init_values['module'])
+
+            domain = Module()
+            module = domain(mod_spec)
+
+            c = module.get_configuration(key)
+            c.declare('module', ConfigValue(module, domain=domain))
+            MarkImmutable(c.get('module'))
+            c.set_value(init_values)
+            return c
+
         # We put this first so that plugins will be registered before any other
         # options are applied, which lets them add custom command line options 
         # before they are potentially used.
-        self.declare("plugin", ConfigList(
-            domain=_PluginPath(self),
-            default=[],
-            description="The path of a python module that extends prescient behavior",
-        )).declare_as_argument()
+        self.declare("plugin", ConfigDict(
+            implicit=True,
+            implicit_domain=DynamicImplicitDomain(register_plugin),
+            description="Settings for python modules that extends prescient behavior",
+        ))
 
         self.declare("start_date", ConfigValue(
             domain=_StartDate,
@@ -365,31 +402,16 @@ class PrescientConfig(ConfigDict):
         self.import_argparse(args)
         return self
 
-    def set_value(self, value, skip_implicit=False):
-        if value is None:
-            return self
-        if (type(value) is not dict) and \
-           (not isinstance(value, ConfigDict)):
-            raise ValueError("Expected dict value for %s.set_value, found %s" %
-                             (self.name(True), type(value).__name__))
-
-        if 'plugin' in value:
-            self.plugin.append(value['plugin'])
-            value = {**value}
-            del(value['plugin'])
-        super().set_value(value)
-
-
 
 def _construct_options_parser(config: PrescientConfig) -> ArgumentParser:
     '''
     Make a new parser that can parse standard and custom command line options.
 
     Custom options are provided by plugin modules. Plugins are specified
-    as command-line arguments "--plugin=<module name>", where <module name>
-    refers to a python module. The plugin may provide new command line
-    options by calling "prescient.plugins.add_custom_commandline_option"
-    when loaded.
+    as command-line arguments "--plugin=<alias>:<module name>", where <alias>
+    is the name the plugin will be known as in the configuration, and 
+    <module name> identifies a python module by name or by path. Any configuration
+    items defined by the plugin will be available at config.plugin.alias.
     '''
 
     # To support the ability to add new command line options to the line that
@@ -402,59 +424,60 @@ def _construct_options_parser(config: PrescientConfig) -> ArgumentParser:
     parser = ArgumentParser()
     parser._inner_parse = parser.parse_args
 
+    def split_plugin_spec(spec:str) -> (str, str):
+        ''' Return the plugin's alias and module from the plugin name/path
+        '''
+        result = spec.split(':', 1)
+        if len(result) == 1:
+            raise ValueError("No alias found in plugin specification.  Correct format: <alias>:<module_path_or_name>")
+        return result
+
     def outer_parse(args=None, values=None):
         if args is None:
             args = sys.argv[1:]
 
-        # Manually check each argument against --plugin=<module>,
+        # Manually check each argument against --plugin=<alias>:<module>,
         # give plugins a chance to install their options.
         stand_alone_opt = '--plugin'
         prefix = "--plugin="
         next_arg_is_module = False
-        # When a plugin is imported, its
-        # plugin behaviors are registered.
+        found_plugin=False
         for arg in args:
-            if arg.startswith(prefix):
-                module_name = arg[len(prefix):]
-                config.plugin_context.register_plugin(module_name, config)
+            if next_arg_is_module:
+                module_spec = arg
+                alias, mod = split_plugin_spec(module_spec)
+                config.plugin[alias] = mod
+                next_arg_is_module = False
+                found_plugin=True
+            elif arg.startswith(prefix):
+                module_spec = arg[len(prefix):]
+                alias, mod = split_plugin_spec(module_spec)
+                config.plugin[alias] = mod
+                found_plugin=True
             elif arg == stand_alone_opt:
                 next_arg_is_module = True
-            elif next_arg_is_module:
-                module_name = arg
-                config.plugin_context.register_plugin(module_name, config)
-                next_arg_is_module = False
- 
+
         # load the arguments into the ArgumentParser
         config.initialize_argparse(parser)
 
         # Remove plugins from args so they don't get re-handled
-        i = 0
-        while (i < len(args)):
-            if args[i].startswith(prefix):
-                del(args[i])
-            elif args[i] == stand_alone_opt:
-                del(args[i])
-                del(args[i])
-            else:
-                i += 1
+        if found_plugin:
+            args = args.copy()
+            i = 0
+            while (i < len(args)):
+                if args[i].startswith(prefix):
+                    del(args[i])
+                elif args[i] == stand_alone_opt:
+                    del(args[i])
+                    del(args[i])
+                else:
+                    i += 1
 
         # Now parse for real, with any new options in place.
         return parser._inner_parse(args, values)
 
     parser.parse_args = outer_parse
     return parser
-
-class _PluginPath(Path):
-    ''' A Path that registers a plugin when its path is set
-    '''
-    def __init__(self, parent_config: PrescientConfig):
-        self.config = parent_config
-        super().__init__()
-
-    def __call__(self, data):
-        path = super().__call__(data)
-        self.config.plugin_context.register_plugin(path, self.config)
-        return path
 
 class _InEnumStr(InEnum):
     ''' A bit more forgiving string to enum parser

@@ -126,7 +126,7 @@ class OracleManager(_Manager):
         self.data_manager.set_pending_ruc_plan(options, ruc_plan)
         self.data_manager.activate_pending_ruc(options)
 
-        self.simulator.plugin_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
+        self.simulator.callback_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
         return ruc_plan
 
     def call_planning_oracle(self, options: Options, time_step: PrescientTime):
@@ -154,7 +154,7 @@ class OracleManager(_Manager):
                 options.run_ruc_with_next_day_data,
                )
 
-        self.simulator.plugin_manager.invoke_before_ruc_solve_callbacks(options, self.simulator, deterministic_ruc_instance, uc_date, uc_hour)
+        self.simulator.callback_manager.invoke_before_ruc_solve_callbacks(options, self.simulator, deterministic_ruc_instance, uc_date, uc_hour)
 
         deterministic_ruc_instance = self.engine.solve_deterministic_ruc(
                 options,
@@ -184,12 +184,12 @@ class OracleManager(_Manager):
            )
 
         result = RucPlan(simulation_actuals, deterministic_ruc_instance, ruc_market)
-        self.simulator.plugin_manager.invoke_after_ruc_generation_callbacks(options, self.simulator, result, uc_date, uc_hour)
+        self.simulator.callback_manager.invoke_after_ruc_generation_callbacks(options, self.simulator, result, uc_date, uc_hour)
         return result
 
     def activate_pending_ruc(self, options: Options):
         self.data_manager.activate_pending_ruc(options)
-        self.simulator.plugin_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
+        self.simulator.callback_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
 
     def call_operation_oracle(self, options: Options, time_step: PrescientTime):
         # determine the SCED execution mode, in terms of how discrepancies between forecast and actuals are handled.
@@ -219,7 +219,7 @@ class OracleManager(_Manager):
             lp_filename=lp_filename
             )
 
-        self.simulator.plugin_manager.invoke_before_operations_solve_callbacks(options, self.simulator, current_sced_instance)
+        self.simulator.callback_manager.invoke_before_operations_solve_callbacks(options, self.simulator, current_sced_instance)
 
         current_sced_instance, solve_time = self.engine.solve_sced_instance(options, current_sced_instance, 
                                                                             options.output_sced_initial_conditions,
@@ -249,7 +249,7 @@ class OracleManager(_Manager):
         lmp_sced = self.engine.create_and_solve_lmp(options, current_sced_instance)
 
         self.data_manager.apply_sced(options, current_sced_instance)
-        self.simulator.plugin_manager.invoke_after_operations_callbacks(options, self.simulator, current_sced_instance)
+        self.simulator.callback_manager.invoke_after_operations_callbacks(options, self.simulator, current_sced_instance)
 
         ops_stats = self.simulator.stats_manager.collect_operations(current_sced_instance,
                                                                     solve_time,
@@ -257,7 +257,7 @@ class OracleManager(_Manager):
                                                                     pre_quickstart_cache,
                                                                     self.engine.operations_data_extractor)
 
-        self.simulator.plugin_manager.invoke_update_operations_stats_callbacks(options, self.simulator, ops_stats)
+        self.simulator.callback_manager.invoke_update_operations_stats_callbacks(options, self.simulator, ops_stats)
         self._report_sced_stats(ops_stats)
 
         if options.compute_market_settlements:

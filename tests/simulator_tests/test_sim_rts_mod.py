@@ -59,6 +59,8 @@ class _SimulatorModRTSGMLC:
 
         simulator_config_filename = self.simulator_config_filename
         script, options = runner.parse_commands(simulator_config_filename)
+        # Consider using the following instead of launching a separate process:
+        # Prescient().simulate(config_file=simulator_config_filename)
 
         if sys.platform.startswith('win'):
             subprocess.call([script] + options, shell=True)
@@ -176,8 +178,8 @@ class TestSimulatorModRtsGmlcCopperSheet_python(_SimulatorModRTSGMLC, unittest.T
         options = {**base_options}
         options['data_directory'] = 'deterministic_scenarios'
         options['output_directory'] = 'deterministic_simulation_output_python'
-        options['plugin'] = 'test_plugin.py'
-        options['print_callback_message'] = True
+        options['plugin'] = {'test':{'module':'test_plugin.py', 
+                                     'print_callback_message':True}}
         Prescient().simulate(**options)
 
 # test options are correctly re-freshed, Python, and network
