@@ -1,0 +1,18 @@
+command/exec simulator.py
+--data-directory=deterministic_with_network_scenarios_csv
+--input-format=rts-gmlc
+--simulate-out-of-sample 
+--run-sced-with-persistent-forecast-errors 
+--output-directory=deterministic_with_network_simulation_output_csv
+--start-date=07-10-2020
+--num-days=7 
+--sced-horizon=4
+--ruc-mipgap=0.00
+--reserve-factor=0.0 
+--deterministic-ruc-solver=cbc
+--deterministic-ruc-solver-options="feas=off DivingG=on"
+--sced-frequency-minutes=60
+--sced-solver=cbc
+--ruc-horizon=36
+--enforce-sced-shutdown-ramprate
+--no-startup-shutdown-curves

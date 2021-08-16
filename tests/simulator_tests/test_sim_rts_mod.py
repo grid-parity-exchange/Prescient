@@ -167,22 +167,6 @@ class TestSimulatorModRtsGmlcCopperSheet_csv_python_config_file(_SimulatorModRTS
         Prescient().simulate(**options)
 
 # test plugin with Python and *.dat files
-class TestSimulatorModRtsGmlcCopperSheet_python(_SimulatorModRTSGMLC, unittest.TestCase):
-
-    def _set_names(self):
-        self.results_dir_name = 'deterministic_simulation_output_python'
-        self.baseline_dir_name = 'deterministic_simulation_output_baseline'
-
-    def _run_simulator(self):
-        os.chdir(self.test_cases_path)
-        options = {**base_options}
-        options['data_directory'] = 'deterministic_scenarios'
-        options['output_directory'] = 'deterministic_simulation_output_python'
-        options['plugin'] = {'test':{'module':'test_plugin.py', 
-                                     'print_callback_message':True}}
-        Prescient().simulate(**options)
-
-# test options are correctly re-freshed, Python, and network
 class TestSimulatorModRtsGmlcNetwork_python(_SimulatorModRTSGMLC, unittest.TestCase):
 
     def _set_names(self):
@@ -194,6 +178,23 @@ class TestSimulatorModRtsGmlcNetwork_python(_SimulatorModRTSGMLC, unittest.TestC
         options = {**base_options}
         options['data_directory'] = 'deterministic_with_network_scenarios'
         options['output_directory'] = 'deterministic_with_network_simulation_output_python'
+        options['plugin'] = {'test':{'module':'test_plugin.py', 
+                                     'print_callback_message':True}}
+        Prescient().simulate(**options)
+
+# test options are correctly re-freshed, Python, and network
+class TestSimulatorModRtsGmlcNetwork_python_csv(_SimulatorModRTSGMLC, unittest.TestCase):
+
+    def _set_names(self):
+        self.results_dir_name = 'deterministic_with_network_simulation_output_python_csv'
+        self.baseline_dir_name = 'deterministic_with_network_simulation_output_baseline'
+
+    def _run_simulator(self):
+        os.chdir(self.test_cases_path)
+        options = {**base_options}
+        options['data_directory'] = 'deterministic_with_network_scenarios_csv'
+        options['output_directory'] = 'deterministic_with_network_simulation_output_python_csv'
+        options['input_format'] = 'rts-gmlc'
         Prescient().simulate(**options)
 
 if __name__ == '__main__':
