@@ -24,8 +24,8 @@ import prescient.plugins
 class Simulator:
 
     def __init__(self, model_engine: ModelingEngine,
-                       time_manager: TimeManager, 
-                       data_manager: DataManager, 
+                       time_manager: TimeManager,
+                       data_manager: DataManager,
                        oracle_manager: OracleManager,
                        stats_manager: StatsManager,
                        reporting_manager: ReportingManager
@@ -46,7 +46,7 @@ class Simulator:
             raise RuntimeError("The stats_manager must be an instance of class simulator.StatsManager")
         if not isinstance(model_engine, ModelingEngine):
             raise RuntimeError("The model_engine must be an instance of class simulator.ModelingEngine")
-        
+
         time_manager.set_simulator(self)
         data_manager.set_simulator(self)
         oracle_manager.set_simulator(self)
@@ -104,6 +104,8 @@ class Simulator:
             stats_manager.end_timestep(time_step)
 
         stats_manager.end_simulation()
+
+        self.plugin_manager.invoke_after_simulation_callbacks(options, self)
 
         print("Simulation Complete")
         import time

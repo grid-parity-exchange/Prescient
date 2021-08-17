@@ -15,7 +15,7 @@ pending_overall_subscribers = []
 
 class PluginCallbackManager():
     '''
-    Keeps track of what callback methods have been registered, and 
+    Keeps track of what callback methods have been registered, and
     provides methods to invoke callbacks at appropriate times.
     '''
     def __init__(self):
@@ -25,7 +25,8 @@ class PluginCallbackManager():
                      'after_ruc_activation',
                      'before_operations_solve',
                      'before_ruc_solve',
-                     'after_operations']
+                     'after_operations',
+                     'after_simulation']
         for cb in callbacks:
             self._setup_callback(cb)
 
