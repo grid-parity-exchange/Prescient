@@ -9,6 +9,6 @@ dependencies:
 - numpy
 - pandas
 - python-dateutil
-- pyomo>=6.0
+- pyomo>=6.1
 - scipy
 - ipopt
