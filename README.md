@@ -7,7 +7,7 @@ Code base for Prescient production cost model / scenario generation / prediction
 
 ### Requirements
 * Python 3.7 or later
-* Pyomo 6.0 or later
+* Pyomo 6.1 or later
 * EGRET
 * A mixed-integer linear programming (MILP) solver
   * Open source: CBC, GLPK, SCIP, ...
@@ -68,7 +68,6 @@ Depending on your license, you may need to install a specific version of the sol
 ```
 pip install xpress==8.8.6
 ```
-Note for Xpress users: using the Python bindings for Xpress requires at least Pyomo 5.7.1.
 
 
 ### Testing Prescient
