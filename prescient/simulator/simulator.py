@@ -105,7 +105,7 @@ class Simulator:
 
         stats_manager.end_simulation()
 
-        self.plugin_manager.invoke_after_simulation_callbacks(options, self)
+        self.plugin_manager.invoke_finalization_callbacks(options, self)
 
         print("Simulation Complete")
         import time

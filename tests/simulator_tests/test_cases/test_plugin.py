@@ -55,3 +55,7 @@ pplugins.register_after_operations_callback(after_operations_callback)
 def update_operations_stats_callback(options, simulator, operations_stats):
     msg('update_operations_stats_callback', options)
 pplugins.register_update_operations_stats_callback(update_operations_stats_callback)
+
+def finalization_callback(options, simulator):
+    msg('finalization_callback', options)
+pplugins.register_finalization_callback(finalization_callback)
