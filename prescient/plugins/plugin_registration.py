@@ -104,10 +104,10 @@ def register_update_operations_stats_callback(callback: Callable[[Options, Simul
     '''
     get_active_plugin_manager().register_update_operations_stats_callback(callback)
 
-def register_after_simulation_callback(callback: Callable[[Options, Simulator], None]) -> None:
+def register_finalization_callback(callback: Callable[[Options, Simulator], None]) -> None:
     ''' Request a method be called after prescient simulation is over.
     '''
-    get_active_plugin_manager().register_after_simulation_callback(callback)
+    get_active_plugin_manager().register_finalization_callback(callback)
 
 
 

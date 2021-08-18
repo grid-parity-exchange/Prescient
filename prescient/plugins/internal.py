@@ -26,7 +26,7 @@ class PluginCallbackManager():
                      'before_operations_solve',
                      'before_ruc_solve',
                      'after_operations',
-                     'after_simulation']
+                     'finalization']
         for cb in callbacks:
             self._setup_callback(cb)
 
