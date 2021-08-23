@@ -195,7 +195,7 @@ class ScedDataExtractor(BaseScedExtractor):
 
     def get_bus_demand(self, sced: OperationsModel, bus: B) -> float:
         ''' get the demand on a bus in a given time period '''
-        return sced.data['elements']['load'][bus]['p_load']['values'][0]
+        return sced.data['elements']['bus'][bus]['pl']['values'][0]
 
     def get_reserve_RT_price(self, lmp_sced: OperationsModel) -> float:
         if 'reserve_price' in lmp_sced.data['system']:  
@@ -225,7 +225,7 @@ class RucDataExtractor(BaseRucExtractor):
 
     def get_bus_demand(self, ruc: RucModel, bus: B, time: int) -> float:
         ''' get the demand on a bus in a given time period '''
-        return ruc.data['elements']['load'][bus]['p_load']['values'][time-1]
+        return ruc.data['elements']['bus'][bus]['pl']['values'][time-1]
 
     def get_nondispatchable_generators(self, ruc: RucModel) -> Iterable[G]:
         return (g for g,_ in \
