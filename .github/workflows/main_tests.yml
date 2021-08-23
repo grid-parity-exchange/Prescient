@@ -54,6 +54,8 @@ jobs:
               else
                 conda install coincbc
               fi
+              # test cbc executable
+              cbc -quit
           - name: Install EGRET
             run: |
               pip install git+https://github.com/grid-parity-exchange/Egret.git
