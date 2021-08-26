@@ -25,11 +25,12 @@ class RucMarket(NamedTuple):
     thermal_gen_cleared_DA: Dict
     thermal_reserve_cleared_DA: Dict
     renewable_gen_cleared_DA: Dict
+    virtual_gen_cleared_DA: Dict
 
 class RucPlan(NamedTuple):
-   simulation_actuals: RucModel
-   deterministic_ruc_instance: RucModel
-   ruc_market: Optional[RucMarket]
+    simulation_actuals: RucModel
+    deterministic_ruc_instance: RucModel
+    ruc_market: Optional[RucMarket]
 
 class DataManager(_Manager):
     def initialize(self, engine, options):

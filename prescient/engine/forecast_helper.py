@@ -40,13 +40,19 @@ def get_forecastables(*models: EgretModel) -> Iterable[ Tuple[MutableSequence[fl
     '''
     # Renewables limits
     model1 = models[0]
-    for gen, gdata1 in model1.elements('generator', generator_type='renewable'):
-        yield tuple(m.data['elements']['generator'][gen]['p_min']['values'] for m in models)
-        yield tuple(m.data['elements']['generator'][gen]['p_max']['values'] for m in models)
+    for gen, gdata1 in model1.elements('generator', generator_type=('renewable','virtual')):
+        if isinstance(gdata1['p_min'], dict):
+            yield tuple(m.data['elements']['generator'][gen]['p_min']['values'] for m in models)
+        if isinstance(gdata1['p_max'], dict):
+            yield tuple(m.data['elements']['generator'][gen]['p_max']['values'] for m in models)
+        if 'p_cost' in gdata1 and isinstance(gdata1['p_cost'], dict):
+            yield tuple(m.data['elements']['generator'][gen]['p_cost']['values'] for m in models)
 
     # Loads
     for bus, bdata1 in model1.elements('load'):
         yield tuple(m.data['elements']['load'][bus]['p_load']['values'] for m in models)
+        if 'p_price' in bdata1 and isinstance(bdata1['p_price'], dict):
+            yield tuple(m.data['elements']['load'][bus]['p_price']['values'] for m in models)
 
     # Reserve requirement
     if 'reserve_requirement' in model1.data['system']:
@@ -58,14 +64,21 @@ def get_forecastables_with_inferral_method(model:EgretModel) -> Iterable[Inferra
     """ Get all data predicted by forecasting in a model, with the method used to infer values after the first day
     """
     # Renewables limits
-    for gen, gdata in model.elements('generator', generator_type='renewable'):
-        how_to_infer = InferralType.REPEAT_LAST if gdata['fuel'] == 'W' else InferralType.COPY_FIRST_DAY
-        yield InferrableForecastable(how_to_infer, gdata['p_min']['values'])
-        yield InferrableForecastable(how_to_infer, gdata['p_max']['values'])
+    for gen, gdata in model.elements('generator', generator_type=('renewable','virtual')):
+        how_to_infer = InferralType.REPEAT_LAST if ('fuel' in gdata and gdata['fuel'] == 'W') \
+                else InferralType.COPY_FIRST_DAY
+        if isinstance(gdata['p_min'], dict):
+            yield InferrableForecastable(how_to_infer, gdata['p_min']['values'])
+        if isinstance(gdata['p_max'], dict):
+            yield InferrableForecastable(how_to_infer, gdata['p_max']['values'])
+        if 'p_cost' in gdata and isinstance(gdata['p_cost'], dict):
+            yield InferrableForecastable(how_to_infer, gdata['p_cost']['values'])
 
     # Loads
     for bus, bdata in model.elements('load'):
         yield InferrableForecastable(InferralType.COPY_FIRST_DAY, bdata['p_load']['values'])
+        if 'p_price' in bdata and isinstance(bdata['p_price'], dict):
+            yield InferrableForecastable(InferralType.COPY_FIRST_DAY, bdata['p_price']['values'])
 
     # Reserve requirement
     if 'reserve_requirement' in model.data['system']:

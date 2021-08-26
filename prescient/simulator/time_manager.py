@@ -117,11 +117,13 @@ class TimeManager(manager._Manager):
         while current_time < stop_time:
             is_planning_time = current_time == next_planning_time
             if is_planning_time:
-                next_planning_time += ruc_delta
-                # If the next plan won't be activated until after the simulation has finished,
-                # don't bother generating the plan. Push the next planning time out past the end.
-                if next_planning_time + timedelta(hours=self._ruc_delay) >= stop_time:
+                # If this plan won't be activated until after the simulation has finished,
+                # don't bother generating the plan.
+                if current_time + timedelta(hours=self._ruc_delay) >= stop_time:
+                    is_planning_time = False
                     next_planning_time = stop_time
+                else:
+                    next_planning_time += ruc_delta
 
             is_activation_time = current_time == next_activation_time
             if is_activation_time:

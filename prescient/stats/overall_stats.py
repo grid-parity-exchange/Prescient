@@ -41,12 +41,14 @@ class OverallStats(object):
 
     total_thermal_energy_payments: float = 0.0
     total_renewable_energy_payments: float = 0.0
+    total_virtual_energy_payments: float = 0.0
     total_energy_payments: float # implemented as read-only property
 
     total_reserve_payments: float = 0.0
 
     total_thermal_uplift_payments: float = 0.0
     total_renewable_uplift_payments: float = 0.0
+    total_virtual_uplift_payments: float = 0.0
     total_uplift_payments: float # implemented as read-only property
 
     total_payments: float # implemented as read-only property
@@ -76,11 +78,15 @@ class OverallStats(object):
 
     @property
     def total_energy_payments(self):
-        return self.total_thermal_energy_payments + self.total_renewable_energy_payments
+        return self.total_thermal_energy_payments + \
+                self.total_renewable_energy_payments + \
+                self.total_virtual_energy_payments
 
     @property
     def total_uplift_payments(self):
-        return self.total_thermal_uplift_payments + self.total_renewable_uplift_payments
+        return self.total_thermal_uplift_payments + \
+                self.total_renewable_uplift_payments + \
+                self.total_virtual_uplift_payments
 
     @property
     def total_payments(self):
@@ -111,6 +117,8 @@ class OverallStats(object):
 
         self.total_thermal_energy_payments += day_stats.this_date_thermal_energy_payments
         self.total_renewable_energy_payments += day_stats.this_date_renewable_energy_payments
+        self.total_virtual_energy_payments += day_stats.this_date_virtual_energy_payments
         self.total_reserve_payments += day_stats.this_date_reserve_payments
         self.total_thermal_uplift_payments += day_stats.this_date_thermal_uplift
         self.total_renewable_uplift_payments += day_stats.this_date_renewable_uplift
+        self.total_virtual_uplift_payments += day_stats.this_date_virtual_uplift

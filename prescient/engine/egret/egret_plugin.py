@@ -470,14 +470,15 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
     ## change the penalty prices to the caps, if necessary
     reserve_requirement = ('reserve_requirement' in pricing_instance.data['system'])
 
+    system = pricing_instance.data['system']
     # In case of demand shortfall, the price skyrockets, so we threshold the value.
-    if pricing_instance.data['system']['load_mismatch_cost'] > options.price_threshold:
-        pricing_instance.data['system']['load_mismatch_cost'] = options.price_threshold
+    if ('load_mismatch_cost' not in system) or (system['load_mismatch_cost'] > options.price_threshold):
+        system['load_mismatch_cost'] = options.price_threshold
 
     # In case of reserve shortfall, the price skyrockets, so we threshold the value.
     if reserve_requirement:
-        if pricing_instance.data['system']['reserve_shortfall_cost'] > options.reserve_price_threshold:
-            pricing_instance.data['system']['reserve_shortfall_cost'] = options.reserve_price_threshold
+        if ('reserve_shortfall_cost' not in system) or (system['reserve_shortfall_cost'] > options.reserve_price_threshold):
+            system['reserve_shortfall_cost'] = options.reserve_price_threshold
 
     ptdf_manager.mark_active(pricing_instance)
     pyo_model = create_pricing_model(pricing_instance, relaxed=True,
@@ -503,8 +504,11 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
     ptdf_manager.update_active(pricing_results)
 
     ## Debugging
-    if pricing_results.data['system']['total_cost'] > ruc_results.data['system']['total_cost']*(1.+1.e-06):
+    if pricing_results.data['system']['total_cost'] > ruc_results.data['system']['total_cost'] and not \
+            math.isclose(pricing_results.data['system']['total_cost'],  ruc_results.data['system']['total_cost']):
         print("The pricing run had a higher objective value than the MIP run. This is indicative of a bug.")
+        print(f"pricing run cost: {pricing_results.data['system']['total_cost']}")
+        print(f"MIP run cost    : {ruc_results.data['system']['total_cost']}")
         print("Writing LP pricing_problem.json")
         output_filename = 'pricing_instance.json'
         pricing_results.write(output_filename)
@@ -552,13 +556,14 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
             for g, reserve_vals in g_reserve_values.items():
                 thermal_reserve_cleared_DA[g,t] = reserve_vals[t]*surplus_multiple_t
     else:
-        day_ahead_reserve_prices = { t : 0. for t in enumerate(ruc_results.data['system']['time_keys']) } 
+        day_ahead_reserve_prices = { t : 0. for t,_ in enumerate(ruc_results.data['system']['time_keys']) }
         thermal_reserve_cleared_DA = { (g,t) : 0. \
-                for t in enumerate(ruc_results.data['system']['time_keys']) \
+                for t,_ in enumerate(ruc_results.data['system']['time_keys']) \
                 for g,_ in ruc_results.elements(element_type='generator', generator_type='thermal') }
                
     thermal_gen_cleared_DA = {}
     renewable_gen_cleared_DA = {}
+    virtual_gen_cleared_DA = {}
 
     for g, g_dict in ruc_results.elements(element_type='generator'):
         pg = g_dict['pg']['values']
@@ -566,6 +571,8 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
             store_dict = thermal_gen_cleared_DA
         elif g_dict['generator_type'] == 'renewable':
             store_dict = renewable_gen_cleared_DA
+        elif g_dict['generator_type'] == 'virtual':
+            store_dict = virtual_gen_cleared_DA
         else:
             raise RuntimeError(f"Unrecognized generator type {g_dict['generator_type']}")
         for t in range(0,options.ruc_every_hours):
@@ -575,7 +582,8 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
                     day_ahead_reserve_prices=day_ahead_reserve_prices,
                     thermal_gen_cleared_DA=thermal_gen_cleared_DA,
                     thermal_reserve_cleared_DA=thermal_reserve_cleared_DA,
-                    renewable_gen_cleared_DA=renewable_gen_cleared_DA)
+                    renewable_gen_cleared_DA=renewable_gen_cleared_DA,
+                    virtual_gen_cleared_DA=virtual_gen_cleared_DA)
 
 
 def create_simulation_actuals(

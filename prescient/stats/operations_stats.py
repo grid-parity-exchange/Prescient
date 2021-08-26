@@ -68,6 +68,7 @@ class OperationsStats:
     observed_costs: Dict[G, float]
     observed_renewables_levels: Dict[G, float] 
     observed_renewables_curtailment: Dict[G, float]
+    observed_virtual_dispatch_levels: Dict[G, float]
 
     observed_flow_levels: Dict[L, float]
 
@@ -96,6 +97,10 @@ class OperationsStats:
     renewable_gen_cleared_DA: Dict[G, float]
     renewable_gen_revenue: Dict[G, float]
     renewable_uplift: Dict[G, float]
+
+    virtual_gen_cleared_DA: Dict[G, float]
+    virtual_gen_revenue: Dict[G, float]
+    virtual_uplift: Dict[G, float]
 
     thermal_energy_payments: float #read-only property
     renewable_energy_payments: float #read-only property
@@ -198,6 +203,7 @@ class OperationsStats:
         self.observed_costs = extractor.get_cost_per_generator(sced)
         self.observed_renewables_levels = extractor.get_all_nondispatchable_power_used(sced)
         self.observed_renewables_curtailment = extractor.get_all_renewables_curtailment(sced)
+        self.observed_virtual_dispatch_levels = extractor.get_all_virtual_dispatch_levels(sced)
 
         self.observed_flow_levels = extractor.get_all_flow_levels(sced)
 
@@ -231,11 +237,15 @@ class OperationsStats:
         self.renewable_gen_cleared_DA = { g : ruc_market.renewable_gen_cleared_DA[g,time_index] \
                                           for g in extractor.get_nondispatchable_generators(sced) }
 
+        self.virtual_gen_cleared_DA = { g : ruc_market.virtual_gen_cleared_DA[g,time_index] \
+                                          for g in extractor.get_virtual_generators(sced) }
+
         self.thermal_reserve_cleared_DA = { g : ruc_market.thermal_reserve_cleared_DA[g,time_index] \
                                             for g in extractor.get_thermal_generators(sced) }
 
         self.thermal_gen_revenue = dict()
         self.renewable_gen_revenue = dict()
+        self.virtual_gen_revenue = dict()
         for b in extractor.get_buses(sced):
             price_DA = self.planning_energy_prices[b]
             price_RT = self.observed_bus_LMPs[b]
@@ -252,6 +262,12 @@ class OperationsStats:
                      (self.observed_renewables_levels[g] - self.renewable_gen_cleared_DA[g])*price_RT
                     ) * self.sced_duration_minutes / 60
 
+            for g in extractor.get_virtual_generators_at_bus(sced, b):
+                self.virtual_gen_revenue[g] = \
+                    (self.virtual_gen_cleared_DA[g]*price_DA + \
+                     (self.observed_virtual_dispatch_levels[g] - self.virtual_gen_cleared_DA[g])*price_RT
+                    ) * self.sced_duration_minutes / 60
+
 
         r_price_DA = self.planning_reserve_price
         r_price_RT = self.reserve_RT_price
@@ -263,7 +279,5 @@ class OperationsStats:
 
         ## TODO: calculate uplift for the day
         self.thermal_uplift = { g : 0. for g in extractor.get_thermal_generators(sced) }
-
-        ## TODO: calculate uplift for the day
         self.renewable_uplift = { g : 0. for g in extractor.get_nondispatchable_generators(sced) }
-
+        self.virtual_uplift = { g : 0. for g in extractor.get_virtual_generators(sced) }

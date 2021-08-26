@@ -18,6 +18,7 @@ from enum import Enum, auto
 class InputFormats(Enum):
     RTS_GMLC = auto()
     DAT = auto()
+    SHORTCUT = auto()
 
 def get_data_provider(options:Options) -> DataProvider:
     if options.input_format == InputFormats.RTS_GMLC:
@@ -27,6 +28,10 @@ def get_data_provider(options:Options) -> DataProvider:
     elif options.input_format == InputFormats.DAT:
         from .providers.dat_data_provider import DatDataProvider
         return DatDataProvider(options)
+
+    elif options.input_format == InputFormats.SHORTCUT:
+        from .providers.shortcut_data_provider import ShortcutDataProvider
+        return ShortcutDataProvider(options)
 
     else:
         raise ValueError(f"Invalid input format: {options.input_format}")

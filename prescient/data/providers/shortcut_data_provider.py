@@ -15,23 +15,47 @@ if TYPE_CHECKING:
 
 import os.path
 from datetime import datetime, timedelta
+from collections import defaultdict
 import copy
+import csv
+import pandas as pd
 
 from egret.parsers import rts_gmlc_parser as parser
 from egret.data.model_data import ModelData as EgretModel
 
 from ..data_provider import DataProvider
+from .gmlc_data_provider import _recurse_copy_at_ratio
 from prescient.engine import forecast_helper
 
-class GmlcDataProvider(DataProvider):
-    ''' Provides data for RTS-GMLC like files
+class ShortcutDataProvider(DataProvider):
+    ''' Provides data for shortcut simulator
     '''
 
     def __init__(self, options:Options):
                                             # midnight start
         self._start_time = datetime.combine(options.start_date, datetime.min.time())
         self._end_time = self._start_time + timedelta(days=options.num_days)
-        self._cache = parser.parse_to_cache(options.data_directory, self._start_time, self._end_time)
+
+        # TODO: option-drive
+        self._virtual_bus_capacity = 1e6
+
+        self._generator_characteristics = _load_generator_characteristics(options.data_directory)
+        self._historical_prices, self._frequency_minutes = \
+                _load_historical_prices(options.data_directory, self._start_time, self._end_time)
+
+        self._initial_model = { 'elements' : { 'bus' : {'virtual_bus':{}},
+                                               'generator' : self._generator_characteristics,
+                                             },
+                                             'system' : {'baseMVA':100.,
+                                                         'load_mismatch_cost':10000.,
+                                                         'reserve_shortfall_cost':5000.,},
+                              }
+        self._initial_model['elements']['generator']['system'] = { 'p_min' : -self._virtual_bus_capacity,
+                                                                   'p_max' :  self._virtual_bus_capacity,
+                                                                   'p_cost' : { 'data_type' : 'time_series',
+                                                                                'values' : None },
+                                                                   'generator_type' : 'virtual',
+                                                                   'bus' : 'virtual_bus' }
 
     def negotiate_data_frequency(self, desired_frequency_minutes:int):
         ''' Get the number of minutes between each timestep of actuals data this provider will supply,
@@ -53,8 +77,7 @@ class GmlcDataProvider(DataProvider):
             Note that the frequency indicated by this method only applies to actuals data; estimates are always
             hourly.
         '''
-        # This provider can only return data at multiples of the underlying data's frequency.
-        native_frequency = self._cache.minutes_per_period['REAL_TIME']
+        native_frequency = self._frequency_minutes
         if desired_frequency_minutes % native_frequency == 0:
             return desired_frequency_minutes
         else:
@@ -62,7 +85,6 @@ class GmlcDataProvider(DataProvider):
 
     def get_initial_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
         ''' Get a model ready to be populated with data
-
         Returns
         -------
         A model object populated with static system information, such as
@@ -71,12 +93,20 @@ class GmlcDataProvider(DataProvider):
 
         Initial values in time time series do not have meaning.
         '''
-        data = self._cache.get_new_skeleton()
+        data = copy.deepcopy(self._initial_model)
         data['system']['time_period_length_minutes'] = minutes_per_timestep
         data['system']['time_keys'] = [str(i) for i in range(1,num_time_steps+1)]
-        md = EgretModel(data)
-        forecast_helper.ensure_forecastable_storage(num_time_steps, md)
-        return md
+
+        def _ensure_timeseries_allocated(d):
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    if 'data_type' in v and v['data_type'] == 'time_series':
+                        v['values'] = [None]*num_time_steps
+                    else:
+                        _ensure_timeseries_allocated(v)
+        _ensure_timeseries_allocated(data)
+
+        return EgretModel(data)
 
     def populate_initial_state_data(self, options:Options,
                                     model: EgretModel) -> None:
@@ -135,7 +165,7 @@ class GmlcDataProvider(DataProvider):
 
         Note that this method has the same signature as populate_with_actuals.
         '''
-        self._populate_with_forecastable_data('DAY_AHEAD', start_time, num_time_periods, time_period_length_minutes, model)
+        self._populate_with_forecastable_data('day_ahead', start_time, num_time_periods, time_period_length_minutes, model)
 
     def populate_with_actuals(self, options:Options,
                               start_time:datetime,
@@ -174,8 +204,7 @@ class GmlcDataProvider(DataProvider):
 
         Note that this method has the same signature as populate_with_forecast_data.
         '''
-        self._populate_with_forecastable_data('REAL_TIME', start_time, num_time_periods, time_period_length_minutes, model)
-
+        self._populate_with_forecastable_data('real_time', start_time, num_time_periods, time_period_length_minutes, model)
 
     def _populate_with_forecastable_data(self,
                                          sim_type:str,
@@ -184,25 +213,93 @@ class GmlcDataProvider(DataProvider):
                                          time_period_length_minutes: int,
                                          model: EgretModel
                                         ) -> None:
-        end_time = start_time + timedelta(minutes=num_time_periods*time_period_length_minutes)
-        native_frequency = self._cache.minutes_per_period[sim_type]
-        step_ratio = time_period_length_minutes // native_frequency
-        
-        if step_ratio == 1 and len(model.data['system']['time_keys']) == num_time_periods:
-            self._cache.populate_skeleton_with_data(model.data, sim_type, start_time, end_time)
-        else:
-            copy_from = self._cache.generate_model(sim_type, start_time, end_time)
-            _recurse_copy_at_ratio(copy_from.data, model.data, step_ratio)
+                                                                                     # pandas is inclusive on ranges
+        end_time = start_time + timedelta(minutes=num_time_periods*time_period_length_minutes) - timedelta(seconds=1)
 
-        # Fill in the times
+        price_data = self._historical_prices[sim_type][start_time:end_time].to_list()
+
+        if sim_type == 'day_ahead':
+            step_ratio = 1
+        else:
+            step_ratio = time_period_length_minutes // self._frequency_minutes
+
+        if step_ratio == 1 and len(model.data['system']['time_keys']) == num_time_periods:
+            p_cost = model.data['elements']['generator']['system']['p_cost']['values'] 
+            for i, val in enumerate(price_data):
+                p_cost[i] = val
+        else:
+            copy_from = model.clone()
+            copy_from.data['elements']['generator']['system']['p_cost']['values'] = price_data
+            # if the data is at a higher frequency, it is more sensible
+            # to average over the time periods for prices
+            _recurse_average_at_ratio(copy_from.data, model.data, step_ratio)
+
+        # Fill in times:
         time_labels = model.data['system']['time_keys']
         delta = timedelta(minutes=time_period_length_minutes)
         for i in range(len(time_labels)):
             dt = start_time + i*delta
             time_labels[i] = dt.strftime('%Y-%m-%d %H:%M')
 
-def _recurse_copy_at_ratio(src:dict[str, Any], target:dict[str, Any], ratio:int) -> None:
-    ''' Copy every Nth value from a src dict's time_series values into corresponding arrays in a target dict.
+def _load_generator_characteristics(data_directory):
+    
+    # hack the _read_generators function in the RTS-GMLC parser
+    elements = {'generator': {},
+            'bus' : {'virtual_bus':{'area':'virtual_area', 'zone':'virtual_zone'}},
+            'area': {'virtual_area':{}},
+            'zone': {'virtual_zone':{}},
+            }
+    bus_id_to_names = defaultdict(lambda: 'virtual_bus')
+    parser._read_generators(data_directory, elements, bus_id_to_names)
+
+    md = {'elements':elements}
+    # looks for initial_status.csv itself
+    parser.set_t0_data(md, data_directory)
+
+    if os.path.exists(os.path.join(data_directory, 'shortcut_gens.csv')):
+        msg_path = "ONLY"
+
+        gens = []
+        with open(os.path.join(data_directory, 'shortcut_gens.csv'), newline='') as csvfile:
+            genreader = csv.reader(csvfile)
+            for r in genreader:
+                gens.extend(r)
+
+        gen_dict = {}
+        for g in gens:
+            gen_dict[g] = elements['generator'][g]
+
+    else:
+        msg_path = "ALL"
+        gen_dict = elements['generator']
+
+    print("Shortcut Simulator loading "+msg_path+" generator(s) " + \
+            ",".join(gen_dict.keys()) + f" from {os.path.join(data_directory, 'gen.csv')}")
+
+    return gen_dict
+
+def _load_historical_prices(data_directory, start_time, end_time):
+    def parse_prices( fn ):
+        fn = os.path.join(data_directory, fn)
+        df = pd.read_csv(fn, parse_dates=True, index_col=0)
+        return df[df.columns[0]]
+
+    day_ahead = parse_prices(os.path.join(data_directory, 'day_ahead_prices.csv'))[start_time:end_time]
+    real_time = parse_prices(os.path.join(data_directory, 'real_time_prices.csv'))[start_time:end_time]
+
+    # for the day-ahead, only store hourly prices
+    day_ahead = day_ahead.asfreq('H').copy()
+
+    # get the real-time minutes as the space between first two data points
+    real_time_minutes = (real_time.index[1] - real_time.index[0]).seconds//60
+
+    # check against last periods
+    assert real_time_minutes == ((real_time.index[-1] - real_time.index[-2]).seconds//60)
+
+    return {'day_ahead':day_ahead, 'real_time':real_time}, real_time_minutes
+
+def _recurse_average_at_ratio(src:dict[str, Any], target:dict[str, Any], ratio:int) -> None:
+    ''' Average every N-1th to Nth value from a src dict's time_series values into corresponding arrays in a target dict.
     '''
     for key, att in src.items():
         if isinstance(att, dict):
@@ -212,10 +309,11 @@ def _recurse_copy_at_ratio(src:dict[str, Any], target:dict[str, Any], ratio:int)
                     # If there is already a value array at the target, fill it in (to preserve array size)
                     target_vals = target[key]['values']
                     for s,t in zip(range(0, len(src_vals), ratio), range(len(target_vals))):
-                        target_vals[t] = src_vals[s]
+                        target_vals[t] = sum(src_vals[s:s+ratio])/ratio
                 else:
                     # Otherwise create a new timeseries array
                     target[key] = { 'data_type': 'time_series',
-                                    'values' : [src_vals[i] for i in range(0, len(src_vals), ratio)] }
+                                    'values' : [ sum(src_vals[s:s+ratio])/ratio for i \
+                                                    in range(0, len(src_vals), ratio)] }
             else:
-                _recurse_copy_at_ratio(att, target[key], ratio)
+                _recurse_average_at_ratio(att, target[key], ratio)

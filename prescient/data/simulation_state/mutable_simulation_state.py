@@ -153,7 +153,7 @@ class MutableSimulationState(SimulationState):
                            for t in range(0,options.ruc_horizon)) 
 
         # And finally, save forecastables
-        _save_forecastables(options, ruc, self._forecasts)
+        _save_forecastables(options, ruc, self._forecasts, 1)
 
 
     def apply_actuals(self, options, actuals) -> None:
@@ -172,7 +172,7 @@ class MutableSimulationState(SimulationState):
             self._next_actuals_pop_minute = self._minutes_per_actuals_step
             self._sced_frequency = options.sced_frequency_minutes
 
-        _save_forecastables(options, actuals, self._actuals)
+        _save_forecastables(options, actuals, self._actuals, int(60//self._sced_frequency))
 
     def apply_sced(self, options, sced) -> None:
         ''' Incorporate a sced's results into the current state, and move to the next time period.
@@ -219,10 +219,10 @@ class MutableSimulationState(SimulationState):
 
 
 
-def _save_forecastables(options, ruc, where_to_store):
+def _save_forecastables(options, ruc, where_to_store, steps_per_hour):
     first_ruc = (len(where_to_store) == 0)
     ruc_delay = -(options.ruc_execution_hour % (-options.ruc_every_hours))
-    max_length = ruc_delay + options.ruc_horizon
+    max_length = steps_per_hour*(ruc_delay + options.ruc_horizon)
 
     # Save all forecastables, in forecastable order
     for idx, (new_ruc_vals,) in enumerate(get_forecastables(ruc)):
@@ -234,7 +234,7 @@ def _save_forecastables(options, ruc, where_to_store):
             forecast = where_to_store[idx]
 
             # Pop until the first "ruc_delay" items are the only items in the list
-            for _ in range(len(forecast) - ruc_delay):
+            for _ in range(len(forecast) - steps_per_hour*ruc_delay):
                 forecast.pop()
 
         # Put the new values into the value queue
