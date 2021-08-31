@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 from typing import NamedTuple
 
 class _StatisticsSubscribers(NamedTuple):
+    operations: List[Callable[[OperationsStats], None]] = list()
     hourly: List[Callable[[HourlyStats], None]] = list()
     daily: List[Callable[[DailyStats], None]] = list()
     overall: List[Callable[[OverallStats], None]] = list()
@@ -58,6 +59,9 @@ class PluginCallbackManager():
     def register_initialization_callback(self, callback):
         self._initialization_callbacks.append(callback)
 
+    def register_operations_stats_callback(self, callback):
+        self._pending_stats_subscribers.operations.append(callback)
+
     def register_hourly_stats_callback(self, callback):
         self._pending_stats_subscribers.hourly.append(callback)
 
@@ -75,6 +79,9 @@ class PluginCallbackManager():
             cb(options, simulator)
 
         # register stats callbacks as subscribers
+        for s in self._pending_stats_subscribers.operations:
+            simulator.stats_manager.register_for_sced_stats(s)
+        self._pending_stats_subscribers.operations.clear()
         for s in self._pending_stats_subscribers.hourly:
             simulator.stats_manager.register_for_hourly_stats(s)
         self._pending_stats_subscribers.hourly.clear()

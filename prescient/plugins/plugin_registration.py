@@ -44,6 +44,17 @@ class PluginRegistrationContext:
             raise RuntimeError(f"plugin module={plugin_module} does not have a required method, register_plugins")
         register_func(self, config, plugin_config)
 
+    def register_for_operations_stats(
+        self, 
+        callback: Callable[[OperationsStats], None]
+        ) -> None:
+        '''
+        Called during plugin registration to request a subscription to operations (sced) stats updates.
+
+        To subscribe to statistics after plugin registration, call the stats_manager directly.
+        '''
+        self.callback_manager.register_operations_stats_callback(callback)
+
     def register_for_hourly_stats(
         self, 
         callback: Callable[[HourlyStats], None]
@@ -162,6 +173,8 @@ class PluginRegistrationContext:
         ) -> None:
         ''' Register a callback to be called after intial statistics have been gathered for an 
             solved operations model, but before the statistics have been published.
+
+            The operations stats object may be modified by the registered callback.
         '''
         self.callback_manager.register_update_operations_stats_callback(callback)
 
