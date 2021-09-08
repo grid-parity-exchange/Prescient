@@ -1,0 +1,17 @@
+command/exec simulator.py
+--data-directory=5bus
+--input-format=rts-gmlc
+#--simulate-out-of-sample 
+--run-sced-with-persistent-forecast-errors 
+--output-directory=5bus_output
+--start-date=07-10-2020
+--num-days=3
+--sced-horizon=1
+--ruc-mipgap=0.00
+--reserve-factor=0.0 
+--deterministic-ruc-solver=cbc
+--deterministic-ruc-solver-options="feas=off DivingG=on"
+--sced-frequency-minutes=5
+--sced-solver=cbc
+--ruc-horizon=36
+--compute-market-settlements
