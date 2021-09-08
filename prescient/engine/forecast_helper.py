@@ -112,10 +112,11 @@ def ensure_forecastable_storage(num_entries:int, model:EgretModel) -> None:
             yield (model.data['system'], 'reserve_requirement')
 
     for data, key in _get_forecastable_locations(model):
-        if (not key in data or \
+        if (key not in data or \
             type(data[key]) is not dict or \
             data[key]['data_type'] != 'time_series' or \
             len(data[key]['values'] != num_entries)
            ):
+            default = None if (key not in data) else data[key]
             data[key] = { 'data_type': 'time_series',
-                          'values': [None]*num_entries}
+                          'values': [default]*num_entries}
