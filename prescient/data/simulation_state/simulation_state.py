@@ -47,8 +47,8 @@ class SimulationState(ABC):
         pass
 
     @abstractmethod
-    def get_current_actuals(self) -> Iterable[float]:
-        ''' Get the current actual value for each forecastable.
+    def get_current_actuals(self, forecastable:str) -> float:
+        ''' Get the current actual value for forecastable
 
         This is the actual value for the current time period (time index 0).
         Values are returned in the same order as forecast_helper.get_forecastables,
@@ -57,8 +57,8 @@ class SimulationState(ABC):
         pass
 
     @abstractmethod
-    def get_forecasts(self) -> Iterable[Sequence[float]]:
-        ''' Get the forecast values for each forecastable 
+    def get_forecasts(self, forecastable:str) -> Sequence[float]:
+        ''' Get the forecast values for forecastable
 
         This is very similar to forecast_helper.get_forecastables(); the 
         function yields an array per forecastable, in the same order as
@@ -70,8 +70,8 @@ class SimulationState(ABC):
         pass
 
     @abstractmethod
-    def get_future_actuals(self) -> Iterable[Sequence[float]]:
-        ''' Warning: Returns actual values of forecastables for the current time AND FUTURE TIMES.
+    def get_future_actuals(self, forecastable:str) -> Sequence[float]:
+        ''' Warning: Returns actual values of forecastable for the current time AND FUTURE TIMES.
 
         Be aware that this function returns information that is not yet known!
         The function lets you peek into the future.  Future actuals may be used

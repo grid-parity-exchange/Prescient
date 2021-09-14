@@ -26,8 +26,8 @@ class MutableSimulationState(SimulationState):
     '''
 
     def __init__(self):
-        self._forecasts = []
-        self._actuals = []
+        self._forecasts = {}
+        self._actuals = {}
         self._commits = {}
 
         self._init_gen_state = {}
@@ -49,7 +49,9 @@ class MutableSimulationState(SimulationState):
     @property
     def timestep_count(self) -> int:
         ''' The number of timesteps we have data for '''
-        return len(self._forecasts[0]) if len(self._forecasts) > 0 else 0
+        for _ in self._forecasts.values():
+            return len(_)
+        return 0
 
     @property
     def minutes_per_step(self) -> int:
@@ -73,18 +75,17 @@ class MutableSimulationState(SimulationState):
         ''' Get state of charge in the previous time period '''
         return self._init_soc[s]
 
-    def get_current_actuals(self) -> Iterable[float]:
-        ''' Get the current actual value for each forecastable.
+    def get_current_actuals(self, forecastable:str) -> float:
+        ''' Get the current actual value for forecastable
 
         This is the actual value for the current time period (time index 0).
         Values are returned in the same order as forecast_helper.get_forecastables,
         but instead of returning arrays it returns a single value.
         '''
-        for forecastable in self._actuals:
-            yield forecastable[0]
+        return self._actuals[forecastable][0]
 
-    def get_forecasts(self) -> Iterable[Sequence[float]]:
-        ''' Get the forecast values for each forecastable 
+    def get_forecasts(self, forecastable:str) -> Sequence[float]:
+        ''' Get the forecast values for forecastable
 
         This is very similar to forecast_helper.get_forecastables(); the 
         function yields an array per forecastable, in the same order as
@@ -93,18 +94,16 @@ class MutableSimulationState(SimulationState):
         Note that the value at index 0 is the forecast for the current time,
         not the actual value for the current time.
         '''
-        for forecastable in self._forecasts:
-            yield forecastable
+        return self._forecasts[forecastable]
 
-    def get_future_actuals(self) -> Iterable[Sequence[float]]:
-        ''' Warning: Returns actual values for the current time AND FUTURE TIMES.
+    def get_future_actuals(self, forecastable:str) -> Sequence[float]:
+        ''' Warning: Returns actual values of forecastable for the current time AND FUTURE TIMES.
 
         Be aware that this function returns information that is not yet known!
         The function lets you peek into the future.  Future actuals may be used
         by some (probably unrealistic) algorithm options, such as 
         '''
-        for forecastable in self._actuals:
-            yield forecastable
+        return self._actuals[forecastable]
 
     def apply_ruc(self, options, ruc:RucModel) -> None:
         ''' Incorporate a RUC instance into the current state.
@@ -192,14 +191,14 @@ class MutableSimulationState(SimulationState):
         self._simulation_minute += self._sced_frequency
 
         while self._next_forecast_pop_minute <= self._simulation_minute:
-            for value_deque in self._forecasts:
+            for value_deque in self._forecasts.values():
                 value_deque.popleft()
             for value_deque in self._commits.values():
                 value_deque.popleft()
             self._next_forecast_pop_minute += self._minutes_per_forecast_step
 
         while self._simulation_minute >= self._next_actuals_pop_minute:
-            for value_deque in self._actuals:
+            for value_deque in self._actuals.values():
                 value_deque.popleft()
             self._next_actuals_pop_minute += self._minutes_per_actuals_step
 
@@ -225,17 +224,17 @@ def _save_forecastables(options, ruc, where_to_store, steps_per_hour):
     max_length = steps_per_hour*(ruc_delay + options.ruc_horizon)
 
     # Save all forecastables, in forecastable order
-    for idx, (new_ruc_vals,) in enumerate(get_forecastables(ruc)):
+    for key, new_ruc_vals in get_forecastables(ruc):
         if first_ruc:
             # append to storage array
             forecast = deque(maxlen=max_length)
-            where_to_store.append(forecast)
+            where_to_store[key] = forecast
         else:
-            forecast = where_to_store[idx]
+            forecast = where_to_store[key]
 
             # Pop until the first "ruc_delay" items are the only items in the list
             for _ in range(len(forecast) - steps_per_hour*ruc_delay):
                 forecast.pop()
 
         # Put the new values into the value queue
-        forecast.extend(new_ruc_vals) 
+        forecast.extend(new_ruc_vals)

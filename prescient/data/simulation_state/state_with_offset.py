@@ -82,18 +82,17 @@ class StateWithOffset(SimulationState):
         ''' Get state of charge in the previous time period '''
         return self._init_soc[s]
 
-    def get_current_actuals(self) -> Iterable[float]:
-        ''' Get the current actual value for each forecastable.
+    def get_current_actuals(self, forecastable:str) -> float:
+        ''' Get the current actual value for forecastable
 
         This is the actual value for the current time period (time index 0).
         Values are returned in the same order as forecast_helper.get_forecastables,
         but instead of returning arrays it returns a single value.
         '''
-        for actual in self._parent.get_future_actuals():
-            yield actual[self._offset]
+        return self._parent.get_future_actuals(forecastable)[self._offset]
 
-    def get_forecasts(self) -> Iterable[Sequence[float]]:
-        ''' Get the forecast values for each forecastable 
+    def get_forecasts(self, forecastable:str) -> Sequence[float]:
+        ''' Get the forecast values for forecastable
 
         This is very similar to forecast_helper.get_forecastables(); the 
         function yields an array per forecastable, in the same order as
@@ -102,19 +101,15 @@ class StateWithOffset(SimulationState):
         Note that the value at index 0 is the forecast for the current time,
         not the actual value for the current time.
         '''
-        for forecast in self._parent.get_forecasts():
-            # Copy the relevent portion to a new array
-            portion = list(itertools.islice(forecast, self._offset, None))
-            yield portion
+        # Copy the relevent portion to a new array
+        return list(itertools.islice(self._parent.get_forecasts(forecastable), self._offset, None))
 
-    def get_future_actuals(self) -> Iterable[Sequence[float]]:
-        ''' Warning: Returns actual values for the current time AND FUTURE TIMES.
+    def get_future_actuals(self, forecastable:str) -> Sequence[float]:
+        ''' Warning: Returns actual values of forecastable for the current time AND FUTURE TIMES.
 
         Be aware that this function returns information that is not yet known!
         The function lets you peek into the future.  Future actuals may be used
         by some (probably unrealistic) algorithm options, such as 
         '''
-        for future in self._parent.get_future_actuals():
-            # Copy the relevent portion to a new array
-            portion = list(itertools.islice(future, self._offset, None))
-            yield portion
+        # Copy the relevent portion to a new array
+        return list(itertools.islice(self._parent.get_future_actuals(forecastable), self._offset, None))
