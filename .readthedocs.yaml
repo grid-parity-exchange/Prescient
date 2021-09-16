@@ -1,0 +1,12 @@
+# Required, this config file format version
+version: 2
+
+sphinx:
+  configuration: doc/OnlineDocs/source/conf.py
+
+formats: all
+
+# Set the version of Python and requirements required to build the docs
+python:
+  version: 3
+

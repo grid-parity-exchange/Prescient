@@ -342,7 +342,7 @@ class PrescientConfig(ConfigDict):
         self.declare("write_deterministic_ruc_instances", ConfigValue(
             domain=bool,
             default=False,
-            description="Write all individual SCED instances.",
+            description="Write all individual RUC instances.",
         )).declare_as_argument()
 
         self.declare("write_sced_instances", ConfigValue(

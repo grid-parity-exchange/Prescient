@@ -1,0 +1,18 @@
+.wy-nav-content {
+    max-width: none;
+}
+
+.wy-table-responsive table td, .wy-table-responsive table th {
+    white-space: inherit;
+}
+
+.rst-content table.table-top-align-cells td,
+.rst-content table.table-top-align-cells th {
+    vertical-align: top;
+    word-break: break-word;
+}
+
+.rst-content table.table-wrap-headers th {
+    white-space: normal;
+    word-break: break-word;
+}
