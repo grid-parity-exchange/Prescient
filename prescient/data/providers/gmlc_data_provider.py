@@ -18,7 +18,6 @@ from datetime import datetime, timedelta
 import copy
 
 from egret.parsers import rts_gmlc_parser as parser
-from egret.parsers.rts_gmlc._reserves import reserve_name_map
 from egret.data.model_data import ModelData as EgretModel
 
 from ..data_provider import DataProvider
@@ -207,52 +206,12 @@ class GmlcDataProvider(DataProvider):
             dt = start_time + i*delta
             time_labels[i] = dt.strftime('%Y-%m-%d %H:%M')
 
-    def _get_forecastable_locations(self, simulation_type:str, md:EgretModel):
-        df = self._cache.timeseries_df
-
-        system = md.data['system']
-        loads = md.data['elements']['load']
-        generators = md.data['elements']['generator']
-        areas = md.data['elements']['area']
-
-        # Go through each timeseries value for this simulation type
-        for i in range(self._cache._first_indices[simulation_type], len(df)):
-            if df.iat[i, df.columns.get_loc('Simulation')] != simulation_type:
-                break
-
-            category = df.iat[i, df.columns.get_loc('Category')]
-
-            if category == 'Generator':
-                gen_name = df.iat[i, df.columns.get_loc('Object')]
-                param = df.iat[i, df.columns.get_loc('Parameter')]
-
-                if param == 'PMin MW':
-                    yield (generators[gen_name], 'p_min')
-                elif param == 'PMax MW':
-                    yield (generators[gen_name], 'p_max')
-                else:
-                    raise ValueError(f"Unexpected generator timeseries data: {param}")
-
-            elif category == 'Area':
-                area_name = df.iat[i, df.columns.get_loc('Object')]
-                param = df.iat[i, df.columns.get_loc('Parameter')]
-                assert(param == "MW Load")
-                for l_d in loads.values():
-                    # Skip loads from other areas
-                    if l_d['area'] != area_name:
-                        continue
-                    yield (l_d, 'p_load')
-                    yield (l_d, 'q_load')
-
-            elif category == 'Reserve':
-                res_name = df.iat[i, df.columns.get_loc('Object')]
-                if res_name in reserve_name_map:
-                    yield (system, reserve_name_map[res_name])
-                else:
-                    # reserve name must be <type>_R<area>,
-                    # split into type and area
-                    res_name, area_name = res_name.split("_R", 1)
-                    yield (areas[area_name], reserve_name_map[res_name])
+    def _get_forecastable_locations(self, simulation_type:str, md:EgretModel) -> Iterable[Tuple[dict, str]]:
+        ''' Get all recognized forecastable locations with a defined time series
+        
+        Each location is returned as a dict and the name of a key within the dict
+        '''
+        return self._cache.get_timeseries_locations(simulation_type, md)
 
     def _ensure_forecastable_storage(self, sim_type:str, num_entries:int, model:EgretModel) -> None:
         """ Ensure that the model has an array allocated for every type of forecastable data

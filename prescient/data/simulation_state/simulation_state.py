@@ -48,24 +48,34 @@ class SimulationState(ABC):
 
     @abstractmethod
     def get_current_actuals(self, forecastable:str) -> float:
-        ''' Get the current actual value for forecastable
+        ''' Get the current actual value for a forecastable data item
 
-        This is the actual value for the current time period (time index 0).
-        Values are returned in the same order as forecast_helper.get_forecastables,
-        but instead of returning arrays it returns a single value.
+        Arguments
+        ---------
+        forecastable:str
+            The unique identifier for the forecastable data item of interest,
+            as returned by forecast_helper.get_forecastables()
+
+        Returns
+        -------
+        Returns the actual value for the current time period (time index 0).
         '''
         pass
 
     @abstractmethod
     def get_forecasts(self, forecastable:str) -> Sequence[float]:
-        ''' Get the forecast values for forecastable
+        ''' Get the forecast values for a forecastable
 
-        This is very similar to forecast_helper.get_forecastables(); the 
-        function yields an array per forecastable, in the same order as
-        get_forecastables().
+        Arguments
+        ---------
+        forecastable:str
+            The unique identifier for the forecastable data item of interest,
+            as returned by forecast_helper.get_forecastables()
 
-        Note that the value at index 0 is the forecast for the current time,
-        not the actual value for the current time.
+        Returns
+        -------
+        Returns an array of forecast values, starting with the forecast
+        for the current time at index 0.
         '''
         pass
 
@@ -73,8 +83,20 @@ class SimulationState(ABC):
     def get_future_actuals(self, forecastable:str) -> Sequence[float]:
         ''' Warning: Returns actual values of forecastable for the current time AND FUTURE TIMES.
 
+        Arguments
+        ---------
+        forecastable:str
+            The unique identifier for the forecastable data item of interest,
+            as returned by forecast_helper.get_forecastables()
+
+        Returns
+        -------
+        Returns an array of actual values, starting with the actual value
+        for the current time at index 0. All values beyond index 0 are actual
+        values for future time periods, which cannot be known at the current time.
+
         Be aware that this function returns information that is not yet known!
         The function lets you peek into the future.  Future actuals may be used
-        by some (probably unrealistic) algorithm options, such as 
+        by some (probably unrealistic) algorithm options.
         '''
         pass

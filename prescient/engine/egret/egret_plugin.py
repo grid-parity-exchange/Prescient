@@ -367,13 +367,12 @@ def create_deterministic_ruc(options,
     ruc_delay = -(options.ruc_execution_hour%(-options.ruc_every_hours))
     if options.ruc_prescience_hour > ruc_delay + 1:
         improved_hour_count = options.ruc_prescience_hour - ruc_delay - 1
-        for forecast, actuals in zip(get_forecastables(md),
-                                        current_state.get_future_actuals()):
+        for forecastable, forecast in get_forecastables(md):
+            actuals = current_state.get_future_actuals(forecastable)
             for t in range(0, improved_hour_count):
                 forecast_portion = (ruc_delay+t)/options.ruc_prescience_hour
                 actuals_portion = 1-forecast_portion
                 forecast[t] = forecast_portion*forecast[t] + actuals_portion*actuals[t]
-
 
     # Ensure the reserve requirement is satisfied
     _ensure_reserve_factor_honored(options, md, range(forecast_request_count))
@@ -626,7 +625,7 @@ def create_simulation_actuals(
         timesteps_per_day = 24 * 60 / step_size_minutes
         steps_to_request = math.min(timesteps_per_day, total_step_count)
         get_data_func(options, start_time, steps_to_request, step_size_minutes, md)
-        for vals, in get_forecastables(md):
+        for _, vals in get_forecastables(md):
             for t in range(timesteps_per_day, total_step_count):
                 vals[t] = vals[t-timesteps_per_day]
 

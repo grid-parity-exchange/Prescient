@@ -50,7 +50,9 @@ class MutableSimulationState(SimulationState):
     def timestep_count(self) -> int:
         ''' The number of timesteps we have data for '''
         for _ in self._forecasts.values():
+            # Return the length of the first forecast array, if there is one...
             return len(_)
+        # ...or return 0 if _forecasts is empty
         return 0
 
     @property
@@ -78,18 +80,30 @@ class MutableSimulationState(SimulationState):
     def get_current_actuals(self, forecastable:str) -> float:
         ''' Get the current actual value for forecastable
 
-        This is the actual value for the current time period (time index 0).
-        Values are returned in the same order as forecast_helper.get_forecastables,
-        but instead of returning arrays it returns a single value.
+        Arguments
+        ---------
+        forecastable:str
+            The unique identifier for the forecastable data item of interest,
+            as returned by forecast_helper.get_forecastables()
+
+        Returns
+        -------
+        Returns the actual scalar value for the current time period (time index 0)
         '''
         return self._actuals[forecastable][0]
 
     def get_forecasts(self, forecastable:str) -> Sequence[float]:
-        ''' Get the forecast values for forecastable
+        ''' Get the forecast values for a named forecastable
 
-        This is very similar to forecast_helper.get_forecastables(); the 
-        function yields an array per forecastable, in the same order as
-        get_forecastables().
+        Arguments
+        ---------
+        forecastable:str
+            The unique identifier for the forecastable data item of interest,
+            as returned by forecast_helper.get_forecastables()
+
+        Returns
+        -------
+        Returns an array for the named forecastable.
 
         Note that the value at index 0 is the forecast for the current time,
         not the actual value for the current time.
@@ -97,11 +111,23 @@ class MutableSimulationState(SimulationState):
         return self._forecasts[forecastable]
 
     def get_future_actuals(self, forecastable:str) -> Sequence[float]:
-        ''' Warning: Returns actual values of forecastable for the current time AND FUTURE TIMES.
+        ''' Warning: Returns actual values of a forecastable for the current time AND FUTURE TIMES.
+
+        Arguments
+        ---------
+        forecastable:str
+            The unique identifier for the forecastable data item of interest,
+            as returned by forecast_helper.get_forecastables()
 
         Be aware that this function returns information that is not yet known!
         The function lets you peek into the future.  Future actuals may be used
-        by some (probably unrealistic) algorithm options, such as 
+        by some (probably unrealistic) algorithm options.
+
+        Returns
+        -------
+        Returns an array of actual values. The value at index 0 is the actual value
+        for the current time, and the rest of the array holds actual values for
+        future times.
         '''
         return self._actuals[forecastable]
 
