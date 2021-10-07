@@ -59,7 +59,13 @@ class DatDataProvider():
         # This provider can only return one value every 60 minutes.
         return 60
 
-    def get_initial_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
+    def get_initial_forecast_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
+        return self._get_initial_model(options, num_time_steps, minutes_per_timestep)
+
+    def get_initial_actuals_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
+        return self._get_initial_model(options, num_time_steps, minutes_per_timestep)
+
+    def _get_initial_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
         ''' Get a model ready to be populated with data
 
         Returns
@@ -236,7 +242,7 @@ class DatDataProvider():
 
             dat = identify_dat(day)
 
-            for src, target in forecast_helper.get_forecastables(dat, model):
+            for src, target in _get_forecastables(dat, model):
                 target[step_index] = src[src_step_index]
 
 
@@ -307,3 +313,33 @@ def _recurse_copy_with_time_series_length(root:Dict[str, Any], time_count:int) -
         else:
             new_node[key] = copy.deepcopy(att)
     return new_node
+
+def _get_forecastables(*models: EgretModel) -> Iterable[ Tuple[MutableSequence[float]] ]:
+    ''' Get all data that are predicted by forecasting, for any number of models.
+        Specialization of this for the dat data provider with fixed checks
+
+    The iterable returned by this function yields tuples containing one list from each model
+    passed to the function.  Each tuple of lists corresponds to one type of data that is included
+    in forecast predictions, such as loads on a particular bus, or limits on a renewable generator.
+    The lengths of the lists matches the number of time steps present in the underlying models.
+    Modifying list values modifies the underlying model.
+    '''
+    # Renewables limits
+    model1 = models[0]
+    for gen, gdata1 in model1.elements('generator', generator_type=('renewable','virtual')):
+        if isinstance(gdata1['p_min'], dict):
+            yield tuple(m.data['elements']['generator'][gen]['p_min']['values'] for m in models)
+        if isinstance(gdata1['p_max'], dict):
+            yield tuple(m.data['elements']['generator'][gen]['p_max']['values'] for m in models)
+        if 'p_cost' in gdata1 and isinstance(gdata1['p_cost'], dict):
+            yield tuple(m.data['elements']['generator'][gen]['p_cost']['values'] for m in models)
+
+    # Loads
+    for bus, bdata1 in model1.elements('load'):
+        yield tuple(m.data['elements']['load'][bus]['p_load']['values'] for m in models)
+        if 'p_price' in bdata1 and isinstance(bdata1['p_price'], dict):
+            yield tuple(m.data['elements']['load'][bus]['p_price']['values'] for m in models)
+
+    # Reserve requirement
+    if 'reserve_requirement' in model1.data['system']:
+        yield tuple(m.data['system']['reserve_requirement']['values'] for m in models)

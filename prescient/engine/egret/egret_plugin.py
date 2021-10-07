@@ -38,12 +38,6 @@ if TYPE_CHECKING:
     from egret.data.model_data import ModelData as EgretModel
 
 
-########################################################################################
-# a utility to find the "nearest" - quantified via Euclidean distance - scenario among #
-# a candidate set relative to the input scenario, up through and including the         #
-# specified simulation hour.                                                           #
-########################################################################################
-
 def call_solver(solver,instance,options,solver_options,relaxed=False, set_instance=True):
     tee = options.output_solver_logs
     if not tee:
@@ -117,7 +111,7 @@ def create_sced_instance(data_provider:DataProvider,
     '''
     assert current_state is not None
 
-    sced_md = data_provider.get_initial_model(options, sced_horizon, current_state.minutes_per_step)
+    sced_md = data_provider.get_initial_actuals_model(options, sced_horizon, current_state.minutes_per_step)
 
     # Set initial state
     _copy_initial_state_into_model(options, current_state, sced_md)
@@ -128,28 +122,24 @@ def create_sced_instance(data_provider:DataProvider,
 
     if forecast_error_method is ForecastErrorMethod.PRESCIENT:
         # Warning: This method can see into the future!
-        future_actuals = current_state.get_future_actuals()
-        sced_forecastables = get_forecastables(sced_md)
-        for future, (sced_data,) in zip(future_actuals, sced_forecastables):
+        for forecastable, sced_data in get_forecastables(sced_md):
+            future = current_state.get_future_actuals(forecastable)
             for t in range(sced_horizon):
                 sced_data[t] = future[t]
 
     else:  # persistent forecast error:
-        current_actuals = current_state.get_current_actuals()
-        forecasts = current_state.get_forecasts()
-        sced_forecastables = get_forecastables(sced_md)
         # Go through each time series that can be forecasted
-        for current_actual, forecast, (sced_data,) in zip(current_actuals, forecasts, sced_forecastables):
+        for forecastable, sced_data in get_forecastables(sced_md):
+            forecast = current_state.get_forecasts(forecastable)
             # the first value is, by definition, the actual.
-            sced_data[0] = current_actual
+            sced_data[0] = current_state.get_current_actuals(forecastable)
 
             # Find how much the first forecast was off from the actual, as a fraction of 
             # the forecast. For all subsequent times, adjust the forecast by the same fraction.
-            current_forecast = forecast[0]
-            if current_forecast == 0.0:
+            if forecast[0] == 0.0:
                 forecast_error_ratio = 0.0
             else:
-                forecast_error_ratio = current_actual / forecast[0]
+                forecast_error_ratio = sced_data[0] / forecast[0]
 
             for t in range(1, sced_horizon):
                 sced_data[t] = forecast[t] * forecast_error_ratio
@@ -188,6 +178,9 @@ def create_sced_instance(data_provider:DataProvider,
             if 'startup_curve' in g_dict:
                 continue
             ramp_up_rate_sced = g_dict['ramp_up_60min'] * minutes_per_step/60.
+            # this rarely happens, e.g., synchronous condenser
+            if ramp_up_rate_sced == 0:
+                continue
             if 'startup_capacity' not in g_dict:
                 sced_startup_capacity = _calculate_sced_startup_shutdown_capacity_from_none(
                                             g_dict['p_min'], ramp_up_rate_sced)
@@ -203,6 +196,9 @@ def create_sced_instance(data_provider:DataProvider,
                 continue
 
             ramp_down_rate_sced = g_dict['ramp_down_60min'] * minutes_per_step/60.
+            # this rarely happens, e.g., synchronous condenser
+            if ramp_down_rate_sced == 0:
+                continue
             # compute a new shutdown curve if we go from "on" to "off"
             if g_dict['initial_status'] > 0 and g_dict['fixed_commitment']['values'][0] == 0:
                 power_t0 = g_dict['initial_p_output']
@@ -353,7 +349,7 @@ def create_deterministic_ruc(options,
     start_time = datetime.datetime.combine(start_day, datetime.time(hour=this_hour))
 
     # Create a new model
-    md = data_provider.get_initial_model(options, ruc_horizon, 60)
+    md = data_provider.get_initial_forecast_model(options, ruc_horizon, 60)
 
     # Populate the T0 data
     if current_state is None or current_state.timestep_count == 0:
@@ -371,13 +367,12 @@ def create_deterministic_ruc(options,
     ruc_delay = -(options.ruc_execution_hour%(-options.ruc_every_hours))
     if options.ruc_prescience_hour > ruc_delay + 1:
         improved_hour_count = options.ruc_prescience_hour - ruc_delay - 1
-        for (forecast,), actuals in zip(get_forecastables(md),
-                                        current_state.get_future_actuals()):
+        for forecastable, forecast in get_forecastables(md):
+            actuals = current_state.get_future_actuals(forecastable)
             for t in range(0, improved_hour_count):
                 forecast_portion = (ruc_delay+t)/options.ruc_prescience_hour
                 actuals_portion = 1-forecast_portion
                 forecast[t] = forecast_portion*forecast[t] + actuals_portion*actuals[t]
-
 
     # Ensure the reserve requirement is satisfied
     _ensure_reserve_factor_honored(options, md, range(forecast_request_count))
@@ -620,7 +615,7 @@ def create_simulation_actuals(
 
     # Get a new model
     total_step_count = options.ruc_horizon * 60 // step_size_minutes
-    md = data_provider.get_initial_model(options, total_step_count, step_size_minutes)
+    md = data_provider.get_initial_actuals_model(options, total_step_count, step_size_minutes)
 
     # Fill it in with data
     if this_hour == 0:
@@ -630,7 +625,7 @@ def create_simulation_actuals(
         timesteps_per_day = 24 * 60 / step_size_minutes
         steps_to_request = math.min(timesteps_per_day, total_step_count)
         get_data_func(options, start_time, steps_to_request, step_size_minutes, md)
-        for vals, in get_forecastables(md):
+        for _, vals in get_forecastables(md):
             for t in range(timesteps_per_day, total_step_count):
                 vals[t] = vals[t-timesteps_per_day]
 

@@ -60,7 +60,13 @@ class GmlcDataProvider(DataProvider):
         else:
             return native_frequency
 
-    def get_initial_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
+    def get_initial_actuals_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
+        return self._get_initial_model("REAL_TIME", options, num_time_steps, minutes_per_timestep)
+
+    def get_initial_forecast_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
+        return self._get_initial_model("DAY_AHEAD", options, num_time_steps, minutes_per_timestep)
+
+    def _get_initial_model(self, sim_type:str, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
         ''' Get a model ready to be populated with data
 
         Returns
@@ -75,7 +81,7 @@ class GmlcDataProvider(DataProvider):
         data['system']['time_period_length_minutes'] = minutes_per_timestep
         data['system']['time_keys'] = [str(i) for i in range(1,num_time_steps+1)]
         md = EgretModel(data)
-        forecast_helper.ensure_forecastable_storage(num_time_steps, md)
+        self._ensure_forecastable_storage(sim_type, num_time_steps, md)
         return md
 
     def populate_initial_state_data(self, options:Options,
@@ -176,7 +182,6 @@ class GmlcDataProvider(DataProvider):
         '''
         self._populate_with_forecastable_data('REAL_TIME', start_time, num_time_periods, time_period_length_minutes, model)
 
-
     def _populate_with_forecastable_data(self,
                                          sim_type:str,
                                          start_time:datetime,
@@ -200,6 +205,25 @@ class GmlcDataProvider(DataProvider):
         for i in range(len(time_labels)):
             dt = start_time + i*delta
             time_labels[i] = dt.strftime('%Y-%m-%d %H:%M')
+
+    def _get_forecastable_locations(self, simulation_type:str, md:EgretModel) -> Iterable[Tuple[dict, str]]:
+        ''' Get all recognized forecastable locations with a defined time series
+        
+        Each location is returned as a dict and the name of a key within the dict
+        '''
+        return self._cache.get_timeseries_locations(simulation_type, md)
+
+    def _ensure_forecastable_storage(self, sim_type:str, num_entries:int, model:EgretModel) -> None:
+        """ Ensure that the model has an array allocated for every type of forecastable data
+        """
+        for data, key in self._get_forecastable_locations(sim_type, model):
+            if (key not in data or \
+                type(data[key]) is not dict or \
+                data[key]['data_type'] != 'time_series' or \
+                len(data[key]['values'] != num_entries)
+               ):
+                data[key] = { 'data_type': 'time_series',
+                              'values': [None]*num_entries}
 
 def _recurse_copy_at_ratio(src:dict[str, Any], target:dict[str, Any], ratio:int) -> None:
     ''' Copy every Nth value from a src dict's time_series values into corresponding arrays in a target dict.

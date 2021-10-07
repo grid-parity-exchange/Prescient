@@ -83,7 +83,13 @@ class ShortcutDataProvider(DataProvider):
         else:
             return native_frequency
 
-    def get_initial_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
+    def get_initial_forecast_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
+        return self._get_initial_model(options, num_time_steps, minutes_per_timestep)
+
+    def get_initial_actuals_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
+        return self._get_initial_model(options, num_time_steps, minutes_per_timestep)
+
+    def _get_initial_model(self, options:Options, num_time_steps:int, minutes_per_timestep:int) -> EgretModel:
         ''' Get a model ready to be populated with data
         Returns
         -------

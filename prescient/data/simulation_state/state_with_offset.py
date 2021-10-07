@@ -82,39 +82,56 @@ class StateWithOffset(SimulationState):
         ''' Get state of charge in the previous time period '''
         return self._init_soc[s]
 
-    def get_current_actuals(self) -> Iterable[float]:
-        ''' Get the current actual value for each forecastable.
+    def get_current_actuals(self, forecastable:str) -> float:
+        ''' Get the current actual value for a forecastable data item
 
-        This is the actual value for the current time period (time index 0).
-        Values are returned in the same order as forecast_helper.get_forecastables,
-        but instead of returning arrays it returns a single value.
+        Arguments
+        ---------
+        forecastable:str
+            The unique identifier for the forecastable data item of interest,
+            as returned by forecast_helper.get_forecastables()
+
+        Returns
+        -------
+        Returns the actual value for the current time period (time index 0).
         '''
-        for actual in self._parent.get_future_actuals():
-            yield actual[self._offset]
+        return self._parent.get_future_actuals(forecastable)[self._offset]
 
-    def get_forecasts(self) -> Iterable[Sequence[float]]:
-        ''' Get the forecast values for each forecastable 
+    def get_forecasts(self, forecastable:str) -> Sequence[float]:
+        ''' Get the forecast values for a forecastable
 
-        This is very similar to forecast_helper.get_forecastables(); the 
-        function yields an array per forecastable, in the same order as
-        get_forecastables().
+        Arguments
+        ---------
+        forecastable:str
+            The unique identifier for the forecastable data item of interest,
+            as returned by forecast_helper.get_forecastables()
 
-        Note that the value at index 0 is the forecast for the current time,
-        not the actual value for the current time.
+        Returns
+        -------
+        Returns an array of forecast values, starting with the forecast
+        for the current time at index 0.
         '''
-        for forecast in self._parent.get_forecasts():
-            # Copy the relevent portion to a new array
-            portion = list(itertools.islice(forecast, self._offset, None))
-            yield portion
+        # Copy the relevent portion to a new array
+        return list(itertools.islice(self._parent.get_forecasts(forecastable), self._offset, None))
 
-    def get_future_actuals(self) -> Iterable[Sequence[float]]:
-        ''' Warning: Returns actual values for the current time AND FUTURE TIMES.
+    def get_future_actuals(self, forecastable:str) -> Sequence[float]:
+        ''' Warning: Returns actual values of a forecastable for the current time AND FUTURE TIMES.
+
+        Arguments
+        ---------
+        forecastable:str
+            The unique identifier for the forecastable data item of interest,
+            as returned by forecast_helper.get_forecastables()
+
+        Returns
+        -------
+        Returns an array of actual values, starting with the actual value
+        for the current time at index 0. All values beyond index 0 are actual
+        values for future time periods, which cannot be known at the current time.
 
         Be aware that this function returns information that is not yet known!
         The function lets you peek into the future.  Future actuals may be used
-        by some (probably unrealistic) algorithm options, such as 
+        by some (probably unrealistic) algorithm options.
         '''
-        for future in self._parent.get_future_actuals():
-            # Copy the relevent portion to a new array
-            portion = list(itertools.islice(future, self._offset, None))
-            yield portion
+        # Copy the relevent portion to a new array
+        return list(itertools.islice(self._parent.get_future_actuals(forecastable), self._offset, None))
