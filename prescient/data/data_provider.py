@@ -45,8 +45,22 @@ class DataProvider(ABC):
         pass
 
     @abstractmethod
-    def get_initial_model(self, options:Options, num_time_steps:int) -> EgretModel:
-        ''' Get a model ready to be populated with data
+    def get_initial_forecast_model(self, options:Options, num_time_steps:int) -> EgretModel:
+        ''' Get a forecast model ready to be populated with data
+
+        Returns
+        -------
+        A model object populated with static system information, such as
+        buses and generators, and with time series arrays that are large
+        enough to hold num_time_steps entries.
+
+        Initial values in time time series do not have meaning.
+        '''
+        pass
+
+    @abstractmethod
+    def get_initial_actuals_model(self, options:Options, num_time_steps:int) -> EgretModel:
+        ''' Get an actuals model ready to be populated with data
 
         Returns
         -------
