@@ -374,9 +374,6 @@ def create_deterministic_ruc(options,
                 actuals_portion = 1-forecast_portion
                 forecast[t] = forecast_portion*forecast[t] + actuals_portion*actuals[t]
 
-    # Ensure the reserve requirement is satisfied
-    _ensure_reserve_factor_honored(options, md, range(forecast_request_count))
-
     if infer_second_day:
         for infer_type, vals in get_forecastables_with_inferral_method(md):
             for t in range(24, ruc_horizon):
@@ -386,6 +383,9 @@ def create_deterministic_ruc(options,
                 else:
                     # Repeat the final value from day 1
                     vals[t] = vals[23]
+
+    # Ensure the reserve requirement is satisfied
+    _ensure_reserve_factor_honored(options, md, range(ruc_horizon))
 
     return md
 
@@ -641,6 +641,13 @@ def _ensure_reserve_factor_honored(options:Options, md:EgretModel, time_periods:
     '''
     if options.reserve_factor > 0:
         reserve_factor = options.reserve_factor
+        if 'reserve_requirement' not in md.data['system']:
+            md.data['system']['reserve_requirement'] = 0.
+        if not isinstance(md.data['system']['reserve_requirement'], dict):
+            fixed_requirement = md.data['system']['reserve_requirement']
+            md.data['system']['reserve_requirement'] = \
+                    { 'data_type' : 'time_series',
+                      'values' : [fixed_requirement for _ in time_periods] }
         reserve_reqs = md.data['system']['reserve_requirement']['values']
         for t in time_periods:
             total_load = sum(bdata['p_load']['values'][t]
