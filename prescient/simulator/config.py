@@ -365,10 +365,10 @@ class PrescientConfig(ConfigDict):
             description="Output sced initial conditions prior to each solve. Default is False.",
         )).declare_as_argument()
 
-        self.declare("output_sced_demands", ConfigValue(
+        self.declare("output_sced_loads", ConfigValue(
             domain=bool,
             default=False,
-            description="Output sced demands prior to each solve. Default is False.",
+            description="Output sced loads prior to each solve. Default is False.",
         )).declare_as_argument()
 
         self.declare("output_solver_logs", ConfigValue(

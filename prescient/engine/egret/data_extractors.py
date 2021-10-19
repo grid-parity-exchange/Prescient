@@ -29,6 +29,9 @@ class ScedDataExtractor(BaseScedExtractor):
     def get_buses(self, sced: OperationsModel) -> Iterable[B]:
         return sced.data['elements']['bus'].keys()
 
+    def get_loads(self, sced: OperationsModel) -> Iterable[L]:
+        return sced.data['elements']['load'].keys()    
+
     def get_transmission_lines(self, sced: OperationsModel) -> Iterable[L]:
         return sced.data['elements']['branch'].keys()
 
@@ -204,6 +207,14 @@ class ScedDataExtractor(BaseScedExtractor):
     def get_bus_demand(self, sced: OperationsModel, bus: B) -> float:
         ''' get the demand on a bus in a given time period '''
         return sced.data['elements']['bus'][bus]['pl']['values'][0]
+
+    def get_load_bus(self, sced: OperationsModel, load: L) -> float:
+        ''' get the bus associated with a given load '''
+        return sced.data['elements']['load'][load]['bus']
+
+    def get_load_demand(self, sced: OperationsModel, load: L) -> float:
+        ''' get the demand associated with a load in a given time period '''
+        return sced.data['elements']['load'][load]['p_load']['values'][0]    
 
     def get_reserve_RT_price(self, lmp_sced: OperationsModel) -> float:
         if 'reserve_price' in lmp_sced.data['system']:  
