@@ -28,7 +28,6 @@ class RucMarket(NamedTuple):
     virtual_gen_cleared_DA: Dict
 
 class RucPlan(NamedTuple):
-    simulation_actuals: RucModel
     deterministic_ruc_instance: RucModel
     ruc_market: Optional[RucMarket]
 

@@ -192,6 +192,12 @@ class OracleManager(_Manager):
         forecasts and actuals.
         '''
 
+        # Update actuals
+        print("")
+        print("Extracting scenario to simulate")
+        simulation_actuals = self._formulate_actuals(options, uc_date, uc_hour)
+        self.data_manager.apply_actuals(options, simulation_actuals)
+
         # Formulate RUC
         deterministic_ruc_instance = self._formulate_ruc(
                 options,
@@ -210,17 +216,13 @@ class OracleManager(_Manager):
                 deterministic_ruc_instance,
                 options.compute_market_settlements
                )
-        self.data_manager.apply_ruc(options, deterministic_ruc_instance)
-
-        # Update actuals
-        print("")
-        print("Extracting scenario to simulate")
-        simulation_actuals = self._formulate_actuals(options, uc_date, uc_hour)
-        self.data_manager.apply_actuals(options, simulation_actuals)
 
         # Notify callbacks of the new RUC data.
-        result = RucPlan(simulation_actuals, deterministic_ruc_instance, ruc_market)
+        result = RucPlan(deterministic_ruc_instance, ruc_market)
         self.simulator.callback_manager.invoke_after_ruc_generation_callbacks(options, self.simulator, result, uc_date, uc_hour)
+
+        # Save RUC results
+        self.data_manager.apply_ruc(options, deterministic_ruc_instance)
 
         # Set the new RUC data as the pending RUC
         self.data_manager.set_pending_ruc(options, result)
