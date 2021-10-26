@@ -28,7 +28,6 @@ class RucMarket(NamedTuple):
     virtual_gen_cleared_DA: Dict
 
 class RucPlan(NamedTuple):
-    simulation_actuals: RucModel
     deterministic_ruc_instance: RucModel
     ruc_market: Optional[RucMarket]
 
@@ -51,11 +50,17 @@ class DataManager(_Manager):
         self._state.apply_sced(options, sced)
         self.prior_sced_instance = sced
 
-    def set_pending_ruc_plan(self, options:Options, current_ruc_plan: RucPlan):
-        self.ruc_market_pending = current_ruc_plan.ruc_market
+    def apply_forecasts(self, options:Options, model_with_forecasts: EgretModel):
+        self._state.apply_forecasts(options, model_with_forecasts)
 
-        self._state.apply_ruc(options, current_ruc_plan.deterministic_ruc_instance)
-        self._state.apply_actuals(options, current_ruc_plan.simulation_actuals)
+    def apply_actuals(self, options:Options, model_with_actuals: EgretModel):
+        self._state.apply_actuals(options, model_with_actuals)
+
+    def apply_ruc(self, options:Options, ruc_instance:EgretModel):
+        self._state.apply_ruc(options, ruc_instance)
+
+    def set_pending_ruc(self, options:Options, pending_ruc_plan:RucPlan):
+        self.ruc_market_pending = pending_ruc_plan.ruc_market
 
     def activate_pending_ruc(self, options: Options):
         self.ruc_market_active = self.ruc_market_pending

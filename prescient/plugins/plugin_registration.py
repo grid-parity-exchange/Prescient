@@ -130,8 +130,8 @@ class PluginRegistrationContext:
         ) -> None:
         ''' Register a callback to be called after each new RUC plan is generated.
 
-            The callback is called after both the forecast and actuals RUCs have been 
-            generated, just before they are stored in the DataManager.
+            Called after each RUC has been solved, just before its results
+            are stored in the DataManager.
         '''
         self.callback_manager.register_after_ruc_generation_callback(callback)
     
@@ -142,8 +142,8 @@ class PluginRegistrationContext:
         ''' Register a callback to be called after activating a RUC.
 
             The callback is called just after the most recently generated RUC
-            becomes active.  The new RUC instances are accessible through the data manager 
-            (ex: simulator.data_manager.deterministic_ruc_instance_for_this_period).
+            becomes active. The RUC becomes active when the simulation reaches
+            the time period in which the RUC's commitment decisions are used.
         '''
         self.callback_manager.register_after_ruc_activation_callback(callback)
 

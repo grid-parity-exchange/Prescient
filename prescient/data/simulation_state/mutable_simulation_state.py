@@ -131,22 +131,58 @@ class MutableSimulationState(SimulationState):
         '''
         return self._actuals[forecastable]
 
-    def apply_ruc(self, options, ruc:RucModel) -> None:
-        ''' Incorporate a RUC instance into the current state.
+    def apply_actuals(self, options, actuals) -> None:
+        ''' Save a model's forecastable values as actual values.
 
-        This will save the ruc's forecasts, and for the very first ruc
-        this will also save initial state info.
+        This will incorporate the models's forecastables into the state's actual values. If there
+        is a ruc delay, as indicated by options.ruc_execution_hour and options.ruc_every_hours, 
+        then the actuals are applied to future time periods, offset by the ruc delay.
+        This does not apply to the very first actuals model, which is applied with no offset.
+        '''
+        # If this is the first actuals, save data to indicate when to pop actuals-related state 
+        first_actuals = (len(self._actuals) == 0)
+        if first_actuals:
+            self._minutes_per_actuals_step = actuals.data['system']['time_period_length_minutes']
+            self._next_actuals_pop_minute = self._minutes_per_actuals_step
+            self._sced_frequency = options.sced_frequency_minutes
+
+        _save_forecastables(options, actuals, self._actuals, int(60//self._sced_frequency))
+
+    def apply_forecasts(self, options, forecast_model:EgretModel) -> None:
+        ''' Save the model's forecastable values as forecasts.
+
+        This will incorporate the models's forecastables into the state's forecasts. If there 
+        is a ruc delay, as indicated by options.ruc_execution_hour and options.ruc_every_hours, 
+        then the forecast values are applied to future time periods, offset by the ruc delay.
+        This does not apply to the very first forecast model, which is applied with no offset.
+        '''
+        first_forecast = (len(self._forecasts) == 0)
+        if first_forecast:
+            # If this is first forecast, save data to indicate when to pop forecast-related state 
+            self._minutes_per_forecast_step = forecast_model.data['system']['time_period_length_minutes']
+            self._next_forecast_pop_minute = self._minutes_per_forecast_step
+            self._sced_frequency = options.sced_frequency_minutes
+
+        # Save forecasts, always 1 forecast per hour
+        _save_forecastables(options, forecast_model, self._forecasts, 1)
+
+    def apply_ruc(self, options, ruc:RucModel) -> None:
+        ''' Incorporate the results of a RUC into the current state.
+
+        This method saves generator commitment decisions made by solving a RUC.
+        For the very first RUC this will also save initial state info. After the
+        first RUC, initial state is updated by apply_sced().
 
         If there is a ruc delay, as indicated by options.ruc_execution_hour and
-        options.ruc_every_hours, then the RUC is applied to future time periods,
+        options.ruc_every_hours, then the RUC is applied to future time periods
         offset by the ruc delay.  This does not apply to the very first RUC, which
         is used to set up the initial simulation state with no offset.
         '''
  
         ruc_delay = -(options.ruc_execution_hour % (-options.ruc_every_hours))
 
-        # If we've never stored forecasts before...
-        first_ruc = (len(self._forecasts) == 0)
+        # If we've never stored a RUC before...
+        first_ruc = (len(self._init_gen_state) == 0)
 
         if first_ruc:
             # The is the first RUC, save initial state
@@ -177,28 +213,6 @@ class MutableSimulationState(SimulationState):
             commits.extend(int(round(g_dict['commitment']['values'][t]))
                            for t in range(0,options.ruc_horizon)) 
 
-        # And finally, save forecastables
-        _save_forecastables(options, ruc, self._forecasts, 1)
-
-
-    def apply_actuals(self, options, actuals) -> None:
-        ''' Incorporate actuals into the current state.
-
-        This will save the actuals RUC's forecastables. If there is a ruc delay, 
-        as indicated by options.ruc_execution_hour and options.ruc_every_hours, 
-        then the actuals are applied to future time periods, offset by the ruc delay.
-        This does not apply to the very first actuals RUC, which is used to set up the 
-        initial simulation state with no offset.
-        '''
-        # If this is the first actuals, save data to indicate when to pop actuals-related state 
-        first_actuals = (len(self._actuals) == 0)
-        if first_actuals:
-            self._minutes_per_actuals_step = actuals.data['system']['time_period_length_minutes']
-            self._next_actuals_pop_minute = self._minutes_per_actuals_step
-            self._sced_frequency = options.sced_frequency_minutes
-
-        _save_forecastables(options, actuals, self._actuals, int(60//self._sced_frequency))
-
     def apply_sced(self, options, sced) -> None:
         ''' Incorporate a sced's results into the current state, and move to the next time period.
 
@@ -213,9 +227,10 @@ class MutableSimulationState(SimulationState):
         for s,soc in _helper.get_storage_socs_at_sced_offset(sced, 0):
             self._init_soc[s] = soc
 
-        # Advance time, dropping data if necessary
+        # Advance the current time by one sced's duration
         self._simulation_minute += self._sced_frequency
 
+        # Drop data that occurs at or before the new simulation time
         while self._next_forecast_pop_minute <= self._simulation_minute:
             for value_deque in self._forecasts.values():
                 value_deque.popleft()
@@ -223,7 +238,7 @@ class MutableSimulationState(SimulationState):
                 value_deque.popleft()
             self._next_forecast_pop_minute += self._minutes_per_forecast_step
 
-        while self._simulation_minute >= self._next_actuals_pop_minute:
+        while self._next_actuals_pop_minute <= self._simulation_minute:
             for value_deque in self._actuals.values():
                 value_deque.popleft()
             self._next_actuals_pop_minute += self._minutes_per_actuals_step
@@ -244,14 +259,14 @@ class MutableSimulationState(SimulationState):
 
 
 
-def _save_forecastables(options, ruc, where_to_store, steps_per_hour):
-    first_ruc = (len(where_to_store) == 0)
+def _save_forecastables(options, model, where_to_store, steps_per_hour):
+    first_data = (len(where_to_store) == 0)
     ruc_delay = -(options.ruc_execution_hour % (-options.ruc_every_hours))
     max_length = steps_per_hour*(ruc_delay + options.ruc_horizon)
 
-    # Save all forecastables, in forecastable order
-    for key, new_ruc_vals in get_forecastables(ruc):
-        if first_ruc:
+    # Save all forecastables, indexed by unique forecastable key
+    for key, new_ruc_vals in get_forecastables(model):
+        if first_data:
             # append to storage array
             forecast = deque(maxlen=max_length)
             where_to_store[key] = forecast
