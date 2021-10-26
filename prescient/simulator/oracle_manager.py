@@ -263,7 +263,7 @@ class OracleManager(_Manager):
 
         current_sced_instance, solve_time = self.engine.solve_sced_instance(options, current_sced_instance, 
                                                                             options.output_sced_initial_conditions,
-                                                                            options.output_sced_demands,
+                                                                            options.output_sced_loads,
                                                                             lp_filename)
 
         pre_quickstart_cache = None

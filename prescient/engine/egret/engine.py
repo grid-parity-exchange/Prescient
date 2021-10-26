@@ -139,7 +139,7 @@ class EgretEngine(ModelingEngine):
                             options,
                             sced_instance,
                             output_initial_conditions = False,
-                            output_demands = False,
+                            output_loads = False,
                             lp_filename: str = None):
 
         ptdf_manager = self._ptdf_manager
@@ -158,7 +158,7 @@ class EgretEngine(ModelingEngine):
 
         self._p._zero_out_costs(pyo_model, self._hours_in_objective)
 
-        self._print_sced_info(sced_instance, output_initial_conditions, output_demands)
+        self._print_sced_info(sced_instance, output_initial_conditions, output_loads)
         if options.output_solver_logs:
             print("")
             print("------------------------------------------------------------------------------")
@@ -300,15 +300,19 @@ class EgretEngine(ModelingEngine):
     def _print_sced_info(self,
                          sced_instance: OperationsSced,
                          output_initial_conditions: bool,
-                         output_demands: bool):
-        if not output_initial_conditions and not output_demands:
+                         output_loads: bool):
+        if not output_initial_conditions and not output_loads:
             return
 
         sced_data_extractor = self.operations_data_extractor
 
-        # for pretty-printing purposes, compute the maximum bus and generator label lengths.
+        # for pretty-printing purposes, compute the maximum label lengths for various set types.
+        
         buses = list(sced_data_extractor.get_buses(sced_instance))
         max_bus_label_length = max((len(this_bus) for this_bus in buses))
+
+        loads = list(sced_data_extractor.get_loads(sced_instance))
+        max_load_label_length = max((len(this_load) for this_load in loads))
 
         lines = list(sced_data_extractor.get_transmission_lines(sced_instance))
         if len(lines) == 0:
@@ -331,6 +335,7 @@ class EgretEngine(ModelingEngine):
                 (len(this_generator) for this_generator in nondispatchable_gens))
 
         if output_initial_conditions:
+            print("")
             print("Initial condition detail (gen-name t0-unit-on t0-power-generated t1-unit-on ):")
             for g in thermal_gens: 
                 print(("%-" + str(max_thermal_generator_label_length) + "s %5d %12.2f %5d") %
@@ -340,12 +345,14 @@ class EgretEngine(ModelingEngine):
                         sced_data_extractor.is_generator_on(sced_instance, g),
                         ))
 
-        if output_demands:
-            print("Demand detail:")
-            for b in buses: 
-                print(("%-" + str(max_bus_label_length) + "s %12.2f") %
-                      (b,
-                       sced_data_extractor.get_bus_demand(sced_instance,b)))
+        if output_loads:
+            print("")
+            print("Load detail (load bus demand):")
+            for l in loads: 
+                print(("%-" + str(max_load_label_length) + "s %-" + str(max_bus_label_length) + "s %12.2f") %
+                      (l,
+                       sced_data_extractor.get_load_bus(sced_instance,l),                       
+                       sced_data_extractor.get_load_demand(sced_instance,l)))
 
             print("")
             print(("%-" + str(max_bus_label_length) + "s %12.2f") %
