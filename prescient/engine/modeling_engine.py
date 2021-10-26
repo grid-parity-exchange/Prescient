@@ -117,7 +117,7 @@ class ModelingEngine(ABC):
                             options: Options, 
                             sced_instance: OperationsModel, 
                             output_initial_conditions: bool = False, 
-                            output_demands: bool = False,
+                            output_loads: bool = False,
                             lp_filename: str = None
             ) -> Tuple[OperationsModel, float]:
         '''

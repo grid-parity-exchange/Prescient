@@ -60,7 +60,7 @@ Simulator Options:
 --plot-individual-generators
 --traceback
 --output-sced-initial-conditions
---output-sced-demands
+--output-sced-loads
 --output-sced-solutions
 --output-ruc-initial-conditions
 --output-ruc-solutions
