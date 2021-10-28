@@ -270,6 +270,14 @@ class PrescientConfig(ConfigDict):
                         "it is set to this value.",
         )).declare_as_argument()
 
+        self.declare("monitor_all_contingencies", ConfigValue(
+            domain=bool,
+            default=False,
+            description="If enabled, will monitor and enforce non-disconnecting "
+                        "transmission contingencies. Can be computationally expensive "
+                        "for even medium-sized networks.",
+        )).declare_as_argument()
+
         # # PRESCIENT_SOLVER_OPTIONS
 
         self.declare("sced_solver", ConfigValue(

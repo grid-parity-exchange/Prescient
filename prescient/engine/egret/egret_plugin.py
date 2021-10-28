@@ -22,6 +22,7 @@ from egret.parsers.prescient_dat_parser import get_uc_model, create_model_data_d
 from egret.models.unit_commitment import _time_series_dict, _preallocated_list, _solve_unit_commitment, \
                                         _save_uc_results, create_tight_unit_commitment_model, \
                                         _get_uc_model
+from egret.model_library.transmission.tx_calc import construct_connection_graph, get_N_minus_1_branches
 
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
@@ -145,6 +146,7 @@ def create_sced_instance(data_provider:DataProvider,
                 sced_data[t] = forecast[t] * forecast_error_ratio
 
     _ensure_reserve_factor_honored(options, sced_md, range(sced_horizon))
+    _ensure_contingencies_monitored(options, sced_md)
 
     # Set generator commitments & future state
     for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
@@ -351,8 +353,10 @@ def create_deterministic_ruc(options,
     # Create a new model
     md = data_provider.get_initial_forecast_model(options, ruc_horizon, 60)
 
+    initial_day = current_state is None or current_state.timestep_count == 0
+
     # Populate the T0 data
-    if current_state is None or current_state.timestep_count == 0:
+    if initial_day:
         data_provider.populate_initial_state_data(options, md)
     else:
         _copy_initial_state_into_model(options, current_state, md)
@@ -386,6 +390,8 @@ def create_deterministic_ruc(options,
 
     # Ensure the reserve requirement is satisfied
     _ensure_reserve_factor_honored(options, md, range(ruc_horizon))
+
+    _ensure_contingencies_monitored(options, md, initial_day)
 
     return md
 
@@ -655,6 +661,38 @@ def _ensure_reserve_factor_honored(options:Options, md:EgretModel, time_periods:
             min_reserve = reserve_factor*total_load
             if reserve_reqs[t] < min_reserve:
                 reserve_reqs[t] = min_reserve
+
+def _ensure_contingencies_monitored(options:Options, md:EgretModel, initial_day:bool = False) -> None:
+    ''' Add contingency screening, if that option is enabled '''
+    if initial_day:
+        _ensure_contingencies_monitored.contingency_dicts = {}
+
+    for bn, b in md.elements('branch'): 
+        if not b.get('in_service', True):
+            raise RuntimeError(f"Remove branches from service by setting the `planned_outage` attribute. "
+                    f"Branch {bn} has `in_service`:False")
+    for bn, b in md.elements('bus'): 
+        if not b.get('in_service', True):
+            raise RuntimeError(f"Buses cannot be removed from service in Prescient")
+
+    if options.monitor_all_contingencies:
+        key = []
+        for bn, b in md.elements('branch'):
+            if 'planned_outage' in b:
+                if isinstance(b['planned_outage'], dict):
+                    if any(b['planned_outage']['values']):
+                        key.append(b)
+                elif b['planned_outage']:
+                    key.append(b)
+        key = tuple(key)
+        if key not in _ensure_contingencies_monitored.contingency_dicts:
+            mapping_bus_to_idx = { k : i for i,k in enumerate(md.data['elements']['bus'].keys())}
+            graph = construct_connection_graph(md.data['elements']['branch'], mapping_bus_to_idx)
+            contingency_list = get_N_minus_1_branches(graph, md.data['elements']['branch'], mapping_bus_to_idx)
+            contingency_dict = { cn : {'branch_contingency':cn} for cn in contingency_list} 
+            _ensure_contingencies_monitored.contingency_dicts[key] = contingency_dict
+
+        md.data['elements']['contingency'] = _ensure_contingencies_monitored.contingency_dicts[key]
 
 def _copy_initial_state_into_model(options:Options, 
                                    current_state:SimulationState, 
