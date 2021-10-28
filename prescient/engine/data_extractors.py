@@ -41,6 +41,11 @@ class ScedDataExtractor(ABC):
         pass
 
     @abstractmethod
+    def get_loads(self, sced: OperationsModel) -> Iterable[L]:
+        """Get all loads in the model."""
+        pass    
+
+    @abstractmethod
     def get_transmission_lines(self, sced: OperationsModel) -> Iterable[L]:
         """Get all transmission lines in the model."""
         pass
@@ -123,7 +128,17 @@ class ScedDataExtractor(ABC):
     @abstractmethod
     def get_bus_demand(self, sced: OperationsModel, bus: B) -> float:
         """Get the demand at a specific bus."""
-        pass    
+        pass
+
+    @abstractmethod
+    def get_load_bus(self, sced: OperationsModel, load: L) -> float:
+        """Get the bus for a specific load."""
+        pass            
+
+    @abstractmethod
+    def get_load_demand(self, sced: OperationsModel, load: L) -> float:
+        """Get the demand for a specific load."""
+        pass        
 
     @abstractmethod
     def get_bus_mismatch(self, sced: OperationsModel, bus: B) -> float:

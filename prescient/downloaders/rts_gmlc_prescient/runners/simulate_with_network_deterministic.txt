@@ -7,7 +7,7 @@ command/exec simulator.py
 --num-days=7 
 --sced-horizon=4
 --output-sced-initial-conditions 
---output-sced-demands 
+--output-sced-loads
 --output-ruc-initial-conditions 
 --output-ruc-solutions 
 --output-solver-logs

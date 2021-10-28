@@ -95,13 +95,14 @@ class OracleManager(_Manager):
 
 
     def call_initialization_oracle(self, options: Options, time_step: PrescientTime):
-        '''Calls the oracle to kick off the simulation, before rolling-horizon starts'''
-        ########################################################################################
-        # we need to create the "yesterday" deterministic or stochastic ruc instance, to kick  #
-        # off the simulation process. for now, simply solve RUC for the first day, as          #
-        # specified in the instance files. in practice, this may not be the best idea but it   #
-        # will at least get us a solution to start from.                                       #
-        ########################################################################################
+        ''' Call the oracle to kick off the simulation, before rolling-horizon starts.
+        '''
+        ##################################################################################
+        # This creates a "yesterday" deterministic ruc instance, to kick off the         #
+        # simulation process. for now, simply solve RUC for the first day, as specified  #
+        # in the instance files. in practice, this may not be the best idea but it       #
+        # will at least get us a solution to start from.                                 #
+        ##################################################################################
 
         # Print one-time information about simulation options
         if options.run_ruc_with_next_day_data:
@@ -121,29 +122,27 @@ class OracleManager(_Manager):
         # construct the simulation data associated with the first date #
         #################################################################
 
-        ruc_plan = self._generate_ruc(options, time_step.date, time_step.hour, None)
+        self._generate_pending_ruc(options, time_step.date, time_step.hour, None)
+        self.activate_pending_ruc(options)
 
-        self.data_manager.set_pending_ruc_plan(options, ruc_plan)
-        self.data_manager.activate_pending_ruc(options)
-
-        self.simulator.callback_manager.invoke_after_ruc_activation_callbacks(options, self.simulator)
-        return ruc_plan
-
-    def call_planning_oracle(self, options: Options, time_step: PrescientTime):
+    def call_planning_oracle(self, options: Options, time_step: PrescientTime) -> None:
         ''' Create a new RUC and make it the pending RUC
         '''
         projected_state = self._get_projected_state(options, time_step)
-
         uc_hour, uc_date = self._get_uc_activation_time(options, time_step)
+        self._generate_pending_ruc(options, uc_date, uc_hour, projected_state)
 
-        ruc = self._generate_ruc(options, uc_date, uc_hour, projected_state)
-        self.data_manager.set_pending_ruc_plan(options, ruc)
+    def _formulate_ruc(self, options, uc_date, uc_hour, sim_state_for_ruc):
+        '''Create a RUC model holding forecast data.
 
-        return ruc
+        The returned model includes forecasts provided by the engine's
+        DataProvider. The model's intial state (such as T0 generator state)
+        is taken from the provided simulation state, if provided. If no
+        initial state is provided, the T0 data is supplied by the DataProvider.
 
-    def _generate_ruc(self, options, uc_date, uc_hour, sim_state_for_ruc):
-        '''Creates a RUC plan by calling the oracle for the long-term plan based on forecast'''
-
+        The default RUC formulation can be modified by callbacks that have
+        implemented the before_ruc_solve callback.
+        '''
         deterministic_ruc_instance = self.engine.create_deterministic_ruc(
                 options,
                 uc_date,
@@ -155,37 +154,78 @@ class OracleManager(_Manager):
                )
 
         self.simulator.callback_manager.invoke_before_ruc_solve_callbacks(options, self.simulator, deterministic_ruc_instance, uc_date, uc_hour)
+        return deterministic_ruc_instance
 
+
+    def _solve_ruc(self, options, uc_date, uc_hour, deterministic_ruc_instance, compute_market_settlements:bool):
+        ''' Solve a RUC, and generate and solve market RUC if options indicate we should '''
         deterministic_ruc_instance = self.engine.solve_deterministic_ruc(
-                options,
-                deterministic_ruc_instance,
-                uc_date,
-                uc_hour
-               )
-
-        if options.compute_market_settlements:
+            options,
+            deterministic_ruc_instance,
+            uc_date,
+            uc_hour
+        )
+        if compute_market_settlements:
             print("Solving day-ahead market")
             ruc_market = self.engine.create_and_solve_day_ahead_pricing(options, deterministic_ruc_instance)
         else:
             ruc_market = None
-        # the RUC instance to simulate only exists to store the actual demand and renewables outputs
-        # to be realized during the course of a day. it also serves to provide a concrete instance,
-        # from which static data and topological features of the system can be extracted.
-        # IMPORTANT: This instance should *not* be passed to any method involved in the creation of
-        #            economic dispatch instances, as that would enable those instances to be
-        #            prescient.
-        print("")
-        print("Extracting scenario to simulate")
+        return (deterministic_ruc_instance, ruc_market)
 
-        simulation_actuals = self.engine.create_simulation_actuals(
+    def _formulate_actuals(self, options, uc_date, uc_hour):
+        ''' Create an Egret model with actual values.
+
+        The model returned by this method includes a time series for
+        each value that changes over time, and may differ from forecasts.
+        '''
+        return self.engine.create_simulation_actuals(
             options,
             uc_date,
             uc_hour,
            )
 
-        result = RucPlan(simulation_actuals, deterministic_ruc_instance, ruc_market)
+    def _generate_pending_ruc(self, options, uc_date, uc_hour, sim_state_for_ruc):
+        '''Create a new RUC and install it as the pending RUC.
+
+        This method will create a new RUC model, solve it, and apply its commitment
+        choices to the oracle's DataManager. It will also update the DataManager's 
+        forecasts and actuals.
+        '''
+
+        # Update actuals
+        print("")
+        print("Extracting scenario to simulate")
+        simulation_actuals = self._formulate_actuals(options, uc_date, uc_hour)
+        self.data_manager.apply_actuals(options, simulation_actuals)
+
+        # Formulate RUC
+        deterministic_ruc_instance = self._formulate_ruc(
+                options,
+                uc_date,
+                uc_hour,
+                sim_state_for_ruc
+               )
+        # Update forecasts using data in RUC
+        self.data_manager.apply_forecasts(options, deterministic_ruc_instance)
+
+        # Solve RUC
+        deterministic_ruc_instance, ruc_market = self._solve_ruc(
+                options,
+                uc_date,
+                uc_hour,
+                deterministic_ruc_instance,
+                options.compute_market_settlements
+               )
+
+        # Notify callbacks of the new RUC data.
+        result = RucPlan(deterministic_ruc_instance, ruc_market)
         self.simulator.callback_manager.invoke_after_ruc_generation_callbacks(options, self.simulator, result, uc_date, uc_hour)
-        return result
+
+        # Save RUC results
+        self.data_manager.apply_ruc(options, deterministic_ruc_instance)
+
+        # Set the new RUC data as the pending RUC
+        self.data_manager.set_pending_ruc(options, result)
 
     def activate_pending_ruc(self, options: Options):
         self.data_manager.activate_pending_ruc(options)
@@ -223,7 +263,7 @@ class OracleManager(_Manager):
 
         current_sced_instance, solve_time = self.engine.solve_sced_instance(options, current_sced_instance, 
                                                                             options.output_sced_initial_conditions,
-                                                                            options.output_sced_demands,
+                                                                            options.output_sced_loads,
                                                                             lp_filename)
 
         pre_quickstart_cache = None
