@@ -4,18 +4,18 @@ command/exec simulator.py
 --simulate-out-of-sample 
 --run-sced-with-persistent-forecast-errors 
 --output-directory=5bus_output
---start-date=07-10-2020
---num-days=7
+--start-date=01-01-2020
+--num-days=365
 --sced-horizon=1
 --ruc-mipgap=0.00
 --reserve-factor=0.1
 --deterministic-ruc-solver=xpress
 #--deterministic-ruc-solver-options="feas=off DivingG=on"
---sced-frequency-minutes=60
+--sced-frequency-minutes=15
 --sced-solver=xpress
 --ruc-horizon=36
 --compute-market-settlements
 --monitor-all-contingencies
---output-solver-logs
+#--output-solver-logs
 --price-threshold=1000
 --reserve-price-threshold=5
