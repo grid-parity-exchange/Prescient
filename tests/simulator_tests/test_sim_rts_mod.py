@@ -209,5 +209,20 @@ class TestShortcutSimulator_python_config_file(_SimulatorModRTSGMLC, unittest.Te
         options = {'config_file' : self.simulator_config_filename}
         Prescient().simulate(**options)
 
+class TestCustomDataSource(_SimulatorModRTSGMLC, unittest.TestCase):
+    def _set_names(self):
+        self.results_dir_name = 'custom_data_provider_output'
+        self.baseline_dir_name = 'deterministic_simulation_output_baseline'
+
+    def _run_simulator(self):
+        import custom_data_provider
+        options = {**base_options}
+        options['output_directory'] = 'custom_data_provider_output'
+        options['data_provider'] = custom_data_provider
+
+        os.chdir(self.test_cases_path)
+        Prescient().simulate(**options)
+
+
 if __name__ == '__main__':
     unittest.main()
