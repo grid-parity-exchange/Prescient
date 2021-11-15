@@ -10,7 +10,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Dict, Sequence, TypeVar, Any
+    from typing import Dict, Sequence, TypeVar, Any, Tuple
     from datetime import datetime
     from prescient.engine.data_extractors import ScedDataExtractor
     from prescient.engine.abstract_types import OperationsModel, G, L, B, S
@@ -71,6 +71,9 @@ class OperationsStats:
     observed_virtual_dispatch_levels: Dict[G, float]
 
     observed_flow_levels: Dict[L, float]
+    observed_flow_violation_levels: Dict[L, float]
+    observed_contingency_flow_levels: Dict[Tuple[L,L], float]
+    observed_contingency_flow_violation_levels: Dict[Tuple[L,L], float]
 
     bus_demands: Dict[B, float]
 
@@ -206,6 +209,9 @@ class OperationsStats:
         self.observed_virtual_dispatch_levels = extractor.get_all_virtual_dispatch_levels(sced)
 
         self.observed_flow_levels = extractor.get_all_flow_levels(sced)
+        self.observed_flow_violation_levels = extractor.get_all_flow_violation_levels(sced)
+        self.observed_contingency_flow_levels = extractor.get_all_contingency_flow_levels(sced)
+        self.observed_contingency_flow_violation_levels= extractor.get_all_contingency_flow_violation_levels(sced)
 
         self.bus_demands = extractor.get_all_bus_demands(sced)        
 

@@ -60,6 +60,7 @@ class ReportingManager(_Manager):
         self.setup_virtual_detail(options, stats_manager)
         self.setup_bus_detail(options, stats_manager)
         self.setup_line_detail(options, stats_manager)
+        self.setup_contingency_detail(options, stats_manager)
         self.setup_hourly_gen_summary(options, stats_manager)
         self.setup_hourly_summary(options, stats_manager)
         self.setup_daily_summary(options, stats_manager)
@@ -196,7 +197,25 @@ class ReportingManager(_Manager):
                         'Hour': lambda ops,l: ops.timestamp.hour,
                         'Minute': lambda ops,l: ops.timestamp.minute,
                         'Line': lambda ops,l: l,
-                        'Flow': lambda ops,l: _round(ops.observed_flow_levels[l])
+                        'Flow': lambda ops,l: _round(ops.observed_flow_levels[l]),
+                        'Violation': lambda ops,l: _round(ops.observed_flow_violation_levels[l]),
+                   }
+        line_writer = CsvMultiRowReporter.from_dict(line_file, line_entries_per_hour, line_columns)
+        stats_manager.register_for_sced_stats(line_writer.write_record)
+        stats_manager.register_for_overall_stats(lambda overall: line_file.close())
+
+    def setup_contingency_detail(self, options, stats_manager: StatsManager):
+        _round = self._round
+        line_path = os.path.join(options.output_directory, 'contingency_detail.csv')
+        line_file = open(line_path, 'w', newline='')
+        line_entries_per_hour = lambda ops: ops.observed_contingency_flow_levels.keys()
+        line_columns = {'Date': lambda ops,c_l: str(ops.timestamp.date()),
+                        'Hour': lambda ops,c_l: ops.timestamp.hour,
+                        'Minute': lambda ops,c_l: ops.timestamp.minute,
+                        'Contingency': lambda ops,c_l: c_l[0],
+                        'Line': lambda ops,c_l: c_l[1],
+                        'Flow': lambda ops,c_l: _round(ops.observed_contingency_flow_levels[c_l]),
+                        'Violation': lambda ops,c_l: _round(ops.observed_contingency_flow_violation_levels[c_l]),
                    }
         line_writer = CsvMultiRowReporter.from_dict(line_file, line_entries_per_hour, line_columns)
         stats_manager.register_for_sced_stats(line_writer.write_record)

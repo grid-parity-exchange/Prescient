@@ -10,7 +10,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Iterable
+    from typing import Iterable, Dict, Tuple
     from prescient.engine.abstract_types import *
 
 import numpy as np
@@ -186,6 +186,30 @@ class ScedDataExtractor(BaseScedExtractor):
 
     def get_flow_level(self, sced: OperationsModel, line: L) -> float:
         return sced.data['elements']['branch'][line]['pf']['values'][0]
+
+    def get_flow_violation_level(self, sced: OperationsModel, line: L) -> float:
+        pf_violation = sced.data['elements']['branch'][line].get('pf_violation', 0.)
+        if pf_violation != 0.:
+            pf_violation = pf_violation['values'][0]
+        return pf_violation
+
+    def get_all_contingency_flow_levels(self, sced: OperationsModel) -> Dict[Tuple[L,L], float]:
+        contingency_dict = {}
+        for c_dict in sced.data['elements'].get('contingency', {}).values():
+            line_out = c_dict['branch_contingency']
+            monitored_branches = c_dict.get('monitored_branches',{'values':[{}]})
+            for bn, b_dict in monitored_branches['values'][0].items():
+                contingency_dict[line_out, bn] = b_dict['pf']
+        return contingency_dict
+
+    def get_all_contingency_flow_violation_levels(self, sced: OperationsModel) -> Dict[Tuple[L,L], float]:
+        contingency_viol = {}
+        for c_dict in sced.data['elements'].get('contingency', {}).values():
+            line_out = c_dict['branch_contingency']
+            monitored_branches = c_dict.get('monitored_branches',{'values':[{}]})
+            for bn, b_dict in monitored_branches['values'][0].items():
+                contingency_viol[line_out, bn] = b_dict.get('pf_violation', 0.)
+        return contingency_viol
 
     def get_bus_mismatch(self, sced: OperationsModel, bus: B) -> float:
         return self.get_load_mismatch(sced, bus)
