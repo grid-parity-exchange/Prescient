@@ -506,7 +506,9 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
 
     ## Debugging
     if pricing_results.data['system']['total_cost'] > ruc_results.data['system']['total_cost'] and not \
-            math.isclose(pricing_results.data['system']['total_cost'],  ruc_results.data['system']['total_cost']):
+            math.isclose(pricing_results.data['system']['total_cost'],
+                         ruc_results.data['system']['total_cost'],
+                         rel_tol=1e-06, abs_tol=1e-06):
         print("The pricing run had a higher objective value than the MIP run. This is indicative of a bug.")
         print(f"pricing run cost: {pricing_results.data['system']['total_cost']}")
         print(f"MIP run cost    : {ruc_results.data['system']['total_cost']}")
