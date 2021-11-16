@@ -19,14 +19,14 @@ class CustomDataProvider(GmlcDataProvider):
     def __init__(self, options:Options):
         self._start_time = datetime.combine(options.start_date, datetime.min.time())
         self._end_time = self._start_time + timedelta(days=options.num_days)
-        self._cache = self.read_data_to_cache()
+        self._cache = self.read_data_to_cache(options.data_path)
 
-    def read_data_to_cache(self):
+    def read_data_to_cache(self, filepath):
         import json
         from dateutil import parser
 
         # Read the JSON file
-        with open('custom_data.json') as f:
+        with open(filepath) as f:
             data = json.load(f)
 
         # Convert Series arrays into pd.Series objects with time indices

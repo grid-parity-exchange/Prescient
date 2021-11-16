@@ -133,11 +133,11 @@ class PrescientConfig(ConfigDict):
 
         # # PRESCIENT_INPUT_OPTIONS
 
-        self.declare("data_directory", ConfigValue(
+        self.declare("data_path", ConfigValue(
             domain=Path(),
             default="input_data",
-            description="Specifies the directory to pull data from",
-        )).declare_as_argument()
+            description="Specifies the file or directory to pull data from",
+        )).declare_as_argument('--data-path', '--data-directory')
 
         self.declare("input_format", ConfigValue(
             domain=_InEnumStr(InputFormats),

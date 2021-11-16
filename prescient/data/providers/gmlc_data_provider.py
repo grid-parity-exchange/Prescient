@@ -31,7 +31,7 @@ class GmlcDataProvider(DataProvider):
                                             # midnight start
         self._start_time = datetime.combine(options.start_date, datetime.min.time())
         self._end_time = self._start_time + timedelta(days=options.num_days)
-        self._cache = parser.parse_to_cache(options.data_directory, self._start_time, self._end_time)
+        self._cache = parser.parse_to_cache(options.data_path, self._start_time, self._end_time)
 
     def negotiate_data_frequency(self, desired_frequency_minutes:int):
         ''' Get the number of minutes between each timestep of actuals data this provider will supply,

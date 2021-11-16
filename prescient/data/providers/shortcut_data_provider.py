@@ -39,9 +39,9 @@ class ShortcutDataProvider(DataProvider):
         # TODO: option-drive
         self._virtual_bus_capacity = 1e6
 
-        self._generator_characteristics = _load_generator_characteristics(options.data_directory)
+        self._generator_characteristics = _load_generator_characteristics(options.data_path)
         self._historical_prices, self._frequency_minutes = \
-                _load_historical_prices(options.data_directory, self._start_time, self._end_time)
+                _load_historical_prices(options.data_path, self._start_time, self._end_time)
 
         self._initial_model = { 'elements' : { 'bus' : {'virtual_bus':{}},
                                                'generator' : self._generator_characteristics,
