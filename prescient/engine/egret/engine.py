@@ -229,17 +229,10 @@ class EgretEngine(ModelingEngine):
         lmp_sced_instance = sced_instance.clone()
 
         # In case of demand shortfall, the price skyrockets, so we threshold the value.
-        if 'load_mismatch_cost' not in lmp_sced_instance.data['system'] or \
-                lmp_sced_instance.data['system']['load_mismatch_cost'] > \
-                    options.price_threshold:
-            lmp_sced_instance.data['system']['load_mismatch_cost'] = options.price_threshold
-
-        # In case of reserve shortfall, the price skyrockets, so we threshold the value.
-        if 'reserve_shortfall_cost' not in lmp_sced_instance.data['system'] or \
-                lmp_sced_instance.data['system']['reserve_shortfall_cost'] > \
-                    options.reserve_price_threshold:
-            lmp_sced_instance.data['system']['reserve_shortfall_cost'] = \
-                    options.reserve_price_threshold
+        system = lmp_sced_instance.data['system']
+        for system_key, threshold_value in self._p.get_attrs_to_price_option(options):
+            if (system_key not in system) or (system[system_key] > threshold_value):
+                system[system_key] = threshold_value
 
         if self._last_sced_pyo_model is None:
             self._ptdf_manager.mark_active(lmp_sced_instance)
@@ -282,20 +275,51 @@ class EgretEngine(ModelingEngine):
 
         update_obj = False
 
-        new_load_penalty = system['baseMVA'] * system['load_mismatch_cost']
-        if not math.isclose(new_load_penalty, pyo_model.LoadMismatchPenalty.value):
-            pyo_model.LoadMismatchPenalty.value = new_load_penalty
-            update_obj = True
+        baseMVA = system['baseMVA']
+        for system_attr, mutable_param in self._system_attr_to_pyo_model_param(pyo_model):
+            new_penalty = baseMVA * system[system_attr]
+            if not math.isclose(new_penalty, mutable_param.value):
+                mutable_param.value = new_penalty
+                update_obj = True
 
-        new_reserve_penalty =  system['baseMVA'] * system['reserve_shortfall_cost']
-        if not math.isclose(new_reserve_penalty, pyo_model.ReserveShortfallPenalty.value):
-            pyo_model.ReserveShortfallPenalty.value = new_reserve_penalty
-            update_obj = True
+        for param in pyo_model.BranchLimitPenalty.values():
+            if param.value > pyo_model.SystemTransmissionLimitPenalty.value:
+                param.value = pyo_model.SystemTransmissionLimitPenalty.value
+                update_obj = True
+
+        for param in pyo_model.InterfaceLimitPenalty.values():
+            if param.value > pyo_model.SystemInterfaceLimitPenalty.value:
+                param.value = pyo_model.SystemInterfaceLimitPenalty.value
+                update_obj = True
 
         pyo_model.model_data = lmp_sced_instance
 
         if update_obj and isinstance(pyo_solver, PersistentSolver):
             pyo_solver.set_objective(pyo_model.TotalCostObjective)
+
+    @staticmethod
+    def _system_attr_to_pyo_model_param(pyo_model):
+        if pyo_model.nonbasic_reserves:
+            return {
+                    'load_mismatch_cost' : pyo_model.LoadMismatchPenalty,
+                    'contingency_flow_violation_cost' : pyo_model.SystemContingencyLimitPenalty,
+                    'transmission_flow_violation_cost' : pyo_model.SystemTransmissionLimitPenalty,
+                    'interface_flow_violation_cost' : pyo_model.SystemInterfaceLimitPenalty,
+                    'reserve_shortfall_cost' : pyo_model.ReserveShortfallPenalty,
+                    'regulation_penalty_price' : pyo_model.RegulationPenalty,
+                    'spinning_reserve_penalty_price' : pyo_model.SpinningReservePenalty,
+                    'non_spinning_reserve_penalty_price' : pyo_model.NonSpinningReservePenalty,
+                    'supplemental_reserve_penalty_price' : pyo_model.SupplementalReservePenalty,
+                    'flexible_ramp_penalty_price' : pyo_model.FlexRampPenalty,
+                    }.items()
+        else:
+            return {
+                    'load_mismatch_cost' : pyo_model.LoadMismatchPenalty,
+                    'contingency_flow_violation_cost' : pyo_model.SystemContingencyLimitPenalty,
+                    'transmission_flow_violation_cost' : pyo_model.SystemTransmissionLimitPenalty,
+                    'interface_flow_violation_cost' : pyo_model.SystemInterfaceLimitPenalty,
+                    'reserve_shortfall_cost' : pyo_model.ReserveShortfallPenalty,
+                    }.items()
 
     def _print_sced_info(self,
                          sced_instance: OperationsSced,
@@ -420,8 +444,8 @@ class EgretEngine(ModelingEngine):
         if not pe.SolverFactory(self._sced_solver).available():
             raise RuntimeError(f"Solver {self._sced_solver} is not available to Pyomo")
 
-
-    def _print_persistence_warning(self, solver):
+    @staticmethod
+    def _print_persistence_warning(solver):
         print(f"WARNING: Solver {solver} supports persistence, which "
                "improves the performance of Prescient. Consider installing the "
               f"python bindings for {solver}.")
@@ -451,6 +475,7 @@ class EgretEngine(ModelingEngine):
             self.create_simulation_actuals = egret_plugin.create_simulation_actuals
             self.solve_deterministic_day_ahead_pricing_problem = egret_plugin.solve_deterministic_day_ahead_pricing_problem
             self._zero_out_costs = egret_plugin._zero_out_costs
+            self.get_attrs_to_price_option = egret_plugin.get_attrs_to_price_option
 
             if options.simulator_plugin != None:
                 try:

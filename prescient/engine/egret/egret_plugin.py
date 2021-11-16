@@ -472,14 +472,11 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
     reserve_requirement = ('reserve_requirement' in pricing_instance.data['system'])
 
     system = pricing_instance.data['system']
-    # In case of demand shortfall, the price skyrockets, so we threshold the value.
-    if ('load_mismatch_cost' not in system) or (system['load_mismatch_cost'] > options.price_threshold):
-        system['load_mismatch_cost'] = options.price_threshold
 
-    # In case of reserve shortfall, the price skyrockets, so we threshold the value.
-    if reserve_requirement:
-        if ('reserve_shortfall_cost' not in system) or (system['reserve_shortfall_cost'] > options.reserve_price_threshold):
-            system['reserve_shortfall_cost'] = options.reserve_price_threshold
+    # In case of shortfall, the price skyrockets, so we threshold the value.
+    for system_key, threshold_value in get_attrs_to_price_option(options):
+        if (system_key not in system) or (system[system_key] > threshold_value):
+            system[system_key] = threshold_value
 
     ptdf_manager.mark_active(pricing_instance)
     pyo_model = create_pricing_model(pricing_instance, relaxed=True,
@@ -704,3 +701,21 @@ def _copy_initial_state_into_model(options:Options,
         g_dict['initial_p_output']  = current_state.get_initial_power_generated(g)
     for s,s_dict in md.elements('storage'):
         s_dict['initial_state_of_charge'] = current_state.get_initial_state_of_charge(s)
+
+def get_attrs_to_price_option(options:Options):
+    '''
+    Create a map from internal attributs to various price thresholds
+    for the LMP SCED
+    '''
+    return {
+            'load_mismatch_cost' : options.price_threshold,
+            'contingency_flow_violation_cost' : options.contingency_price_threshold,
+            'transmission_flow_violation_cost' : options.transmission_price_threshold,
+            'interface_flow_violation_cost' : options.interface_price_threshold,
+            'reserve_shortfall_cost' : options.reserve_price_threshold,
+            'regulation_penalty_price' : options.regulation_price_threshold,
+            'spinning_reserve_penalty_price' : options.spinning_reserve_price_threshold,
+            'non_spinning_reserve_penalty_price' : options.non_spinning_reserve_price_threshold,
+            'supplemental_reserve_penalty_price' : options.supplemental_reserve_price_threshold,
+            'flexible_ramp_penalty_price' : options.flex_ramp_price_threshold,
+            }.items()
