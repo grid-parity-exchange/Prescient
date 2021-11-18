@@ -1,5 +1,5 @@
 command/exec simulator.py
---data-directory=deterministic_scenario_csv
+--data-path=deterministic_scenario_csv
 --input-format=rts-gmlc
 --simulate-out-of-sample 
 --run-sced-with-persistent-forecast-errors 
