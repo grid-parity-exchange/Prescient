@@ -39,7 +39,7 @@ from pyomo.common.config import (ConfigDict,
 
 from prescient.plugins import PluginRegistrationContext
 from prescient.data.data_provider_factory import InputFormats
-from prescient.engine.modeling_engine import PricingType
+from prescient.engine.modeling_engine import PricingType, SlackType
 
 prescient_persistent_solvers = ("cplex", "gurobi", "xpress")
 prescient_solvers = [ s+sa for sa in ["", "_direct", "_persistent"] for s in prescient_persistent_solvers ]
@@ -189,6 +189,15 @@ class PrescientConfig(ConfigDict):
                         "Default is 24. Should be a divisor of 24.",
         )).declare_as_argument()
 
+        self.declare("ruc_slack_type", ConfigValue(
+            domain=_InEnumStr(SlackType),
+            default="every-bus",
+            description="Specifies the type of slack variables to use in RUC processes. Choices are "
+                        "every-bus            -- slack variables at every system bus."
+                        "ref-bus-and-branches -- slack variables at only reference bus and each system branch."
+                        "Default is every-bus.",
+        )).declare_as_argument()
+
         self.declare("ruc_horizon", ConfigValue(
             domain=PositiveInt,
             default=48,
@@ -210,6 +219,15 @@ class PrescientConfig(ConfigDict):
             default=60,
             description="Specifies how often a SCED will be run, in minutes. "
                         "Must divide evenly into 60, or be a multiple of 60.",
+        )).declare_as_argument()
+
+        self.declare("sced_slack_type", ConfigValue(
+            domain=_InEnumStr(SlackType),
+            default="every-bus",
+            description="Specifies the type of slack variables to use in SCED processes. Choices are "
+                        "every-bus            -- slack variables at every system bus."
+                        "ref-bus-and-branches -- slack variables at only reference bus and each system branch."
+                        "Default is every-bus.",
         )).declare_as_argument()
 
         self.declare("enforce_sced_shutdown_ramprate", ConfigValue(
