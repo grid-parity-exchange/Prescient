@@ -29,7 +29,7 @@ class DatDataProvider():
 
     def __init__(self, options:Options):
         self._uc_model_template = get_uc_model()
-        self._instance_directory_name = os.path.join(os.path.expanduser(options.data_directory), 
+        self._instance_directory_name = os.path.join(os.path.expanduser(options.data_path), 
                                                      "pyspdir_twostage")
         self._actuals_by_date = {}
         self._forecasts_by_date = {}

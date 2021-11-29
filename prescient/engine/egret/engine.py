@@ -65,7 +65,7 @@ class EgretEngine(ModelingEngine):
         self._ptdf_manager = PTDFManager()
         self._last_sced_pyo_model = None
         self._last_sced_pyo_solver = None
-        self._data_provider = data_provider_factory.get_data_provider(options)
+        self._data_provider = options.data_provider.get_data_provider(options)
         self._actuals_step_frequency = 60 if not options.simulate_out_of_sample \
                                        else self._data_provider.negotiate_data_frequency(options.sced_frequency_minutes)
 

@@ -176,7 +176,7 @@ class TestSimulatorModRtsGmlcNetwork_python(_SimulatorModRTSGMLC, unittest.TestC
     def _run_simulator(self):
         os.chdir(self.test_cases_path)
         options = {**base_options}
-        options['data_directory'] = 'deterministic_with_network_scenarios'
+        options['data_path'] = 'deterministic_with_network_scenarios'
         options['output_directory'] = 'deterministic_with_network_simulation_output_python'
         options['plugin'] = {'test':{'module':'test_plugin.py', 
                                      'print_callback_message':True}}
@@ -192,7 +192,7 @@ class TestSimulatorModRtsGmlcNetwork_python_csv(_SimulatorModRTSGMLC, unittest.T
     def _run_simulator(self):
         os.chdir(self.test_cases_path)
         options = {**base_options}
-        options['data_directory'] = 'deterministic_with_network_scenarios_csv'
+        options['data_path'] = 'deterministic_with_network_scenarios_csv'
         options['output_directory'] = 'deterministic_with_network_simulation_output_python_csv'
         options['input_format'] = 'rts-gmlc'
         Prescient().simulate(**options)
@@ -208,6 +208,22 @@ class TestShortcutSimulator_python_config_file(_SimulatorModRTSGMLC, unittest.Te
         os.chdir(self.test_cases_path)
         options = {'config_file' : self.simulator_config_filename}
         Prescient().simulate(**options)
+
+class TestCustomDataSource(_SimulatorModRTSGMLC, unittest.TestCase):
+    def _set_names(self):
+        self.results_dir_name = 'custom_data_provider_output'
+        self.baseline_dir_name = 'deterministic_simulation_output_baseline'
+
+    def _run_simulator(self):
+        import custom_data_provider
+        options = {**base_options}
+        options['output_directory'] = 'custom_data_provider_output'
+        options['data_provider'] = custom_data_provider
+        options['data_path'] = 'custom_data.json'
+
+        os.chdir(self.test_cases_path)
+        Prescient().simulate(**options)
+
 
 if __name__ == '__main__':
     unittest.main()

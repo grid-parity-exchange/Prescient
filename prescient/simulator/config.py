@@ -40,6 +40,7 @@ from pyomo.common.config import (ConfigDict,
 from prescient.plugins import PluginRegistrationContext
 from prescient.data.data_provider_factory import InputFormats
 from prescient.engine.modeling_engine import PricingType, SlackType
+from prescient.data import data_provider_factory
 
 prescient_persistent_solvers = ("cplex", "gurobi", "xpress")
 prescient_solvers = [ s+sa for sa in ["", "_direct", "_persistent"] for s in prescient_persistent_solvers ]
@@ -120,17 +121,23 @@ class PrescientConfig(ConfigDict):
                         "associated data are written.",
         )).declare_as_argument()
 
+        self.declare("data_provider", ConfigValue(
+            domain=Module(),
+            default=data_provider_factory,
+            description="Python module that supplies a data provider implementation"
+        )).declare_as_argument()
+
         #############################
         #  PRESCIENT ONLY OPTIONS   #
         #############################
 
         # # PRESCIENT_INPUT_OPTIONS
 
-        self.declare("data_directory", ConfigValue(
+        self.declare("data_path", ConfigValue(
             domain=Path(),
             default="input_data",
-            description="Specifies the directory to pull data from",
-        )).declare_as_argument()
+            description="Specifies the file or directory to pull data from",
+        )).declare_as_argument('--data-path', '--data-directory')
 
         self.declare("input_format", ConfigValue(
             domain=_InEnumStr(InputFormats),
