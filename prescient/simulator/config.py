@@ -39,7 +39,7 @@ from pyomo.common.config import (ConfigDict,
 
 from prescient.plugins import PluginRegistrationContext
 from prescient.data.data_provider_factory import InputFormats
-from prescient.engine.modeling_engine import PricingType, SlackType
+from prescient.engine.modeling_engine import PricingType, SlackType, NetworkType
 from prescient.data import data_provider_factory
 
 prescient_persistent_solvers = ("cplex", "gurobi", "xpress")
@@ -196,6 +196,15 @@ class PrescientConfig(ConfigDict):
                         "Default is 24. Should be a divisor of 24.",
         )).declare_as_argument()
 
+        self.declare("ruc_network_type", ConfigValue(
+            domain=_InEnumStr(NetworkType),
+            default="ptdf",
+            description="Specifies the type of network representation to use in RUC processes. Choices are "
+                        "ptdf   -- power transfer distribution factor representation."
+                        "btheta -- b-theta representation."
+                        "Default is ptdf.",
+        )).declare_as_argument()
+
         self.declare("ruc_slack_type", ConfigValue(
             domain=_InEnumStr(SlackType),
             default="every-bus",
@@ -226,6 +235,15 @@ class PrescientConfig(ConfigDict):
             default=60,
             description="Specifies how often a SCED will be run, in minutes. "
                         "Must divide evenly into 60, or be a multiple of 60.",
+        )).declare_as_argument()
+
+        self.declare("sced_network_type", ConfigValue(
+            domain=_InEnumStr(NetworkType),
+            default="ptdf",
+            description="Specifies the type of network representation to use in SCED processes. Choices are "
+                        "ptdf   -- power transfer distribution factor representation."
+                        "btheta -- b-theta representation."
+                        "Default is ptdf.",
         )).declare_as_argument()
 
         self.declare("sced_slack_type", ConfigValue(

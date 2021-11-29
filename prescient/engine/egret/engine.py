@@ -1,4 +1,4 @@
-#  ___________________________________________________________________________
+pt#  ___________________________________________________________________________
 #
 #  Prescient
 #  Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC
@@ -34,6 +34,8 @@ from egret.common.lazy_ptdf_utils import uc_instance_binary_relaxer
 
 from prescient.engine.modeling_engine import SlackType as EngineSlackType
 from egret.model_library.unit_commitment.uc_utils import SlackType as EgretSlackType
+
+from prescient.engine.modeling_engine import NetworkType as EngineNetworkType
 
 def create_sced_uc_model(model_data,
                          network_constraints='ptdf_power_flow',
@@ -145,26 +147,37 @@ class EgretEngine(ModelingEngine):
                             output_loads = False,
                             lp_filename: str = None):
 
-        ptdf_manager = self._ptdf_manager
-        if self._hours_in_objective > 10:
-            ptdf_options = ptdf_manager.look_ahead_sced_ptdf_options
+        if options.sced_network_type == EngineNetworkType.PTDF:
+            network_type = "ptdf_power_flow"
         else:
-            ptdf_options = ptdf_manager.sced_ptdf_options
-
-        ptdf_manager.mark_active(sced_instance)
+            network_type = "btheta_power_flow"
 
         if options.sced_slack_type == EngineSlackType.EVERY_BUS:
             slack_type = EgretSlackType.BUS_BALANCE
         else:
             slack_type = EgretSlackType.TRANSMISSION_LIMITS
 
+        ptdf_manager = self._ptdf_manager
+
+        if options.sced_network_type == EngineNetworkType.PTDF:
+           if self._hours_in_objective > 10:
+               ptdf_options = ptdf_manager.look_ahead_sced_ptdf_options
+           else:
+               ptdf_options = ptdf_manager.sced_ptdf_options
+
+           ptdf_manager.mark_active(sced_instance)
+        else:
+            ptdf_options = None
+
         pyo_model = create_sced_uc_model(sced_instance,
                                          ptdf_options = ptdf_options,
                                          PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict,
+                                         network_constraints=network_type,
                                          slack_type=slack_type)
 
-        # update in case lines were taken out
-        ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
+        if options.sced_network_type == EngineNetworkType.PTDF:
+            # update in case lines were taken out
+            ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
 
         self._p._zero_out_costs(pyo_model, self._hours_in_objective)
 
@@ -193,7 +206,9 @@ class EgretEngine(ModelingEngine):
             print("Problematic SCED instance written to file=" + infeasible_sced_filename)
             raise
 
-        ptdf_manager.update_active(sced_results)
+        if options.sced_network_type == EngineNetworkType.PTDF:
+            ptdf_manager.update_active(sced_results)
+
         self._last_sced_pyo_model = pyo_model
         self._last_sced_pyo_solver = pyo_solver
 
