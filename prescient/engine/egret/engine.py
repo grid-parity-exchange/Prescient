@@ -32,10 +32,20 @@ from .reporting import report_initial_conditions_for_deterministic_ruc, \
 from egret.models.unit_commitment import _get_uc_model, create_tight_unit_commitment_model
 from egret.common.lazy_ptdf_utils import uc_instance_binary_relaxer
 
-from prescient.engine.modeling_engine import SlackType as EngineSlackType
+from prescient.engine.modeling_engine import SlackType as EngineSlackType, NetworkType as EngineNetworkType
 from egret.model_library.unit_commitment.uc_utils import SlackType as EgretSlackType
 
-from prescient.engine.modeling_engine import NetworkType as EngineNetworkType
+
+_network_type_to_egret_network_constraints = {
+        EngineNetworkType.PTDF : 'ptdf_power_flow',
+        EngineNetworkType.BTHETA : 'btheta_power_flow',
+        }
+
+_slack_type_to_egret_slack_type = {
+        EngineSlackType.EVERY_BUS : EngineSlackType.BUS_BALANCE,
+        EngineSlackType.REF_BUS_AND_BRANCHES : EngineSlackType.TRANSMISSION_LIMITS,
+        }
+
 
 def create_sced_uc_model(model_data,
                          network_constraints='ptdf_power_flow',
@@ -93,7 +103,9 @@ class EgretEngine(ModelingEngine):
 
 
     def solve_deterministic_ruc(self, options, ruc_instance, uc_date, uc_hour):
-        return self._p.solve_deterministic_ruc(self._ruc_solver, options, ruc_instance, uc_date, uc_hour, self._ptdf_manager)
+        network_type = _network_type_to_egret_network_constraints[options.ruc_network_type]
+        slack_type = _slack_type_to_egret_slack_type[options.ruc_slack_type]
+        return self._p.solve_deterministic_ruc(self._ruc_solver, options, ruc_instance, uc_date, uc_hour, network_type, slack_type, self._ptdf_manager)
 
     def create_and_solve_day_ahead_pricing(self,
             options: Options,
@@ -147,25 +159,18 @@ class EgretEngine(ModelingEngine):
                             output_loads = False,
                             lp_filename: str = None):
 
-        if options.sced_network_type == EngineNetworkType.PTDF:
-            network_type = "ptdf_power_flow"
-        else:
-            network_type = "btheta_power_flow"
-
-        if options.sced_slack_type == EngineSlackType.EVERY_BUS:
-            slack_type = EgretSlackType.BUS_BALANCE
-        else:
-            slack_type = EgretSlackType.TRANSMISSION_LIMITS
+        network_type = _network_type_to_egret_network_constraints[options.sced_network_type]
+        slack_type = _slack_type_to_egret_slack_type[options.sced_slack_type]
 
         ptdf_manager = self._ptdf_manager
 
         if options.sced_network_type == EngineNetworkType.PTDF:
-           if self._hours_in_objective > 10:
-               ptdf_options = ptdf_manager.look_ahead_sced_ptdf_options
-           else:
-               ptdf_options = ptdf_manager.sced_ptdf_options
+            if self._hours_in_objective > 10:
+                ptdf_options = ptdf_manager.look_ahead_sced_ptdf_options
+            else:
+                ptdf_options = ptdf_manager.sced_ptdf_options
 
-           ptdf_manager.mark_active(sced_instance)
+            ptdf_manager.mark_active(sced_instance)
         else:
             ptdf_options = None
 
@@ -269,15 +274,14 @@ class EgretEngine(ModelingEngine):
         if self._last_sced_pyo_model is None:
             self._ptdf_manager.mark_active(lmp_sced_instance)
 
-            if options.sced_slack_type == EngineSlackType.EVERY_BUS:
-                slack_type = EgretSlackType.BUS_BALANCE
-            else:
-                slack_type = EgretSlackType.TRANSMISSION_LIMITS
+            slack_type = _slack_type_to_egret_slack_type[options.sced_slack_type]
+            network_type = _network_type_to_egret_network_constraints[options.sced_network_type]
 
             pyo_model = create_sced_uc_model(lmp_sced_instance, relaxed=True,
                                              ptdf_options = self._ptdf_manager.lmpsced_ptdf_options,
                                              PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict,
-                                             slack_type=slack_type)
+                                             slack_type=slack_type,
+                                             network_constraints=network_type)
             pyo_solver = self._sced_solver
             self._p._zero_out_costs(pyo_model, self._hours_in_objective)
         else:

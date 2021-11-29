@@ -24,15 +24,10 @@ from egret.models.unit_commitment import _time_series_dict, _preallocated_list, 
                                          _save_uc_results, create_tight_unit_commitment_model, \
                                          _get_uc_model
 
-from prescient.engine.modeling_engine import SlackType as EngineSlackType
-from egret.model_library.unit_commitment.uc_utils import SlackType as EgretSlackType
-
-from prescient.engine.modeling_engine import NetworkType as EngineNetworkType
-
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
 from prescient.simulator.data_manager import RucMarket
-from ..modeling_engine import ForecastErrorMethod, PricingType
+from ..modeling_engine import ForecastErrorMethod, PricingType, NetworkType as EngineNetworkType
 from ..forecast_helper import get_forecastables, get_forecastables_with_inferral_method, InferralType
 from . import reporting
 
@@ -277,8 +272,10 @@ def create_solve_deterministic_ruc(deterministic_ruc_solver):
                                 ruc_instance_for_this_period,
                                 this_date,
                                 this_hour,
+                                network_type,
+                                slack_type,
                                 ptdf_manager):
-        ruc_instance_for_this_period = deterministic_ruc_solver(ruc_instance_for_this_period, solver, options, ptdf_manager)
+        ruc_instance_for_this_period = deterministic_ruc_solver(ruc_instance_for_this_period, solver, options, network_type, slack_type, ptdf_manager)
 
         if options.write_deterministic_ruc_instances:
             current_ruc_filename = options.output_directory + os.sep + str(this_date) + \
@@ -312,17 +309,9 @@ def create_solve_deterministic_ruc(deterministic_ruc_solver):
 def _solve_deterministic_ruc(deterministic_ruc_data,
                              solver, 
                              options,
+                             network_type,
+                             slack_type,
                              ptdf_manager):
-
-    if options.ruc_network_type == EngineNetworkType.PTDF:
-        network_type = "ptdf_power_flow"
-    else:
-        network_type = "btheta_power_flow"
-
-    if options.ruc_slack_type == EngineSlackType.EVERY_BUS:
-        slack_type = EgretSlackType.BUS_BALANCE
-    else:
-        slack_type = EgretSlackType.TRANSMISSION_LIMITS
 
     if options.ruc_network_type == EngineNetworkType.PTDF:
         ptdf_manager.mark_active(deterministic_ruc_data)
