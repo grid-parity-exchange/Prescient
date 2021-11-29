@@ -42,8 +42,8 @@ _network_type_to_egret_network_constraints = {
         }
 
 _slack_type_to_egret_slack_type = {
-        EngineSlackType.EVERY_BUS : EngineSlackType.BUS_BALANCE,
-        EngineSlackType.REF_BUS_AND_BRANCHES : EngineSlackType.TRANSMISSION_LIMITS,
+        EngineSlackType.EVERY_BUS : EgretSlackType.BUS_BALANCE,
+        EngineSlackType.REF_BUS_AND_BRANCHES : EgretSlackType.TRANSMISSION_LIMITS,
         }
 
 
