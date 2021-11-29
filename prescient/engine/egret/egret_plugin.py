@@ -13,6 +13,7 @@ import math
 import logging
 import datetime
 import dateutil
+import time
 
 from pyomo.environ import value, Suffix
 
@@ -22,6 +23,9 @@ from egret.parsers.prescient_dat_parser import get_uc_model, create_model_data_d
 from egret.models.unit_commitment import _time_series_dict, _preallocated_list, _solve_unit_commitment, \
                                         _save_uc_results, create_tight_unit_commitment_model, \
                                         _get_uc_model
+
+from prescient.engine.modeling_engine import SlackType as EngineSlackType
+from egret.model_library.unit_commitment.uc_utils import SlackType as EgretSlackType
 
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
@@ -38,7 +42,7 @@ if TYPE_CHECKING:
     from egret.data.model_data import ModelData as EgretModel
 
 
-def call_solver(solver,instance,options,solver_options,relaxed=False, set_instance=True):
+def call_solver(solver, instance, options, solver_options, relaxed=False, set_instance=True):
     tee = options.output_solver_logs
     if not tee:
         egret_logger.setLevel(logging.WARNING)
@@ -303,29 +307,39 @@ def create_solve_deterministic_ruc(deterministic_ruc_solver):
         return ruc_instance_for_this_period
     return solve_deterministic_ruc
 
-def _solve_deterministic_ruc(deterministic_ruc_instance,
-                            solver, 
-                            options,
-                            ptdf_manager):
+def _solve_deterministic_ruc(deterministic_ruc_data,
+                             solver, 
+                             options,
+                             ptdf_manager):
 
-    ptdf_manager.mark_active(deterministic_ruc_instance)
-    pyo_model = create_tight_unit_commitment_model(deterministic_ruc_instance,
+    if options.ruc_slack_type == EngineSlackType.EVERY_BUS:
+        slack_type = EgretSlackType.BUS_BALANCE
+    else:
+        slack_type = EgretSlackType.TRANSMISSION_LIMITS
+
+    ptdf_manager.mark_active(deterministic_ruc_data)
+    st = time.time()
+    pyo_model = create_tight_unit_commitment_model(deterministic_ruc_data,
                                                    ptdf_options=ptdf_manager.ruc_ptdf_options,
-                                                   PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict)
+                                                   PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict,
+                                                   slack_type=slack_type)
+    print("\nPyomo model construction time: %12.2f\n" % (time.time()-st))
 
     # update in case lines were taken out
     ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
 
     try:
+        st = time.time()
         ruc_results, pyo_results, _  = call_solver(solver,
                                                    pyo_model,
                                                    options,
                                                    options.deterministic_ruc_solver_options)
+        print("Pyomo model solve time:",time.time()-st)
     except:
         print("Failed to solve deterministic RUC instance - likely because no feasible solution exists!")        
         output_filename = "bad_ruc.json"
-        deterministic_ruc_instance.write(output_filename)
-        print("Wrote failed RUC model to file=" + output_filename)
+        deterministic_ruc_data.write(output_filename)
+        print("Wrote failed RUC data to file=" + output_filename)
         raise
 
     ptdf_manager.update_active(ruc_results)

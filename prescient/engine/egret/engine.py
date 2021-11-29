@@ -32,6 +32,9 @@ from .reporting import report_initial_conditions_for_deterministic_ruc, \
 from egret.models.unit_commitment import _get_uc_model, create_tight_unit_commitment_model
 from egret.common.lazy_ptdf_utils import uc_instance_binary_relaxer
 
+from prescient.engine.modeling_engine import SlackType as EngineSlackType
+from egret.model_library.unit_commitment.uc_utils import SlackType as EgretSlackType
+
 def create_sced_uc_model(model_data,
                          network_constraints='ptdf_power_flow',
                          relaxed=False,
@@ -149,9 +152,16 @@ class EgretEngine(ModelingEngine):
             ptdf_options = ptdf_manager.sced_ptdf_options
 
         ptdf_manager.mark_active(sced_instance)
+
+        if options.sced_slack_type == EngineSlackType.EVERY_BUS:
+            slack_type = EgretSlackType.BUS_BALANCE
+        else:
+            slack_type = EgretSlackType.TRANSMISSION_LIMITS
+
         pyo_model = create_sced_uc_model(sced_instance,
                                          ptdf_options = ptdf_options,
-                                         PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict)
+                                         PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict,
+                                         slack_type=slack_type)
 
         # update in case lines were taken out
         ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
@@ -222,9 +232,9 @@ class EgretEngine(ModelingEngine):
         return sced_results
 
     def create_and_solve_lmp(self,
-            options:Options,
-            sced_instance: OperationsModel,
-           ) -> OperationsModel:
+                             options:Options,
+                             sced_instance: OperationsModel,
+                             ) -> OperationsModel:
 
         lmp_sced_instance = sced_instance.clone()
 
@@ -243,9 +253,16 @@ class EgretEngine(ModelingEngine):
 
         if self._last_sced_pyo_model is None:
             self._ptdf_manager.mark_active(lmp_sced_instance)
+
+            if options.sced_slack_type == EngineSlackType.EVERY_BUS:
+                slack_type = EgretSlackType.BUS_BALANCE
+            else:
+                slack_type = EgretSlackType.TRANSMISSION_LIMITS
+
             pyo_model = create_sced_uc_model(lmp_sced_instance, relaxed=True,
                                              ptdf_options = self._ptdf_manager.lmpsced_ptdf_options,
-                                             PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict)
+                                             PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict,
+                                             slack_type=slack_type)
             pyo_solver = self._sced_solver
             self._p._zero_out_costs(pyo_model, self._hours_in_objective)
         else:
