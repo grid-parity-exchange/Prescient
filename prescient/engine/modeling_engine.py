@@ -33,6 +33,10 @@ class SlackType(Enum):
     EVERY_BUS = auto()
     REF_BUS_AND_BRANCHES = auto()
 
+class NetworkType(Enum):
+    PTDF = auto()
+    BTHETA = auto()
+
 class ModelingEngine(ABC):
     '''
     Provides model manipulation and solving capabilities

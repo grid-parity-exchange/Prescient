@@ -21,16 +21,13 @@ from egret.common.log import logger as egret_logger
 from egret.data.model_data import ModelData
 from egret.parsers.prescient_dat_parser import get_uc_model, create_model_data_dict_params
 from egret.models.unit_commitment import _time_series_dict, _preallocated_list, _solve_unit_commitment, \
-                                        _save_uc_results, create_tight_unit_commitment_model, \
-                                        _get_uc_model
-
-from prescient.engine.modeling_engine import SlackType as EngineSlackType
-from egret.model_library.unit_commitment.uc_utils import SlackType as EgretSlackType
+                                         _save_uc_results, create_tight_unit_commitment_model, \
+                                         _get_uc_model
 
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
 from prescient.simulator.data_manager import RucMarket
-from ..modeling_engine import ForecastErrorMethod, PricingType
+from ..modeling_engine import ForecastErrorMethod, PricingType, NetworkType as EngineNetworkType
 from ..forecast_helper import get_forecastables, get_forecastables_with_inferral_method, InferralType
 from . import reporting
 
@@ -275,8 +272,10 @@ def create_solve_deterministic_ruc(deterministic_ruc_solver):
                                 ruc_instance_for_this_period,
                                 this_date,
                                 this_hour,
+                                network_type,
+                                slack_type,
                                 ptdf_manager):
-        ruc_instance_for_this_period = deterministic_ruc_solver(ruc_instance_for_this_period, solver, options, ptdf_manager)
+        ruc_instance_for_this_period = deterministic_ruc_solver(ruc_instance_for_this_period, solver, options, network_type, slack_type, ptdf_manager)
 
         if options.write_deterministic_ruc_instances:
             current_ruc_filename = options.output_directory + os.sep + str(this_date) + \
@@ -310,23 +309,25 @@ def create_solve_deterministic_ruc(deterministic_ruc_solver):
 def _solve_deterministic_ruc(deterministic_ruc_data,
                              solver, 
                              options,
+                             network_type,
+                             slack_type,
                              ptdf_manager):
 
-    if options.ruc_slack_type == EngineSlackType.EVERY_BUS:
-        slack_type = EgretSlackType.BUS_BALANCE
-    else:
-        slack_type = EgretSlackType.TRANSMISSION_LIMITS
+    if options.ruc_network_type == EngineNetworkType.PTDF:
+        ptdf_manager.mark_active(deterministic_ruc_data)
 
-    ptdf_manager.mark_active(deterministic_ruc_data)
     st = time.time()
     pyo_model = create_tight_unit_commitment_model(deterministic_ruc_data,
                                                    ptdf_options=ptdf_manager.ruc_ptdf_options,
                                                    PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict,
+                                                   network_constraints=network_type,
                                                    slack_type=slack_type)
+
     print("\nPyomo model construction time: %12.2f\n" % (time.time()-st))
 
-    # update in case lines were taken out
-    ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
+    if options.ruc_network_type == EngineNetworkType.PTDF:
+        # update in case lines were taken out
+        ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
 
     try:
         st = time.time()
@@ -342,7 +343,9 @@ def _solve_deterministic_ruc(deterministic_ruc_data,
         print("Wrote failed RUC data to file=" + output_filename)
         raise
 
-    ptdf_manager.update_active(ruc_results)
+    if options.ruc_network_type == EngineNetworkType.PTDF:
+        ptdf_manager.update_active(ruc_results)
+
     return ruc_results
 
 ## create this function with default solver
