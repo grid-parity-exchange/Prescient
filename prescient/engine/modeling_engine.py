@@ -25,9 +25,17 @@ class ForecastErrorMethod(Enum):
     PERSISTENT = auto()
 
 class PricingType(Enum):
-    LMP= auto()
+    LMP = auto()
     ELMP = auto()
     ACHP = auto()
+
+class SlackType(Enum):
+    EVERY_BUS = auto()
+    REF_BUS_AND_BRANCHES = auto()
+
+class NetworkType(Enum):
+    PTDF = auto()
+    BTHETA = auto()
 
 class ModelingEngine(ABC):
     '''

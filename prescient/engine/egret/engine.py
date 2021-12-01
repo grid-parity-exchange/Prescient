@@ -32,6 +32,21 @@ from .reporting import report_initial_conditions_for_deterministic_ruc, \
 from egret.models.unit_commitment import _get_uc_model, create_tight_unit_commitment_model
 from egret.common.lazy_ptdf_utils import uc_instance_binary_relaxer
 
+from prescient.engine.modeling_engine import SlackType as EngineSlackType, NetworkType as EngineNetworkType
+from egret.model_library.unit_commitment.uc_utils import SlackType as EgretSlackType
+
+
+_network_type_to_egret_network_constraints = {
+        EngineNetworkType.PTDF : 'ptdf_power_flow',
+        EngineNetworkType.BTHETA : 'btheta_power_flow',
+        }
+
+_slack_type_to_egret_slack_type = {
+        EngineSlackType.EVERY_BUS : EgretSlackType.BUS_BALANCE,
+        EngineSlackType.REF_BUS_AND_BRANCHES : EgretSlackType.TRANSMISSION_LIMITS,
+        }
+
+
 def create_sced_uc_model(model_data,
                          network_constraints='ptdf_power_flow',
                          relaxed=False,
@@ -62,7 +77,7 @@ class EgretEngine(ModelingEngine):
         self._ptdf_manager = PTDFManager()
         self._last_sced_pyo_model = None
         self._last_sced_pyo_solver = None
-        self._data_provider = data_provider_factory.get_data_provider(options)
+        self._data_provider = options.data_provider.get_data_provider(options)
         self._actuals_step_frequency = 60 if not options.simulate_out_of_sample \
                                        else self._data_provider.negotiate_data_frequency(options.sced_frequency_minutes)
 
@@ -88,7 +103,9 @@ class EgretEngine(ModelingEngine):
 
 
     def solve_deterministic_ruc(self, options, ruc_instance, uc_date, uc_hour):
-        return self._p.solve_deterministic_ruc(self._ruc_solver, options, ruc_instance, uc_date, uc_hour, self._ptdf_manager)
+        network_type = _network_type_to_egret_network_constraints[options.ruc_network_type]
+        slack_type = _slack_type_to_egret_slack_type[options.ruc_slack_type]
+        return self._p.solve_deterministic_ruc(self._ruc_solver, options, ruc_instance, uc_date, uc_hour, network_type, slack_type, self._ptdf_manager)
 
     def create_and_solve_day_ahead_pricing(self,
             options: Options,
@@ -142,19 +159,30 @@ class EgretEngine(ModelingEngine):
                             output_loads = False,
                             lp_filename: str = None):
 
-        ptdf_manager = self._ptdf_manager
-        if self._hours_in_objective > 10:
-            ptdf_options = ptdf_manager.look_ahead_sced_ptdf_options
-        else:
-            ptdf_options = ptdf_manager.sced_ptdf_options
+        network_type = _network_type_to_egret_network_constraints[options.sced_network_type]
+        slack_type = _slack_type_to_egret_slack_type[options.sced_slack_type]
 
-        ptdf_manager.mark_active(sced_instance)
+        ptdf_manager = self._ptdf_manager
+
+        if options.sced_network_type == EngineNetworkType.PTDF:
+            if self._hours_in_objective > 10:
+                ptdf_options = ptdf_manager.look_ahead_sced_ptdf_options
+            else:
+                ptdf_options = ptdf_manager.sced_ptdf_options
+
+            ptdf_manager.mark_active(sced_instance)
+        else:
+            ptdf_options = None
+
         pyo_model = create_sced_uc_model(sced_instance,
                                          ptdf_options = ptdf_options,
-                                         PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict)
+                                         PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict,
+                                         network_constraints=network_type,
+                                         slack_type=slack_type)
 
-        # update in case lines were taken out
-        ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
+        if options.sced_network_type == EngineNetworkType.PTDF:
+            # update in case lines were taken out
+            ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
 
         self._p._zero_out_costs(pyo_model, self._hours_in_objective)
 
@@ -183,7 +211,9 @@ class EgretEngine(ModelingEngine):
             print("Problematic SCED instance written to file=" + infeasible_sced_filename)
             raise
 
-        ptdf_manager.update_active(sced_results)
+        if options.sced_network_type == EngineNetworkType.PTDF:
+            ptdf_manager.update_active(sced_results)
+
         self._last_sced_pyo_model = pyo_model
         self._last_sced_pyo_solver = pyo_solver
 
@@ -222,9 +252,9 @@ class EgretEngine(ModelingEngine):
         return sced_results
 
     def create_and_solve_lmp(self,
-            options:Options,
-            sced_instance: OperationsModel,
-           ) -> OperationsModel:
+                             options:Options,
+                             sced_instance: OperationsModel,
+                             ) -> OperationsModel:
 
         lmp_sced_instance = sced_instance.clone()
 
@@ -236,9 +266,15 @@ class EgretEngine(ModelingEngine):
 
         if self._last_sced_pyo_model is None:
             self._ptdf_manager.mark_active(lmp_sced_instance)
+
+            slack_type = _slack_type_to_egret_slack_type[options.sced_slack_type]
+            network_type = _network_type_to_egret_network_constraints[options.sced_network_type]
+
             pyo_model = create_sced_uc_model(lmp_sced_instance, relaxed=True,
                                              ptdf_options = self._ptdf_manager.lmpsced_ptdf_options,
-                                             PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict)
+                                             PTDF_matrix_dict=self._ptdf_manager.PTDF_matrix_dict,
+                                             slack_type=slack_type,
+                                             network_constraints=network_type)
             pyo_solver = self._sced_solver
             self._p._zero_out_costs(pyo_model, self._hours_in_objective)
         else:

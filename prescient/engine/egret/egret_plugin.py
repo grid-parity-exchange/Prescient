@@ -13,6 +13,7 @@ import math
 import logging
 import datetime
 import dateutil
+import time
 
 from pyomo.environ import value, Suffix
 
@@ -27,7 +28,7 @@ from egret.model_library.transmission.tx_calc import construct_connection_graph,
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
 from prescient.simulator.data_manager import RucMarket
-from ..modeling_engine import ForecastErrorMethod, PricingType
+from ..modeling_engine import ForecastErrorMethod, PricingType, NetworkType as EngineNetworkType
 from ..forecast_helper import get_forecastables, get_forecastables_with_inferral_method, InferralType
 from . import reporting
 
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
     from egret.data.model_data import ModelData as EgretModel
 
 
-def call_solver(solver,instance,options,solver_options,relaxed=False, set_instance=True):
+def call_solver(solver, instance, options, solver_options, relaxed=False, set_instance=True):
     tee = options.output_solver_logs
     if not tee:
         egret_logger.setLevel(logging.WARNING)
@@ -273,8 +274,10 @@ def create_solve_deterministic_ruc(deterministic_ruc_solver):
                                 ruc_instance_for_this_period,
                                 this_date,
                                 this_hour,
+                                network_type,
+                                slack_type,
                                 ptdf_manager):
-        ruc_instance_for_this_period = deterministic_ruc_solver(ruc_instance_for_this_period, solver, options, ptdf_manager)
+        ruc_instance_for_this_period = deterministic_ruc_solver(ruc_instance_for_this_period, solver, options, network_type, slack_type, ptdf_manager)
 
         if options.write_deterministic_ruc_instances:
             current_ruc_filename = options.output_directory + os.sep + str(this_date) + \
@@ -305,32 +308,46 @@ def create_solve_deterministic_ruc(deterministic_ruc_solver):
         return ruc_instance_for_this_period
     return solve_deterministic_ruc
 
-def _solve_deterministic_ruc(deterministic_ruc_instance,
-                            solver, 
-                            options,
-                            ptdf_manager):
+def _solve_deterministic_ruc(deterministic_ruc_data,
+                             solver, 
+                             options,
+                             network_type,
+                             slack_type,
+                             ptdf_manager):
 
-    ptdf_manager.mark_active(deterministic_ruc_instance)
-    pyo_model = create_tight_unit_commitment_model(deterministic_ruc_instance,
+    if options.ruc_network_type == EngineNetworkType.PTDF:
+        ptdf_manager.mark_active(deterministic_ruc_data)
+
+    st = time.time()
+    pyo_model = create_tight_unit_commitment_model(deterministic_ruc_data,
                                                    ptdf_options=ptdf_manager.ruc_ptdf_options,
-                                                   PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict)
+                                                   PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict,
+                                                   network_constraints=network_type,
+                                                   slack_type=slack_type)
 
-    # update in case lines were taken out
-    ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
+    print("\nPyomo model construction time: %12.2f\n" % (time.time()-st))
+
+    if options.ruc_network_type == EngineNetworkType.PTDF:
+        # update in case lines were taken out
+        ptdf_manager.PTDF_matrix_dict = pyo_model._PTDFs
 
     try:
+        st = time.time()
         ruc_results, pyo_results, _  = call_solver(solver,
                                                    pyo_model,
                                                    options,
                                                    options.deterministic_ruc_solver_options)
+        print("Pyomo model solve time:",time.time()-st)
     except:
         print("Failed to solve deterministic RUC instance - likely because no feasible solution exists!")        
         output_filename = "bad_ruc.json"
-        deterministic_ruc_instance.write(output_filename)
-        print("Wrote failed RUC model to file=" + output_filename)
+        deterministic_ruc_data.write(output_filename)
+        print("Wrote failed RUC data to file=" + output_filename)
         raise
 
-    ptdf_manager.update_active(ruc_results)
+    if options.ruc_network_type == EngineNetworkType.PTDF:
+        ptdf_manager.update_active(ruc_results)
+
     return ruc_results
 
 ## create this function with default solver

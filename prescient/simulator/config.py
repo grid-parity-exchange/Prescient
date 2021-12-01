@@ -39,7 +39,8 @@ from pyomo.common.config import (ConfigDict,
 
 from prescient.plugins import PluginRegistrationContext
 from prescient.data.data_provider_factory import InputFormats
-from prescient.engine.modeling_engine import PricingType
+from prescient.engine.modeling_engine import PricingType, SlackType, NetworkType
+from prescient.data import data_provider_factory
 
 prescient_persistent_solvers = ("cplex", "gurobi", "xpress")
 prescient_solvers = [ s+sa for sa in ["", "_direct", "_persistent"] for s in prescient_persistent_solvers ]
@@ -120,17 +121,23 @@ class PrescientConfig(ConfigDict):
                         "associated data are written.",
         )).declare_as_argument()
 
+        self.declare("data_provider", ConfigValue(
+            domain=Module(),
+            default=data_provider_factory,
+            description="Python module that supplies a data provider implementation"
+        )).declare_as_argument()
+
         #############################
         #  PRESCIENT ONLY OPTIONS   #
         #############################
 
         # # PRESCIENT_INPUT_OPTIONS
 
-        self.declare("data_directory", ConfigValue(
+        self.declare("data_path", ConfigValue(
             domain=Path(),
             default="input_data",
-            description="Specifies the directory to pull data from",
-        )).declare_as_argument()
+            description="Specifies the file or directory to pull data from",
+        )).declare_as_argument('--data-path', '--data-directory')
 
         self.declare("input_format", ConfigValue(
             domain=_InEnumStr(InputFormats),
@@ -189,6 +196,24 @@ class PrescientConfig(ConfigDict):
                         "Default is 24. Should be a divisor of 24.",
         )).declare_as_argument()
 
+        self.declare("ruc_network_type", ConfigValue(
+            domain=_InEnumStr(NetworkType),
+            default="ptdf",
+            description="Specifies the type of network representation to use in RUC processes. Choices are "
+                        "ptdf   -- power transfer distribution factor representation."
+                        "btheta -- b-theta representation."
+                        "Default is ptdf.",
+        )).declare_as_argument()
+
+        self.declare("ruc_slack_type", ConfigValue(
+            domain=_InEnumStr(SlackType),
+            default="every-bus",
+            description="Specifies the type of slack variables to use in RUC processes. Choices are "
+                        "every-bus            -- slack variables at every system bus."
+                        "ref-bus-and-branches -- slack variables at only reference bus and each system branch."
+                        "Default is every-bus.",
+        )).declare_as_argument()
+
         self.declare("ruc_horizon", ConfigValue(
             domain=PositiveInt,
             default=48,
@@ -210,6 +235,24 @@ class PrescientConfig(ConfigDict):
             default=60,
             description="Specifies how often a SCED will be run, in minutes. "
                         "Must divide evenly into 60, or be a multiple of 60.",
+        )).declare_as_argument()
+
+        self.declare("sced_network_type", ConfigValue(
+            domain=_InEnumStr(NetworkType),
+            default="ptdf",
+            description="Specifies the type of network representation to use in SCED processes. Choices are "
+                        "ptdf   -- power transfer distribution factor representation."
+                        "btheta -- b-theta representation."
+                        "Default is ptdf.",
+        )).declare_as_argument()
+
+        self.declare("sced_slack_type", ConfigValue(
+            domain=_InEnumStr(SlackType),
+            default="every-bus",
+            description="Specifies the type of slack variables to use in SCED processes. Choices are "
+                        "every-bus            -- slack variables at every system bus."
+                        "ref-bus-and-branches -- slack variables at only reference bus and each system branch."
+                        "Default is every-bus.",
         )).declare_as_argument()
 
         self.declare("enforce_sced_shutdown_ramprate", ConfigValue(
