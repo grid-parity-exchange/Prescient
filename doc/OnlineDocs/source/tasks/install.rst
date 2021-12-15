@@ -48,8 +48,8 @@ information in `environment.yml` to identify which packages to install.
 Install a linear solver
 -----------------------
 Prescient requires a mixed-integer linear programming (MILP) solver that is compatible with
-`Pyomo <https://pyomo.readthedocs.io>`_. Options include open source solvers such as CBC, GLPK,
-or SCIP, and commercial solvers such as CPLEX, Gurobi, or Xpress.
+`Pyomo <https://pyomo.readthedocs.io>`_. Options include open source solvers such as CBC or GLPK,
+and commercial solvers such as CPLEX, Gurobi, or Xpress.
 
 The specific mechanics of installing a solver is specific to the solver and/or the platform. An easy way to
 install an open source solver on Linux and Mac is to install the CBC Anaconda package into the current conda
@@ -76,7 +76,7 @@ This will update the active python environment to include Prescient's source cod
 source code will take affect each time Prescient is run.
 
 This command will also install a few utilities that Prescient users may find useful, 
-including `runner.py` (see Running Prescient [link coming soon]).
+including `runner.py` (see :doc:`run`).
 
 
 Verify your installation

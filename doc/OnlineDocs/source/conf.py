@@ -18,11 +18,13 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Prescient'
-copyright = '2021, Prescient Developers'
+copyright = "Copyright 2020 National Technology & Engineering Solutions of Sandia, LLC" \
+            " (NTESS). Under the terms of Contract DE-NA0003525 with NTESS, the U.S." \
+            " Government retains certain rights in this software."
 author = 'Prescient Developers'
 
 # The full version, including alpha/beta/rc tags
-release = '1.0'
+release = '2.0.2'
 
 
 # -- General configuration ---------------------------------------------------
