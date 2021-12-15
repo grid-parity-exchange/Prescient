@@ -101,12 +101,12 @@ class PrescientConfig(ConfigDict):
             description="Settings for python modules that extends prescient behavior",
         ))
 
-         self.declare("config_file", ConfigValue(
-             domain=Path(),
-             description="A file holding configuration options. If specified,"
-                         " the options in the config file are applied first, then"
-                         " overridden by any matching command line arguments."
-         )).declare_as_argument(metavar="<filename>")
+        self.declare("config_file", ConfigValue(
+            domain=Path(),
+            description="A file holding configuration options. If specified,"
+                        " the options in the config file are applied first, then"
+                        " overridden by any matching command line arguments."
+        )).declare_as_argument(metavar="<filename>")
 
         self.declare("start_date", ConfigValue(
             domain=_StartDate,
