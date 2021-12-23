@@ -34,7 +34,9 @@ on the command line:
      - Command-line/config file usage
      - In-code usage
    * - Path
-     - A text string that refers to a file or folder
+     - A text string that refers to a file or folder. Can be
+       relative or absolute, and may include special characters
+       such as `~`.
      - Same as command-line
    * - Date
      - A string that can be converted to a date, such as *1776-07-04*.
@@ -77,9 +79,17 @@ The table below describes all available configuration options.
      - config_file
      - Path. Default=None.
      - Path to a file holding configuration options. Can be absolute or
-       relative. Cannot be set in code directly on a configuration object.
-       If specified, no other command line options or function arguments
-       are allowed.
+       relative. Cannot be set in code directly on a configuration object, but
+       can be passed to a configuration object's `parse_args()` function:
+
+       .. code-block:: python
+
+          p = Prescient()
+          p.config.parse_args(["--config-file", "my-config.txt"])
+
+       See :ref:`launch-with-runner-py` for a description of
+       configuration file syntax.
+
    * - **General Options**
      -
      -

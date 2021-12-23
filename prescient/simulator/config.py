@@ -17,6 +17,7 @@ import sys
 import dateutil.parser
 
 from typing import List
+import argparse
 from argparse import ArgumentParser
 from datetime import date, datetime
 from shlex import shlex
@@ -87,26 +88,46 @@ class PrescientConfig(ConfigDict):
             module = domain(mod_spec)
 
             c = module.get_configuration(key)
+            if c is None:
+                c = ConfigDict()
             c.declare('module', ConfigValue(module, domain=domain))
             MarkImmutable(c.get('module'))
             c.set_value(init_values)
             return c
 
-        # We put this first so that plugins will be registered before any other
-        # options are applied, which lets them add custom command line options 
-        # before they are potentially used.
-        self.declare("plugin", ConfigDict(
-            implicit=True,
-            implicit_domain=DynamicImplicitDomain(register_plugin),
-            description="Settings for python modules that extends prescient behavior",
-        ))
+        class _PluginParserAction(argparse.Action):
+            def __call__(self, parser, namespace, value, opt_str=None):
+                # Split out the alias from the module name
+                split_value = value.split(':', 1)
+                if len(split_value) == 1:
+                    raise ValueError("No alias found in plugin specification.  Correct format: <alias>:<module_path_or_name>")
+                alias, mod_name = split_value
 
-        self.declare("config_file", ConfigValue(
-            domain=Path(),
-            description="A file holding configuration options. If specified,"
-                        " the options in the config file are applied first, then"
-                        " overridden by any matching command line arguments."
-        )).declare_as_argument(metavar="<filename>")
+                # Load the module
+                domain = Module()
+                plugin_module = domain(mod_name)
+
+                # Save the plugin name and module to the namespace
+                if not hasattr(namespace, 'CONFIGBLOCK.plugin'):
+                    namespace.__dict__['CONFIGBLOCK.plugin'] = {}
+                namespace.__dict__['CONFIGBLOCK.plugin'][alias] = plugin_module
+
+                # Get the module's config, which may identify new config options
+                plugin_config = plugin_module.get_configuration(alias)
+
+                # If it has any new options, create a sub-parser and store it on the main parser
+                # (adding new options to the main parser mid-parse doesn't work)
+                if plugin_config:
+                    # Give the plugin config a parent so names work out correctly
+                    if not hasattr(parser, '_plugin_configs'):
+                        parser._plugin_configs = ConfigDict()
+                        parser._plugin_configs.declare('plugin', ConfigDict(implicit=True))
+                    parser._plugin_configs.plugin.declare(alias, plugin_config)
+
+                    # Add a new plugin parser to the main parser
+                    plugin_parser = argparse.ArgumentParser()
+                    plugin_config.initialize_argparse(plugin_parser)
+                    parser._plugin_parsers.append(plugin_parser)
 
         self.declare("start_date", ConfigValue(
             domain=_StartDate,
@@ -512,94 +533,70 @@ class PrescientConfig(ConfigDict):
             description="Disable stackgraph generation",
         )).declare_as_argument()
 
+        self.declare("plugin", ConfigDict(
+            implicit=True,
+            implicit_domain=DynamicImplicitDomain(register_plugin),
+            description="Settings for python modules that extend prescient behavior",
+        )).declare_as_argument(metavar="<alias>:<plugin_module>",
+                               help="A python module that extends prescient behavior,"
+                                    " with an alias that the plugin will be known by"
+                                    " in this Prescient session. Any settings stored by"
+                                    " this plugin will be available in config.plugin.<alias>.",
+                               action=_PluginParserAction)
+
+
+
     def __setattr__(self, name, value):
         if name in PrescientConfig.__slots__:
             super(ConfigDict, self).__setattr__(name, value)
         else:
             ConfigDict.__setattr__(self, name, value)
 
+    def initialize_argparse(self, parser):
+        super().initialize_argparse(parser)
+
+        # Add --config-file support
+        from prescient.scripts import runner
+        class _ConfigFileParserAction(argparse.Action):
+            def __call__(self, parser, namespace, value, opt_str=None):
+                # Get the path from the value
+                domain=Path()
+                path = domain(value)
+                # Get config file contents
+                script, config_options = runner.parse_commands(path)
+                if script and (script != 'simulator.py'):
+                    raise RuntimeError(f"--config-file must be a simulator configuration text file, got {script}")
+                # parse the options we just read
+                _, rest = parser.parse_known_args(config_options, namespace)
+                if rest:
+                    raise RuntimeError(f"Unrecognized argument: {rest[0]}")
+
+        parser.add_argument("--config-file", metavar="<filename>",
+                            help="A file holding configuration options.",
+                            action=_ConfigFileParserAction,
+                            default=argparse.SUPPRESS)
+
+        # Add support for plugin parsers
+        parser._plugin_parsers = []
+
+        def new_parse_known_args(args=None, namespace=None):
+            ns, rest = parser._inner_parse_known_args(args, namespace)
+            for p in parser._plugin_parsers:
+                ns, rest = p.parse_known_args(rest, ns)
+            return ns, rest
+
+        parser._inner_parse_known_args = parser.parse_known_args
+        parser.parse_known_args = new_parse_known_args
+
+
     def parse_args(self, args: List[str]) -> ConfigDict:
-        parser = _construct_options_parser(self)
+        parser = ArgumentParser()
+        self.initialize_argparse(parser)
         args = parser.parse_args(args=args)
         self.import_argparse(args)
         return self
 
 
-def _construct_options_parser(config: PrescientConfig) -> ArgumentParser:
-    '''
-    Make a new parser that can parse standard and custom command line options.
-
-    Custom options are provided by plugin modules. Plugins are specified
-    as command-line arguments "--plugin=<alias>:<module name>", where <alias>
-    is the name the plugin will be known as in the configuration, and 
-    <module name> identifies a python module by name or by path. Any configuration
-    items defined by the plugin will be available at config.plugin.alias.
-    '''
-
-    # To support the ability to add new command line options to the line that
-    # is currently being parsed, we convert a standard ArgumentParser into a
-    # two-pass parser by replacing the parser's parse_args method with a
-    # modified version.  In the modified parse_args, a first pass through the
-    # command line finds any --plugin arguments and allows the plugin to 
-    # add new options to the parser.  The second pass does a full parse of
-    # the command line using the parser's original parse_args method.
-    parser = ArgumentParser()
-    parser._inner_parse = parser.parse_args
-
-    def split_plugin_spec(spec:str) -> (str, str):
-        ''' Return the plugin's alias and module from the plugin name/path
-        '''
-        result = spec.split(':', 1)
-        if len(result) == 1:
-            raise ValueError("No alias found in plugin specification.  Correct format: <alias>:<module_path_or_name>")
-        return result
-
-    def outer_parse(args=None, values=None):
-        if args is None:
-            args = sys.argv[1:]
-
-        # Manually check each argument against --plugin=<alias>:<module>,
-        # give plugins a chance to install their options.
-        stand_alone_opt = '--plugin'
-        prefix = "--plugin="
-        next_arg_is_module = False
-        found_plugin=False
-        for arg in args:
-            if next_arg_is_module:
-                module_spec = arg
-                alias, mod = split_plugin_spec(module_spec)
-                config.plugin[alias] = mod
-                next_arg_is_module = False
-                found_plugin=True
-            elif arg.startswith(prefix):
-                module_spec = arg[len(prefix):]
-                alias, mod = split_plugin_spec(module_spec)
-                config.plugin[alias] = mod
-                found_plugin=True
-            elif arg == stand_alone_opt:
-                next_arg_is_module = True
-
-        # load the arguments into the ArgumentParser
-        config.initialize_argparse(parser)
-
-        # Remove plugins from args so they don't get re-handled
-        if found_plugin:
-            args = args.copy()
-            i = 0
-            while (i < len(args)):
-                if args[i].startswith(prefix):
-                    del(args[i])
-                elif args[i] == stand_alone_opt:
-                    del(args[i])
-                    del(args[i])
-                else:
-                    i += 1
-
-        # Now parse for real, with any new options in place.
-        return parser._inner_parse(args, values)
-
-    parser.parse_args = outer_parse
-    return parser
 
 class _InEnumStr(InEnum):
     ''' A bit more forgiving string to enum parser
