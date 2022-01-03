@@ -33,7 +33,7 @@ from egret.models.unit_commitment import _get_uc_model, create_tight_unit_commit
 from egret.common.lazy_ptdf_utils import uc_instance_binary_relaxer
 
 from prescient.engine.modeling_engine import SlackType as EngineSlackType, NetworkType as EngineNetworkType
-from egret.model_library.unit_commitment.uc_utils import SlackType as EgretSlackType
+from egret.model_library.unit_commitment.uc_utils import SlackType as EgretSlackType, reset_unit_commitment_penalties
 
 
 _network_type_to_egret_network_constraints = {
@@ -261,7 +261,8 @@ class EgretEngine(ModelingEngine):
         # In case of demand shortfall, the price skyrockets, so we threshold the value.
         system = lmp_sced_instance.data['system']
         for system_key, threshold_value in self._p.get_attrs_to_price_option(options):
-            if (system_key not in system) or (system[system_key] > threshold_value):
+            if threshold_value is not None and ((system_key not in system) or
+                    (system[system_key] > threshold_value)):
                 system[system_key] = threshold_value
 
         if self._last_sced_pyo_model is None:
@@ -307,55 +308,11 @@ class EgretEngine(ModelingEngine):
         uc_instance_binary_relaxer(pyo_model, pyo_solver)
 
         ## reset the penalites
-        system = lmp_sced_instance.data['system']
-
-        update_obj = False
-
-        baseMVA = system['baseMVA']
-        for system_attr, mutable_param in self._system_attr_to_pyo_model_param(pyo_model):
-            new_penalty = baseMVA * system[system_attr]
-            if not math.isclose(new_penalty, mutable_param.value):
-                mutable_param.value = new_penalty
-                update_obj = True
-
-        for param in pyo_model.BranchLimitPenalty.values():
-            if param.value > pyo_model.SystemTransmissionLimitPenalty.value:
-                param.value = pyo_model.SystemTransmissionLimitPenalty.value
-                update_obj = True
-
-        for param in pyo_model.InterfaceLimitPenalty.values():
-            if param.value > pyo_model.SystemInterfaceLimitPenalty.value:
-                param.value = pyo_model.SystemInterfaceLimitPenalty.value
-                update_obj = True
-
         pyo_model.model_data = lmp_sced_instance
+        reset_unit_commitment_penalties(pyo_model)
 
-        if update_obj and isinstance(pyo_solver, PersistentSolver):
+        if isinstance(pyo_solver, PersistentSolver):
             pyo_solver.set_objective(pyo_model.TotalCostObjective)
-
-    @staticmethod
-    def _system_attr_to_pyo_model_param(pyo_model):
-        if pyo_model.nonbasic_reserves:
-            return {
-                    'load_mismatch_cost' : pyo_model.LoadMismatchPenalty,
-                    'contingency_flow_violation_cost' : pyo_model.SystemContingencyLimitPenalty,
-                    'transmission_flow_violation_cost' : pyo_model.SystemTransmissionLimitPenalty,
-                    'interface_flow_violation_cost' : pyo_model.SystemInterfaceLimitPenalty,
-                    'reserve_shortfall_cost' : pyo_model.ReserveShortfallPenalty,
-                    'regulation_penalty_price' : pyo_model.RegulationPenalty,
-                    'spinning_reserve_penalty_price' : pyo_model.SpinningReservePenalty,
-                    'non_spinning_reserve_penalty_price' : pyo_model.NonSpinningReservePenalty,
-                    'supplemental_reserve_penalty_price' : pyo_model.SupplementalReservePenalty,
-                    'flexible_ramp_penalty_price' : pyo_model.FlexRampPenalty,
-                    }.items()
-        else:
-            return {
-                    'load_mismatch_cost' : pyo_model.LoadMismatchPenalty,
-                    'contingency_flow_violation_cost' : pyo_model.SystemContingencyLimitPenalty,
-                    'transmission_flow_violation_cost' : pyo_model.SystemTransmissionLimitPenalty,
-                    'interface_flow_violation_cost' : pyo_model.SystemInterfaceLimitPenalty,
-                    'reserve_shortfall_cost' : pyo_model.ReserveShortfallPenalty,
-                    }.items()
 
     def _print_sced_info(self,
                          sced_instance: OperationsSced,

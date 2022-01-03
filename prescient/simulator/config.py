@@ -310,74 +310,74 @@ class PrescientConfig(ConfigDict):
         ##       they can be self-consistent
         self.declare("transmission_price_threshold", ConfigValue(
             domain=PositiveFloat,
-            default=self.price_threshold/2.,
+            default=None,
             description="Maximum possible value the price can take due to transmission limits."
                         "If the price exceeds this value due to transmission violations, then "
-                        "it is set to this value.",
+                        "it is set to this value. The default is based on the value of price_threshold.",
         )).declare_as_argument()
 
         self.declare("contingency_price_threshold", ConfigValue(
             domain=PositiveFloat,
-            default=self.price_threshold/2.,
+            default=None,
             description="Maximum possible value the price can take to contingency limits."
                         "If the price exceeds this value due to transmission contingency violations, then "
-                        "it is set to this value.",
+                        "it is set to this value. The default is based on the value of price_threshold.",
         )).declare_as_argument()
 
         self.declare("interface_price_threshold", ConfigValue(
             domain=PositiveFloat,
-            default=self.price_threshold/4.,
+            default=None,
             description="Maximum possible value the price can take for interface violations."
                         "If the price exceeds this value due to interface flow violations, then "
-                        "it is set to this value.",
+                        "it is set to this value. The default is based on the value of price_threshold.",
         )).declare_as_argument()
 
         self.declare("reserve_price_threshold", ConfigValue(
             domain=PositiveFloat,
-            default=self.price_threshold/10.,
+            default=None,
             description="Maximum possible value the reserve price can take due to reserve violations."
                         "If the reserve price exceeds this value, then "
-                        "it is set to this value.",
+                        "it is set to this value. The default is based on the value of price_threshold.",
         )).declare_as_argument()
 
         self.declare("regulation_price_threshold", ConfigValue(
             domain=PositiveFloat,
-            default=(self.price_threshold+self.reserve_price_threshold)/2.,
+            default=None,
             description="Maximum possible value the reserve price can take due to regulation reserve violations."
                         "If the regulation price exceeds this value, then "
-                        "it is set to this value.",
+                        "it is set to this value. The default is based on the value of price_threshold.",
         )).declare_as_argument()
 
         self.declare("spinning_reserve_price_threshold", ConfigValue(
             domain=PositiveFloat,
-            default=(self.regulation_price_threshold+self.reserve_price_threshold)/2.,
+            default=None,
             description="Maximum possible value the reserve price can take due to spinning reserve violations."
                         "If the spinning reserve price exceeds this value, then "
-                        "it is set to this value.",
+                        "it is set to this value. The default is based on the value of price_threshold.",
         )).declare_as_argument()
 
         self.declare("non_spinning_reserve_price_threshold", ConfigValue(
             domain=PositiveFloat,
-            default=(self.spinning_reserve_price_threshold+self.reserve_price_threshold)/2.,
+            default=None,
             description="Maximum possible value the reserve price can take due to non-spinning reserve violations."
                         "If the non-spinning price exceeds this value, then "
-                        "it is set to this value.",
+                        "it is set to this value. The default is based on the value of price_threshold.",
         )).declare_as_argument()
 
         self.declare("supplemental_reserve_price_threshold", ConfigValue(
             domain=PositiveFloat,
-            default=(self.non_spinning_reserve_price_threshold+self.reserve_price_threshold)/2.,
+            default=None,
             description="Maximum possible value the reserve price can take due to supplemental reserve violations."
                         "If the supplemental price exceeds this value, then "
-                        "it is set to this value.",
+                        "it is set to this value. The default is based on the value of price_threshold.",
         )).declare_as_argument()
 
         self.declare("flex_ramp_price_threshold", ConfigValue(
             domain=PositiveFloat,
-            default=(self.non_spinning_reserve_price_threshold+self.spinning_reserve_price_threshold)/2.,
+            default=None,
             description="Maximum possible value the reserve price can take due to flexible ramping reserve violations."
                         "If the flexi-ramp price exceeds this value, then "
-                        "it is set to this value.",
+                        "it is set to this value. The default is based on the value of price_threshold.",
         )).declare_as_argument()
 
         self.declare("monitor_all_contingencies", ConfigValue(

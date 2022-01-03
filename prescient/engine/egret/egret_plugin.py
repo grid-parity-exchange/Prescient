@@ -492,7 +492,8 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
 
     # In case of shortfall, the price skyrockets, so we threshold the value.
     for system_key, threshold_value in get_attrs_to_price_option(options):
-        if (system_key not in system) or (system[system_key] > threshold_value):
+        if threshold_value is not None and ((system_key not in system) or
+                (system[system_key] > threshold_value)):
             system[system_key] = threshold_value
 
     ptdf_manager.mark_active(pricing_instance)
