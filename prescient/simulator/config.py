@@ -305,9 +305,6 @@ class PrescientConfig(ConfigDict):
                         "it is set to this value.",
         )).declare_as_argument()
 
-        ## TODO: We need to fix these so these defaults get re-set
-        ##       after they're read in by the user. In this way
-        ##       they can be self-consistent
         self.declare("transmission_price_threshold", ConfigValue(
             domain=PositiveFloat,
             default=None,
