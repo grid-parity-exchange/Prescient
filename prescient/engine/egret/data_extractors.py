@@ -139,7 +139,7 @@ class ScedDataExtractor(BaseScedExtractor):
         return val
 
     def get_min_downtime(self, sced: OperationsModel, g: G) -> float:
-        return sced.data['elements']['generator'][g]['min_up_time']
+        return sced.data['elements']['generator'][g]['min_down_time']
 
     def get_scaled_startup_ramp_limit(self, sced: OperationsModel, g: G) -> float:
         return sced.data['elements']['generator'][g]['startup_capacity']

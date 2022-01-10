@@ -243,7 +243,7 @@ class OracleManager(_Manager):
         lp_filename = None
         if options.write_sced_instances:
             lp_filename = options.output_directory + os.sep + str(time_step.date) + \
-                os.sep + "sced_hour_" + str(time_step.hour) + ".lp"
+                os.sep + "sced_hour_" + str(time_step.hour) + ".json"
 
         print("")
         print("Solving SCED instance")
