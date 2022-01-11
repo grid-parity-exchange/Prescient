@@ -370,10 +370,10 @@ def create_deterministic_ruc(options,
     # Create a new model
     md = data_provider.get_initial_forecast_model(options, ruc_horizon, 60)
 
-    initial_day = current_state is None or current_state.timestep_count == 0
+    initial_ruc = current_state is None or current_state.timestep_count == 0
 
     # Populate the T0 data
-    if initial_day:
+    if initial_ruc:
         data_provider.populate_initial_state_data(options, md)
     else:
         _copy_initial_state_into_model(options, current_state, md)
@@ -408,7 +408,7 @@ def create_deterministic_ruc(options,
     # Ensure the reserve requirement is satisfied
     _ensure_reserve_factor_honored(options, md, range(ruc_horizon))
 
-    _ensure_contingencies_monitored(options, md, initial_day)
+    _ensure_contingencies_monitored(options, md, initial_ruc)
 
     return md
 
@@ -679,9 +679,9 @@ def _ensure_reserve_factor_honored(options:Options, md:EgretModel, time_periods:
             if reserve_reqs[t] < min_reserve:
                 reserve_reqs[t] = min_reserve
 
-def _ensure_contingencies_monitored(options:Options, md:EgretModel, initial_day:bool = False) -> None:
+def _ensure_contingencies_monitored(options:Options, md:EgretModel, initial_ruc:bool = False) -> None:
     ''' Add contingency screening, if that option is enabled '''
-    if initial_day:
+    if initial_ruc:
         _ensure_contingencies_monitored.contingency_dicts = {}
 
     for bn, b in md.elements('branch'): 
@@ -722,7 +722,7 @@ def _copy_initial_state_into_model(options:Options,
 
 def get_attrs_to_price_option(options:Options):
     '''
-    Create a map from internal attributs to various price thresholds
+    Create a map from internal attributes to various price thresholds
     for the LMP SCED
     '''
     return {
