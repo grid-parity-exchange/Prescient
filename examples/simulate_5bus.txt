@@ -1,0 +1,22 @@
+command/exec simulator.py
+--data-directory=5bus
+--input-format=rts-gmlc
+--simulate-out-of-sample 
+--run-sced-with-persistent-forecast-errors 
+--output-directory=5bus_output
+--start-date=07-10-2020
+--num-days=7
+--sced-horizon=1
+--ruc-mipgap=0.01
+--reserve-factor=0.1
+--deterministic-ruc-solver=cbc
+--deterministic-ruc-solver-options="feas=off DivingG=on"
+--sced-solver=cbc
+--sced-frequency-minutes=5
+--ruc-horizon=36
+--compute-market-settlements
+--monitor-all-contingencies
+#--output-solver-logs
+--price-threshold=1000
+--contingency-price-threshold=100
+--reserve-price-threshold=5

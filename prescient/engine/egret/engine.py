@@ -33,7 +33,7 @@ from egret.models.unit_commitment import _get_uc_model, create_tight_unit_commit
 from egret.common.lazy_ptdf_utils import uc_instance_binary_relaxer
 
 from prescient.engine.modeling_engine import SlackType as EngineSlackType, NetworkType as EngineNetworkType
-from egret.model_library.unit_commitment.uc_utils import SlackType as EgretSlackType
+from egret.model_library.unit_commitment.uc_utils import SlackType as EgretSlackType, reset_unit_commitment_penalties
 
 
 _network_type_to_egret_network_constraints = {
@@ -259,17 +259,11 @@ class EgretEngine(ModelingEngine):
         lmp_sced_instance = sced_instance.clone()
 
         # In case of demand shortfall, the price skyrockets, so we threshold the value.
-        if 'load_mismatch_cost' not in lmp_sced_instance.data['system'] or \
-                lmp_sced_instance.data['system']['load_mismatch_cost'] > \
-                    options.price_threshold:
-            lmp_sced_instance.data['system']['load_mismatch_cost'] = options.price_threshold
-
-        # In case of reserve shortfall, the price skyrockets, so we threshold the value.
-        if 'reserve_shortfall_cost' not in lmp_sced_instance.data['system'] or \
-                lmp_sced_instance.data['system']['reserve_shortfall_cost'] > \
-                    options.reserve_price_threshold:
-            lmp_sced_instance.data['system']['reserve_shortfall_cost'] = \
-                    options.reserve_price_threshold
+        system = lmp_sced_instance.data['system']
+        for system_key, threshold_value in self._p.get_attrs_to_price_option(options):
+            if threshold_value is not None and ((system_key not in system) or
+                    (system[system_key] > threshold_value)):
+                system[system_key] = threshold_value
 
         if self._last_sced_pyo_model is None:
             self._ptdf_manager.mark_active(lmp_sced_instance)
@@ -314,23 +308,10 @@ class EgretEngine(ModelingEngine):
         uc_instance_binary_relaxer(pyo_model, pyo_solver)
 
         ## reset the penalites
-        system = lmp_sced_instance.data['system']
-
-        update_obj = False
-
-        new_load_penalty = system['baseMVA'] * system['load_mismatch_cost']
-        if not math.isclose(new_load_penalty, pyo_model.LoadMismatchPenalty.value):
-            pyo_model.LoadMismatchPenalty.value = new_load_penalty
-            update_obj = True
-
-        new_reserve_penalty =  system['baseMVA'] * system['reserve_shortfall_cost']
-        if not math.isclose(new_reserve_penalty, pyo_model.ReserveShortfallPenalty.value):
-            pyo_model.ReserveShortfallPenalty.value = new_reserve_penalty
-            update_obj = True
-
         pyo_model.model_data = lmp_sced_instance
+        reset_unit_commitment_penalties(pyo_model)
 
-        if update_obj and isinstance(pyo_solver, PersistentSolver):
+        if isinstance(pyo_solver, PersistentSolver):
             pyo_solver.set_objective(pyo_model.TotalCostObjective)
 
     def _print_sced_info(self,
@@ -456,8 +437,8 @@ class EgretEngine(ModelingEngine):
         if not pe.SolverFactory(self._sced_solver).available():
             raise RuntimeError(f"Solver {self._sced_solver} is not available to Pyomo")
 
-
-    def _print_persistence_warning(self, solver):
+    @staticmethod
+    def _print_persistence_warning(solver):
         print(f"WARNING: Solver {solver} supports persistence, which "
                "improves the performance of Prescient. Consider installing the "
               f"python bindings for {solver}.")
@@ -487,6 +468,7 @@ class EgretEngine(ModelingEngine):
             self.create_simulation_actuals = egret_plugin.create_simulation_actuals
             self.solve_deterministic_day_ahead_pricing_problem = egret_plugin.solve_deterministic_day_ahead_pricing_problem
             self._zero_out_costs = egret_plugin._zero_out_costs
+            self.get_attrs_to_price_option = egret_plugin.get_attrs_to_price_option
 
             if options.simulator_plugin != None:
                 try:

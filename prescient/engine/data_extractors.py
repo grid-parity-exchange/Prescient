@@ -174,6 +174,20 @@ class ScedDataExtractor(ABC):
         pass
 
     @abstractmethod
+    def get_flow_violation_level(self, sced: OperationsModel, line: L) -> float:
+        pass
+
+    @abstractmethod
+    def get_all_contingency_flow_levels(self, sced: OperationsModel) -> Dict[Tuple[L,L], float]:
+        """Get the flows for the monitored contingencies."""
+        pass
+
+    @abstractmethod
+    def get_all_contingency_flow_violation_levels(self, sced: OperationsModel) -> Dict[Tuple[L,L], float]:
+        """Get the flow violations for the monitored contingencies."""
+        pass
+
+    @abstractmethod
     def get_storage_input_dispatch_level(self, sced: OperationsModel, storage: S) -> float:
         pass
 
@@ -423,6 +437,10 @@ class ScedDataExtractor(ABC):
 
     def get_all_flow_levels(self, sced: OperationsModel) -> Dict[L, float]:
         return {l: self.get_flow_level(sced, l)
+                for l in self.get_transmission_lines(sced)}
+
+    def get_all_flow_violation_levels(self, sced: OperationsModel) -> Dict[L, float]:
+        return {l: self.get_flow_violation_level(sced, l)
                 for l in self.get_transmission_lines(sced)}
 
     def get_all_bus_demands(self, sced: OperationsModel) -> Dict[B, float]:

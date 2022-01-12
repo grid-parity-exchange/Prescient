@@ -21,8 +21,9 @@ from egret.common.log import logger as egret_logger
 from egret.data.model_data import ModelData
 from egret.parsers.prescient_dat_parser import get_uc_model, create_model_data_dict_params
 from egret.models.unit_commitment import _time_series_dict, _preallocated_list, _solve_unit_commitment, \
-                                         _save_uc_results, create_tight_unit_commitment_model, \
-                                         _get_uc_model
+                                        _save_uc_results, create_tight_unit_commitment_model, \
+                                        _get_uc_model
+from egret.model_library.transmission.tx_calc import construct_connection_graph, get_N_minus_1_branches
 
 from prescient.util import DEFAULT_MAX_LABEL_LENGTH
 from prescient.util.math_utils import round_small_values
@@ -146,6 +147,7 @@ def create_sced_instance(data_provider:DataProvider,
                 sced_data[t] = forecast[t] * forecast_error_ratio
 
     _ensure_reserve_factor_honored(options, sced_md, range(sced_horizon))
+    _ensure_contingencies_monitored(options, sced_md)
 
     # Set generator commitments & future state
     for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
@@ -368,8 +370,10 @@ def create_deterministic_ruc(options,
     # Create a new model
     md = data_provider.get_initial_forecast_model(options, ruc_horizon, 60)
 
+    initial_ruc = current_state is None or current_state.timestep_count == 0
+
     # Populate the T0 data
-    if current_state is None or current_state.timestep_count == 0:
+    if initial_ruc:
         data_provider.populate_initial_state_data(options, md)
     else:
         _copy_initial_state_into_model(options, current_state, md)
@@ -403,6 +407,8 @@ def create_deterministic_ruc(options,
 
     # Ensure the reserve requirement is satisfied
     _ensure_reserve_factor_honored(options, md, range(ruc_horizon))
+
+    _ensure_contingencies_monitored(options, md, initial_ruc)
 
     return md
 
@@ -483,14 +489,12 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
     reserve_requirement = ('reserve_requirement' in pricing_instance.data['system'])
 
     system = pricing_instance.data['system']
-    # In case of demand shortfall, the price skyrockets, so we threshold the value.
-    if ('load_mismatch_cost' not in system) or (system['load_mismatch_cost'] > options.price_threshold):
-        system['load_mismatch_cost'] = options.price_threshold
 
-    # In case of reserve shortfall, the price skyrockets, so we threshold the value.
-    if reserve_requirement:
-        if ('reserve_shortfall_cost' not in system) or (system['reserve_shortfall_cost'] > options.reserve_price_threshold):
-            system['reserve_shortfall_cost'] = options.reserve_price_threshold
+    # In case of shortfall, the price skyrockets, so we threshold the value.
+    for system_key, threshold_value in get_attrs_to_price_option(options):
+        if threshold_value is not None and ((system_key not in system) or
+                (system[system_key] > threshold_value)):
+            system[system_key] = threshold_value
 
     ptdf_manager.mark_active(pricing_instance)
     pyo_model = create_pricing_model(pricing_instance, relaxed=True,
@@ -675,6 +679,38 @@ def _ensure_reserve_factor_honored(options:Options, md:EgretModel, time_periods:
             if reserve_reqs[t] < min_reserve:
                 reserve_reqs[t] = min_reserve
 
+def _ensure_contingencies_monitored(options:Options, md:EgretModel, initial_ruc:bool = False) -> None:
+    ''' Add contingency screening, if that option is enabled '''
+    if initial_ruc:
+        _ensure_contingencies_monitored.contingency_dicts = {}
+
+    for bn, b in md.elements('branch'): 
+        if not b.get('in_service', True):
+            raise RuntimeError(f"Remove branches from service by setting the `planned_outage` attribute. "
+                    f"Branch {bn} has `in_service`:False")
+    for bn, b in md.elements('bus'): 
+        if not b.get('in_service', True):
+            raise RuntimeError(f"Buses cannot be removed from service in Prescient")
+
+    if options.monitor_all_contingencies:
+        key = []
+        for bn, b in md.elements('branch'):
+            if 'planned_outage' in b:
+                if isinstance(b['planned_outage'], dict):
+                    if any(b['planned_outage']['values']):
+                        key.append(b)
+                elif b['planned_outage']:
+                    key.append(b)
+        key = tuple(key)
+        if key not in _ensure_contingencies_monitored.contingency_dicts:
+            mapping_bus_to_idx = { k : i for i,k in enumerate(md.data['elements']['bus'].keys())}
+            graph = construct_connection_graph(md.data['elements']['branch'], mapping_bus_to_idx)
+            contingency_list = get_N_minus_1_branches(graph, md.data['elements']['branch'], mapping_bus_to_idx)
+            contingency_dict = { cn : {'branch_contingency':cn} for cn in contingency_list} 
+            _ensure_contingencies_monitored.contingency_dicts[key] = contingency_dict
+
+        md.data['elements']['contingency'] = _ensure_contingencies_monitored.contingency_dicts[key]
+
 def _copy_initial_state_into_model(options:Options, 
                                    current_state:SimulationState, 
                                    md:EgretModel):
@@ -683,3 +719,21 @@ def _copy_initial_state_into_model(options:Options,
         g_dict['initial_p_output']  = current_state.get_initial_power_generated(g)
     for s,s_dict in md.elements('storage'):
         s_dict['initial_state_of_charge'] = current_state.get_initial_state_of_charge(s)
+
+def get_attrs_to_price_option(options:Options):
+    '''
+    Create a map from internal attributes to various price thresholds
+    for the LMP SCED
+    '''
+    return {
+            'load_mismatch_cost' : options.price_threshold,
+            'contingency_flow_violation_cost' : options.contingency_price_threshold,
+            'transmission_flow_violation_cost' : options.transmission_price_threshold,
+            'interface_flow_violation_cost' : options.interface_price_threshold,
+            'reserve_shortfall_cost' : options.reserve_price_threshold,
+            'regulation_penalty_price' : options.regulation_price_threshold,
+            'spinning_reserve_penalty_price' : options.spinning_reserve_price_threshold,
+            'non_spinning_reserve_penalty_price' : options.non_spinning_reserve_price_threshold,
+            'supplemental_reserve_penalty_price' : options.supplemental_reserve_price_threshold,
+            'flexible_ramp_penalty_price' : options.flex_ramp_price_threshold,
+            }.items()
