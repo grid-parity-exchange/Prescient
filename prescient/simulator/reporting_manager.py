@@ -198,7 +198,7 @@ class ReportingManager(_Manager):
                         'Minute': lambda ops,l: ops.timestamp.minute,
                         'Line': lambda ops,l: l,
                         'Flow': lambda ops,l: _round(ops.observed_flow_levels[l]),
-                        #'Violation': lambda ops,l: _round(ops.observed_flow_violation_levels[l]),
+                        'Violation': lambda ops,l: _round(ops.observed_flow_violation_levels[l]),
                    }
         line_writer = CsvMultiRowReporter.from_dict(line_file, line_entries_per_hour, line_columns)
         stats_manager.register_for_sced_stats(line_writer.write_record)
