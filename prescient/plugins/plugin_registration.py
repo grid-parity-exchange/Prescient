@@ -159,11 +159,10 @@ class PluginRegistrationContext:
 
     def register_after_operations_callback(
         self, 
-        callback: Callable[[Options, Simulator, OperationsModel], None]
+        callback: Callable[[Options, Simulator, OperationsModel, OperationsModel], None]
         ) -> None:
         ''' Register a callback to be called after the operations model has been created and
-            solved, but before the LMP has been solved, and before statistics have been
-            collected.
+            solved, before statistics have been collected.
         '''
         self.callback_manager.register_after_operations_callback(callback)
 

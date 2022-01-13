@@ -65,7 +65,7 @@ def register_plugins(context: pplugins.PluginRegistrationContext,
         msg('before_operations_solve_callback', plugin_config)
     context.register_before_operations_solve_callback(before_operations_solve_callback)
 
-    def after_operations_callback(options, simulator, sced_model):
+    def after_operations_callback(options, simulator, sced_model, lmp_model):
         msg('after_operations_callback', plugin_config)
     context.register_after_operations_callback(after_operations_callback)
 

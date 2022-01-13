@@ -289,7 +289,7 @@ class OracleManager(_Manager):
         lmp_sced = self.engine.create_and_solve_lmp(options, current_sced_instance)
 
         self.data_manager.apply_sced(options, current_sced_instance)
-        self.simulator.callback_manager.invoke_after_operations_callbacks(options, self.simulator, current_sced_instance)
+        self.simulator.callback_manager.invoke_after_operations_callbacks(options, self.simulator, current_sced_instance, lmp_sced)
 
         ops_stats = self.simulator.stats_manager.collect_operations(current_sced_instance,
                                                                     solve_time,
