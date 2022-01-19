@@ -163,6 +163,16 @@ class PluginRegistrationContext:
         ) -> None:
         ''' Register a callback to be called after the operations model has been created and
             solved, before statistics have been collected.
+
+            The callback will be called with the following arguments:
+                options:Options
+                    The options used for this simulation run
+                simulator:Simulator
+                    The simulator managing the simulation and its data
+                sced:OperationsModel
+                    The operations model that was just solved
+                lmp_sced:OperationsModel
+                    The solved LMP model for the operations model that was just solved
         '''
         self.callback_manager.register_after_operations_callback(callback)
 
