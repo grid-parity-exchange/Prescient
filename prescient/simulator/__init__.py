@@ -7,6 +7,7 @@
 #  This software is distributed under the Revised BSD License.
 #  ___________________________________________________________________________
 
+from .prescient import Prescient
 from .simulator import Simulator
 from .data_manager import DataManager
 from .oracle_manager import OracleManager
@@ -14,4 +15,3 @@ from .reporting_manager import ReportingManager
 from .stats_manager import StatsManager
 from .time_manager import TimeManager
 from .options import Options
-from .prescient import Prescient

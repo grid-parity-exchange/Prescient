@@ -43,14 +43,31 @@ class Prescient(Simulator):
                          stats_manager, reporting_manager)
 
     def simulate(self, **options):
+        ''' Execute a Prescient simulation.
+
+        Arguments
+        ---------
+        config_file: str
+            Path to a text file holding configuration options. If specified,
+            this must be the only argument passed to the function.
+
+        All other arguments:
+            Any configuration properties accepted by PrescientConfig can be
+            specified.
+
+        Any options passed as arguments are applied to this instance's
+        configuration, and then a simulation is run.
+        
+        Arguments can either be passed individually, or in a configuration
+        file. You can't mix and match how configuration options are passed;
+        either use a configuration file (config_file='path_to_config.txt')
+        or pass configuration options as function arguments.
+        '''
         if 'config_file' in options:
             config_file = options.pop('config_file')
             if options:
                 raise RuntimeError(f"If using a config_file, all options must be specified in the configuration file")
-            script, config_options = runner.parse_commands(config_file)
-            if script != 'simulator.py':
-                raise RuntimeError(f"config_file must be a simulator configuration text file, got {script}")
-            self.config.parse_args(args=config_options)
+            self.config.parse_args(args=['--config-file', config_file])
 
         else:
             self.config.set_value(options)
@@ -80,4 +97,4 @@ def main(args=None):
 
 # MAIN ROUTINE STARTS NOW #
 if __name__ == '__main__':
-    result = main(sys.argv)
+    result = main(sys.argv[1:])

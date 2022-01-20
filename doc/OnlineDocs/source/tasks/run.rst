@@ -1,10 +1,12 @@
+.. highlight:: none
+
 Running Prescient
 =================
 
 There are three ways to launch and run Prescient:
 
 * With a configuration file, :ref:`using runner.py<launch-with-runner-py>`
-* With command line options, :ref:`using the prescient module<launch-with-prescient-module>`
+* With command line options, :ref:`using the prescient.simulator module<launch-with-prescient-module>`
 * From python code, :ref:`using in-code configuration<launch-with-code>`
 
 In all three cases, the analyst supplies configuration values that
@@ -54,25 +56,27 @@ where `config.txt` should be replaced with the name of your configuration file.
 
 .. _launch-with-prescient-module:
 
-Launch with the `prescient` module
-----------------------------------
+Launch with the `prescient.simulator` module
+--------------------------------------------
 
-Another way to run Prescient is to execute the `prescient.simulator.prescient` module::
+Another way to run Prescient is to execute the `prescient.simulator` module::
 
-	python -m prescient.simulator.prescient <options>
+	python -m prescient.simulator <options>
 
 where `options` specifies the configuration options for the run. An example might 
 be something like this::
 
-	python -m prescient.simulator.prescient --data-directory=example_scenario_input --output-directory=example_scenario_output --input-format=rts-gmlc --run-sced-with-persistent-forecast-errors --start-date=07-11-2024 --num-days=7 --sced-horizon=1 --sced-frequency-minutes=10 --ruc-horizon=36
+	python -m prescient.simulator --data-directory=example_scenario_input --output-directory=example_scenario_output --input-format=rts-gmlc --run-sced-with-persistent-forecast-errors --start-date=07-11-2024 --num-days=7 --sced-horizon=1 --sced-frequency-minutes=10 --ruc-horizon=36
 
 Configuration options can also be specified in a configuration file::
 
-	python -m prescient.simulator.prescient --config-file=config.txt
+	python -m prescient.simulator --config-file=config.txt
 
-Note that if you use the `--config-file` option, it must be the only option on the command line.
+You can combine the `--config-file` option with other command line options. The contents of the configuration
+file are effectively inserted into the command line at the location of the `--config-file` option. You can 
+override values in a configuration file by repeating the option at some point after the `--config-file` option.
 
-Running the `prescient` module allows you to run Prescient without explicitly installing it, as long 
+Running the `prescient.simulator` module allows you to run Prescient without explicitly installing it, as long 
 as Prescient is found in the python module search path.
 
 .. _launch-with-code:
@@ -103,7 +107,7 @@ Prescient can be configured and launched from python code:
             no_startup_shutdown_curves=True)
 
 The code example above creates an instance of the Prescient class and passes 
-configuration options to its `simulate()` method. Another option is to set 
+configuration options to its `simulate()` method. An alternative is to set 
 values on a configuration object, and then run the simulation after configuration
 is done:
 
@@ -131,8 +135,24 @@ is done:
 
     p.simulate()
 
-Managing configuration in code is very flexible. The example below demonstrates
-a combination of approaches to configuring a prescient run:
+A third option is to store configuration values in a `dict`, which can potentially
+be shared among multiple runs:
+
+.. code-block:: python
+
+    from prescient.simulator import Prescient
+
+    options = {
+        'data_path':'deterministic_scenarios',
+        'simulate_out_of_sample':True,
+        'run_sced_with_persistent_forecast_errors':True,
+        'output_directory':'deterministic_simulation_output'
+    }
+
+    Prescient().simulate(**options)
+
+These three methods can be used together quite flexibly. The example below 
+demonstrates a combination of approaches to configuring a prescient run:
 
 .. code-block:: python
 
