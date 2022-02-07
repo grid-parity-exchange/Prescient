@@ -59,7 +59,7 @@ jobs:
           - name: Install EGRET
             # don't install if this is a tag
             # use the version specified in setup.py
-            if: {{!startsWith(github.ref, 'refs/tags')}}
+            if: ${{!startsWith(github.ref, 'refs/tags')}}
             run: |
               pip install git+https://github.com/grid-parity-exchange/Egret.git
 
