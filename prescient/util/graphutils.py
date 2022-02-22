@@ -12,7 +12,9 @@ import sys
 
 import matplotlib as mpl
 
-if not hasattr(sys, 'ps1'):
+if hasattr(sys, 'ps1'):
+    print("Interactive Python mode detected; using default matplotlib backend for plotting.")
+else:
     # Not in interactive mode, so use the AGG backend for
     # systems without GUIs (which probably will not be run
     # in interactive mode). See the discussion on
