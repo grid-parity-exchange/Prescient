@@ -8,10 +8,17 @@
 #  ___________________________________________________________________________
 
 import os.path
+import sys
 
 import matplotlib as mpl
-# no support (nor present need for) interactive graphics - we just write PNG files.
-mpl.use('AGG') 
+
+if not hasattr(sys, 'ps1'):
+    # Not in interactive mode, so use the AGG backend for
+    # systems without GUIs (which probably will not be run
+    # in interactive mode). See the discussion on
+    # https://stackoverflow.com/questions/2356399/tell-if-python-is-in-interactive-mode
+    # and the definition https://docs.python.org/3/library/sys.html#sys.ps1
+    mpl.use('AGG')
 
 import matplotlib.pyplot as plt
 
