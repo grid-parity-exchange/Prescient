@@ -519,23 +519,6 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
 
     ptdf_manager.update_active(pricing_results)
 
-    ## Debugging
-    if pricing_results.data['system']['total_cost'] > ruc_results.data['system']['total_cost'] and not \
-            math.isclose(pricing_results.data['system']['total_cost'],
-                         ruc_results.data['system']['total_cost'],
-                         rel_tol=1e-06, abs_tol=1e-06):
-        print("The pricing run had a higher objective value than the MIP run. This is indicative of a bug.")
-        print(f"pricing run cost: {pricing_results.data['system']['total_cost']}")
-        print(f"MIP run cost    : {ruc_results.data['system']['total_cost']}")
-        print("Writing LP pricing_problem.json")
-        output_filename = 'pricing_instance.json'
-        pricing_results.write(output_filename)
-
-        output_filename = 'ruc_results.json'
-        ruc_results.write(output_filename)
-
-        raise RuntimeError("Halting due to bug in pricing.")
-
     day_ahead_prices = {}
     for b, b_dict in pricing_results.elements(element_type='bus'):
         for t,lmp in enumerate(b_dict['lmp']['values']):
