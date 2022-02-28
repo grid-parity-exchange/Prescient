@@ -8,9 +8,7 @@
 #  ___________________________________________________________________________
 
 #!/bin/usr/env python
-import glob
 import sys
-import os
 
 # We raise an error if trying to install with less than python 3.7
 if sys.version_info < (3,7):
@@ -36,10 +34,11 @@ setup(name='gridx-prescient',
                 'populator.py = prescient.scripts.populator:main',
                 'scenario_creator.py = prescient.scripts.scenario_creator:main',
                 'simulator.py = prescient.scripts.simulator:main',
-                #'prescient.py = prescient.simulator.prescient:main'
             ]
         },
-      package_data={'prescient.downloaders.rts_gmlc_prescient':['runners/*.txt','runners/templates/*']},
+      package_data={'prescient.downloaders.rts_gmlc_prescient':['runners/*.txt','runners/templates/*'],
+                    'prescient.simulator.tests':['regression_tests_data/**/*'],
+                   },
       install_requires=['numpy','matplotlib','pandas','scipy','pyomo>=6.1.2',
                         'python-dateutil','networkx','jupyter', 'gridx-egret>=0.5.2.dev0',
                        ],
