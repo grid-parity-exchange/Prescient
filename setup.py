@@ -21,7 +21,7 @@ from setuptools import setup, find_namespace_packages
 packages = find_namespace_packages(include=['prescient.*'])
 
 setup(name='gridx-prescient',
-      version='2.1.dev0',
+      version='2.1',
       description='Power Generation Scenario creation and simulation utilities',
       url='https://github.com/grid-parity-exchange/Prescient',
       author='Jean-Paul Watson, David Woodruff, Andrea Staid, Dominic Yang',
