@@ -223,10 +223,9 @@ class TestCustomDataSource(SimulatorRegressionBase, unittest.TestCase):
         self.baseline_dir_name = 'deterministic_simulation_output_baseline'
 
     def _run_simulator(self):
-        import custom_data_provider
         options = {**base_options}
         options['output_directory'] = 'custom_data_provider_output'
-        options['data_provider'] = custom_data_provider
+        options['data_provider'] = os.path.join(self.this_file_path, 'custom_data_provider.py')
         options['data_path'] = 'custom_data.json'
 
         os.chdir(self.test_case_path)
