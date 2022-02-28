@@ -14,28 +14,24 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from prescient.downloaders import rts_gmlc
 from prescient.scripts import runner
-from tests.simulator_tests import simulator_diff
-
 from prescient.simulator import Prescient
 
 this_file_path = os.path.dirname(os.path.realpath(__file__))
 
-class _SimulatorModRTSGMLC:
+class SimulatorRegressionBase:
     """Test class for running the simulator."""
     # arbitrary comparison threshold
     COMPARISON_THRESHOLD = .01
 
     def setUp(self):
         self.this_file_path = this_file_path
-        self.test_cases_path = os.path.join(self.this_file_path, 'test_cases')
 
         self._set_names()
         self._run_simulator()
 
-        test_results_dir = os.path.join(self.test_cases_path, self.results_dir_name) 
-        control_results_dir = os.path.join(self.test_cases_path, self.baseline_dir_name)
+        test_results_dir = os.path.join(self.test_case_path, self.results_dir_name) 
+        control_results_dir = os.path.join(self.test_case_path, self.baseline_dir_name)
 
         output_files = ["bus_detail",
                         "daily_summary",
@@ -55,7 +51,7 @@ class _SimulatorModRTSGMLC:
 
     def _run_simulator(self):
         """Runs the simulator for the test data set."""
-        os.chdir(self.test_cases_path)
+        os.chdir(self.test_case_path)
 
         simulator_config_filename = self.simulator_config_filename
         script, options = runner.parse_commands(simulator_config_filename)
@@ -129,8 +125,10 @@ class _SimulatorModRTSGMLC:
             assert diff, f"Column: '{column_name}' of File: '{filename}.csv' diverges."
 
 # test runner.py with plugin
-class TestSimulatorModRtsGmlcCopperSheet(_SimulatorModRTSGMLC, unittest.TestCase):
+class TestSimulatorModRtsGmlcCopperSheet(SimulatorRegressionBase, unittest.TestCase):
     def _set_names(self):
+        self.test_case_path = os.path.join(self.this_file_path, 'regression_tests_data')
+        # in self.test_case_path
         self.simulator_config_filename = 'simulate_deterministic.txt'
         self.results_dir_name = 'deterministic_simulation_output'
         self.baseline_dir_name = 'deterministic_simulation_output_baseline'
@@ -155,26 +153,30 @@ base_options = {'simulate_out_of_sample':True,
                }
 
 # test csv / text file configuration
-class TestSimulatorModRtsGmlcCopperSheet_csv_python_config_file(_SimulatorModRTSGMLC, unittest.TestCase):
+class TestSimulatorModRtsGmlcCopperSheet_csv_python_config_file(SimulatorRegressionBase, unittest.TestCase):
     def _set_names(self):
+        self.test_case_path = os.path.join(self.this_file_path, 'regression_tests_data')
+        # in self.test_case_path
         self.simulator_config_filename = 'simulate_deterministic_csv.txt'
         self.results_dir_name = 'deterministic_simulation_csv_output'
         self.baseline_dir_name = 'deterministic_simulation_output_baseline'
 
     def _run_simulator(self):
-        os.chdir(self.test_cases_path)
+        os.chdir(self.test_case_path)
         options = {'config_file' : self.simulator_config_filename}
         Prescient().simulate(**options)
 
 # test plugin with Python and *.dat files
-class TestSimulatorModRtsGmlcNetwork_python(_SimulatorModRTSGMLC, unittest.TestCase):
+class TestSimulatorModRtsGmlcNetwork_python(SimulatorRegressionBase, unittest.TestCase):
 
     def _set_names(self):
+        self.test_case_path = os.path.join(self.this_file_path, 'regression_tests_data')
+        # in self.test_case_path
         self.results_dir_name = 'deterministic_with_network_simulation_output_python'
         self.baseline_dir_name = 'deterministic_with_network_simulation_output_baseline'
 
     def _run_simulator(self):
-        os.chdir(self.test_cases_path)
+        os.chdir(self.test_case_path)
         options = {**base_options}
         options['data_path'] = 'deterministic_with_network_scenarios'
         options['output_directory'] = 'deterministic_with_network_simulation_output_python'
@@ -183,14 +185,16 @@ class TestSimulatorModRtsGmlcNetwork_python(_SimulatorModRTSGMLC, unittest.TestC
         Prescient().simulate(**options)
 
 # test options are correctly re-freshed, Python, and network
-class TestSimulatorModRtsGmlcNetwork_python_csv(_SimulatorModRTSGMLC, unittest.TestCase):
+class TestSimulatorModRtsGmlcNetwork_python_csv(SimulatorRegressionBase, unittest.TestCase):
 
     def _set_names(self):
+        self.test_case_path = os.path.join(self.this_file_path, 'regression_tests_data')
+        # in self.test_case_path
         self.results_dir_name = 'deterministic_with_network_simulation_output_python_csv'
         self.baseline_dir_name = 'deterministic_with_network_simulation_output_baseline'
 
     def _run_simulator(self):
-        os.chdir(self.test_cases_path)
+        os.chdir(self.test_case_path)
         options = {**base_options}
         options['data_path'] = 'deterministic_with_network_scenarios_csv'
         options['output_directory'] = 'deterministic_with_network_simulation_output_python_csv'
@@ -198,19 +202,23 @@ class TestSimulatorModRtsGmlcNetwork_python_csv(_SimulatorModRTSGMLC, unittest.T
         Prescient().simulate(**options)
 
 # test shortcut / text file configuration
-class TestShortcutSimulator_python_config_file(_SimulatorModRTSGMLC, unittest.TestCase):
+class TestShortcutSimulator_python_config_file(SimulatorRegressionBase, unittest.TestCase):
     def _set_names(self):
+        self.test_case_path = os.path.join(self.this_file_path, 'regression_tests_data')
+        # in self.test_case_path
         self.simulator_config_filename = 'simulate_shortcut.txt'
         self.results_dir_name = 'deterministic_shortcut_output'
         self.baseline_dir_name = 'deterministic_shortcut_output_baseline'
 
     def _run_simulator(self):
-        os.chdir(self.test_cases_path)
+        os.chdir(self.test_case_path)
         options = {'config_file' : self.simulator_config_filename}
         Prescient().simulate(**options)
 
-class TestCustomDataSource(_SimulatorModRTSGMLC, unittest.TestCase):
+class TestCustomDataSource(SimulatorRegressionBase, unittest.TestCase):
     def _set_names(self):
+        self.test_case_path = os.path.join(self.this_file_path, 'regression_tests_data')
+        # in self.test_case_path
         self.results_dir_name = 'custom_data_provider_output'
         self.baseline_dir_name = 'deterministic_simulation_output_baseline'
 
@@ -221,7 +229,7 @@ class TestCustomDataSource(_SimulatorModRTSGMLC, unittest.TestCase):
         options['data_provider'] = custom_data_provider
         options['data_path'] = 'custom_data.json'
 
-        os.chdir(self.test_cases_path)
+        os.chdir(self.test_case_path)
         Prescient().simulate(**options)
 
 
