@@ -21,8 +21,9 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 
 class ForecastErrorMethod(Enum):
-    PRESCIENT = auto()
-    PERSISTENT = auto()
+    """ Method to generate forecast values """
+    PRESCIENT = auto() # Use actual values for forecasts
+    PERSISTENT = auto() # Scale forecasts by same factor as current time's error
 
 class PricingType(Enum):
     LMP = auto()

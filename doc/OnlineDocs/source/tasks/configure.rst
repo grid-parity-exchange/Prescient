@@ -149,12 +149,16 @@ The table below describes all available configuration options.
        If multiple RUCs are executed each day (because `ruc_every_hours` 
        is less than 24), any of the execution times may be specified.
        Negative values indicate hours before midnight, positive after.
-   * - \-\-ruc-horizon
+   * - .. _config_ruc-horizon:
+   
+       \-\-ruc-horizon
      - ruc_horizon
      - Integer. Default=48
      - The number of hours to include in each RUC.
        Must be >= `ruc_every_hours` and <= 48.
-   * - \-\-ruc-prescience-hour
+   * - .. _config_ruc-prescience-hour:
+   
+       \-\-ruc-prescience-hour
      - ruc_prescience_hour
      - Integer. Default=0.
      - The number of initial hours of each RUC in which linear blending of 
@@ -228,7 +232,9 @@ The table below describes all available configuration options.
      -
      -
      -
-   * - \-\-sced-frequency-minutes
+   * - .. _config_sced-frequency-minutes:
+
+       \-\-sced-frequency-minutes
      - sced_frequency_minutes
      - Integer. Default=60.
      - How often a SCED will be run, in minutes.
@@ -238,13 +244,15 @@ The table below describes all available configuration options.
      - Integer. Default=1
      - The number of time periods to include in each SCED. 
        Must be at least 1.
-   * - \-\-run-sced-with-persistent-forecast-errors
+   * - .. _config_run-sced-with-persistent-forecast-errors:
+   
+       \-\-run-sced-with-persistent-forecast-errors
      - run_sced_with_persistent_forecast_errors
      - Flag. Default=false.
      - If true, then values in SCEDs use persistent forecast errors.
        If false, all values in SCEDs use actual values for all time 
        periods, including future time periods. 
-       See :ref:`future-times-in-sceds`.
+       See :ref:`forecast_smoothing`.
    * - \-\-enforce-sced-shutdown-ramprate
      - enforce_sced_shutdown_ramprate
      - Flag. Default=false.
