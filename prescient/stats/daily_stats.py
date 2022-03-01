@@ -31,83 +31,75 @@ class DailyStats:
     max_hourly_demand: float = 0.0
 
     # These are cumulative scalars
-    this_date_demand: float = 0.0
-    this_date_power_generated: float = 0.0
-    this_date_fixed_costs: float = 0.0
-    this_date_variable_costs: float = 0.0
-    this_date_total_costs: float # implemented as read-only property
-    this_date_over_generation: float = 0.0
-    this_date_load_shedding: float = 0.0
-    this_date_reserve_shortfall: float = 0.0
-    this_date_renewables_available: float = 0.0
-    this_date_renewables_used: float = 0.0
-    this_date_renewables_penetration_rate: float # implemented as a read-only property
-    this_date_renewables_curtailment: float = 0.0
-    this_date_on_offs: int = 0
-    this_date_sum_on_off_ramps: float = 0.0
-    this_date_sum_nominal_ramps: float = 0.0
-    this_date_quick_start_additional_costs: float = 0.0
-    this_date_quick_start_additional_power_generated: float = 0.0
-    this_date_average_price: float #implemented as read-only property
+    demand: float = 0.0
+    power_generated: float = 0.0
+    fixed_costs: float = 0.0
+    variable_costs: float = 0.0
+    total_costs: float # implemented as read-only property
+    over_generation: float = 0.0
+    load_shedding: float = 0.0
+    reserve_shortfall: float = 0.0
+    renewables_available: float = 0.0
+    renewables_used: float = 0.0
+    renewables_penetration_rate: float # implemented as a read-only property
+    renewables_curtailment: float = 0.0
+    on_offs: int = 0
+    sum_on_off_ramps: float = 0.0
+    sum_nominal_ramps: float = 0.0
+    quick_start_additional_costs: float = 0.0
+    quick_start_additional_power_generated: float = 0.0
+    average_price: float #implemented as read-only property
 
 
     # These variables are only populated if options.compute_market_settlements is True
-    this_date_thermal_energy_payments: float = 0.0
-    this_date_renewable_energy_payments: float = 0.0
-    this_date_virtual_energy_payments: float = 0.0
+    thermal_energy_payments: float = 0.0
+    renewable_energy_payments: float = 0.0
+    virtual_energy_payments: float = 0.0
 
-    this_date_energy_payments: float #implemented as read-only property
+    energy_payments: float #implemented as read-only property
 
-    this_date_reserve_payments: float = 0.0
+    reserve_payments: float = 0.0
 
-    this_date_thermal_uplift: float = 0.0
-    this_date_renewable_uplift: float = 0.0
-    this_date_virtual_uplift: float = 0.0
+    thermal_uplift: float = 0.0
+    renewable_uplift: float = 0.0
+    virtual_uplift: float = 0.0
 
-    this_date_uplift_payments: float #implemented as read-only property
+    uplift_payments: float #implemented as read-only property
 
-    this_date_total_payments: float #implemented as read-only property
-
-    # They are indexed by a (model entity, hour) tuple, and start out empty.
-    ######### They are commented out for now #######################
-    #this_date_planning_energy_prices: Dict[Tuple[B, int], float] = field(default_factory=dict)
-    #this_date_planning_reserve_prices: Dict[int, float] = field(default_factory=dict)
-    #this_date_planning_thermal_generation_cleared: Dict[Tuple[G, int], float] = field(default_factory=dict)
-    #this_date_planning_thermal_reserve_cleared: Dict[Tuple[G, int], float] = field(default_factory=dict)
-    #this_date_planning_renewable_generation_cleared: Dict[Tuple[G, int], float] = field(default_factory=dict)
+    total_payments: float #implemented as read-only property
 
     extensions: Dict[Any, Any]
 
     @property
-    def this_date_total_costs(self):
-        return self.this_date_fixed_costs + self.this_date_variable_costs
+    def total_costs(self):
+        return self.fixed_costs + self.variable_costs
 
     @property
-    def this_date_average_price(self):
-        return 0.0 if self.this_date_demand == 0.0 else self.this_date_total_costs / self.this_date_demand
+    def average_price(self):
+        return 0.0 if self.demand == 0.0 else self.total_costs / self.demand
 
     @property 
-    def this_date_renewables_penetration_rate(self):
-        return 0.0 if self.this_date_power_generated == 0.0 else \
-                (self.this_date_renewables_used / self.this_date_power_generated) * 100.0
+    def renewables_penetration_rate(self):
+        return 0.0 if self.power_generated == 0.0 else \
+                (self.renewables_used / self.power_generated) * 100.0
 
     @property
-    def this_date_energy_payments(self):
-        return self.this_date_thermal_energy_payments + \
-                self.this_date_renewable_energy_payments + \
-                self.this_date_virtual_energy_payments
+    def energy_payments(self):
+        return self.thermal_energy_payments + \
+                self.renewable_energy_payments + \
+                self.virtual_energy_payments
 
     @property
-    def this_date_uplift_payments(self):
-        return self.this_date_thermal_uplift + self.this_date_renewable_uplift + self.this_date_virtual_uplift
+    def uplift_payments(self):
+        return self.thermal_uplift + self.renewable_uplift + self.virtual_uplift
 
     @property
-    def this_date_total_payments(self):
-        return self.this_date_energy_payments + self.this_date_uplift_payments + self.this_date_reserve_payments
+    def total_payments(self):
+        return self.energy_payments + self.uplift_payments + self.reserve_payments
 
     @property
-    def this_date_average_payments(self):
-        return 0.0 if self.this_date_demand == 0.0 else self.this_date_total_payments / self.this_date_demand
+    def average_payments(self):
+        return 0.0 if self.demand == 0.0 else self.total_payments / self.demand
 
     def operations_stats(self):
         yield from (opstat for hrstat in self.hourly_stats for opstat in hrstat.operations_stats)
@@ -123,29 +115,29 @@ class DailyStats:
         self.hourly_stats.append(hourly_stats)
         self.max_hourly_demand = max(self.max_hourly_demand, hourly_stats.total_demand)
 
-        self.this_date_demand += hourly_stats.total_demand
-        self.this_date_power_generated += hourly_stats.power_generated
-        self.this_date_fixed_costs += hourly_stats.fixed_costs
-        self.this_date_variable_costs += hourly_stats.variable_costs
-        self.this_date_over_generation += hourly_stats.over_generation
-        self.this_date_load_shedding += hourly_stats.load_shedding
-        self.this_date_reserve_shortfall += hourly_stats.reserve_shortfall
-        self.this_date_renewables_available += hourly_stats.renewables_available
-        self.this_date_renewables_used += hourly_stats.renewables_used
-        self.this_date_renewables_curtailment += hourly_stats.renewables_curtailment
-        self.this_date_on_offs += hourly_stats.on_offs
-        self.this_date_sum_on_off_ramps += hourly_stats.sum_on_off_ramps
-        self.this_date_sum_nominal_ramps += hourly_stats.sum_nominal_ramps
-        self.this_date_quick_start_additional_costs += hourly_stats.quick_start_additional_costs
-        self.this_date_quick_start_additional_power_generated += hourly_stats.quick_start_additional_power_generated
+        self.demand += hourly_stats.total_demand
+        self.power_generated += hourly_stats.power_generated
+        self.fixed_costs += hourly_stats.fixed_costs
+        self.variable_costs += hourly_stats.variable_costs
+        self.over_generation += hourly_stats.over_generation
+        self.load_shedding += hourly_stats.load_shedding
+        self.reserve_shortfall += hourly_stats.total_reserve_shortfall
+        self.renewables_available += hourly_stats.renewables_available
+        self.renewables_used += hourly_stats.renewables_used
+        self.renewables_curtailment += hourly_stats.renewables_curtailment
+        self.on_offs += hourly_stats.on_offs
+        self.sum_on_off_ramps += hourly_stats.sum_on_off_ramps
+        self.sum_nominal_ramps += hourly_stats.sum_nominal_ramps
+        self.quick_start_additional_costs += hourly_stats.quick_start_additional_costs
+        self.quick_start_additional_power_generated += hourly_stats.quick_start_additional_power_generated
 
         if self._options.compute_market_settlements:
-            self.this_date_thermal_energy_payments += hourly_stats.thermal_energy_payments
-            self.this_date_renewable_energy_payments += hourly_stats.renewable_energy_payments
-            self.this_date_virtual_energy_payments += hourly_stats.virtual_energy_payments
+            self.thermal_energy_payments += hourly_stats.thermal_energy_payments
+            self.renewable_energy_payments += hourly_stats.renewable_energy_payments
+            self.virtual_energy_payments += hourly_stats.virtual_energy_payments
 
-            self.this_date_reserve_payments += hourly_stats.reserve_payments
+            self.reserve_payments += hourly_stats.reserve_payments
 
-            self.this_date_thermal_uplift += hourly_stats.thermal_uplift_payments
-            self.this_date_renewable_uplift += hourly_stats.renewable_uplift_payments
-            self.this_date_virtual_uplift += hourly_stats.virtual_uplift_payments
+            self.thermal_uplift += hourly_stats.thermal_uplift_payments
+            self.renewable_uplift += hourly_stats.renewable_uplift_payments
+            self.virtual_uplift += hourly_stats.virtual_uplift_payments

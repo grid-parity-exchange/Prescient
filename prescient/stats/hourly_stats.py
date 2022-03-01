@@ -45,8 +45,7 @@ class HourlyStats:
     power_generated: float = 0.0
     load_shedding: float = 0.0
     over_generation: float = 0.0
-    reserve_shortfall: float = 0.0
-    available_reserve: float = 0.0
+    total_thermal_headroom: float = 0.0
     available_quickstart: float = 0.0
 
     renewables_available: float = 0.0
@@ -85,16 +84,16 @@ class HourlyStats:
     storage_output_dispatch_levels: Dict[S, Sequence[float]]
     storage_soc_dispatch_levels: Dict[S, Sequence[float]]
 
-    reserve_requirement: float = 0.0
-    reserve_RT_price: float = 0.0
+    reserve_requirements: Dict[R, float]
+    reserve_shortfalls: Dict[R, float]
+    reserve_RT_prices: Dict[R, float]
 
-    planning_reserve_price: float = 0.0
     planning_energy_prices: Dict[B, float]
 
     thermal_gen_cleared_DA: Dict[G, float]
     thermal_gen_revenue: Dict[G, float]
-    thermal_reserve_cleared_DA: Dict[G, float]
-    thermal_reserve_revenue: Dict[G, float]
+    thermal_reserve_cleared_DA: Dict[(R,G), float]
+    thermal_per_reserve_revenue: Dict[(R,G), float]
     thermal_uplift: Dict[G, float]
 
     renewable_gen_cleared_DA: Dict[G, float]
@@ -110,6 +109,7 @@ class HourlyStats:
     thermal_uplift_payments: float #read-only property
     renewable_uplift_payments: float #read-only property
     reserve_payments: float #read-only property
+    total_reserve_shortfall: float # read-only property
 
     extensions: Dict[Any, Any]
 
@@ -158,9 +158,13 @@ class HourlyStats:
         return 0.
 
     @property
+    def total_reserve_shortfall(self) -> float:
+        return sum(self.reserve_shortfalls.values())
+
+    @property
     def reserve_payments(self) -> float:
         if self._options.compute_market_settlements:
-            return sum(self.thermal_reserve_revenue.values())
+            return sum(self.thermal_per_reserve_revenue.values())
         return 0.
 
     def __init__(self, options, day: date, hour: int):
@@ -195,7 +199,7 @@ class HourlyStats:
         keyed_summing_fields = [
             'observed_costs',
             'thermal_gen_revenue',
-            'thermal_reserve_revenue',
+            'thermal_per_reserve_revenue',
             'thermal_uplift',
             'renewable_gen_revenue',
             'renewable_uplift',
@@ -225,17 +229,13 @@ class HourlyStats:
             'power_generated',
             'load_shedding',
             'over_generation',
-            'reserve_shortfall',
-            'available_reserve',
+            'total_thermal_headroom',
             'available_quickstart',
             'renewables_available',
             'renewables_used',
             'renewables_curtailment',
             'quick_start_additional_power_generated',
-            'reserve_requirement',
-            'price',
-            'reserve_RT_price',
-            'planning_reserve_price'
+            'price'
            ]
         for field in averaging_fields:
             val = getattr(ops_stats, field)
@@ -244,6 +244,16 @@ class HourlyStats:
 
         self.average_sced_runtime = \
             (self.average_sced_runtime*self.sced_count + ops_stats.sced_runtime) / (self.sced_count+1)
+
+        def update_dict_avgs(update_from_dict, dict_to_update):
+            ''' Update values in updating_dict by incorporating values in new_dict
+            ''' 
+            for k,val in update_from_dict.items():
+                if k in dict_to_update:
+                    old_sum = dict_to_update[k]*self.sced_count
+                    dict_to_update[k] = (old_sum+val)/(self.sced_count+1)
+                else:
+                    dict_to_update[k] = val
 
         keyed_averaging_fields = [
             'observed_thermal_dispatch_levels',
@@ -257,12 +267,14 @@ class HourlyStats:
             'bus_demands',
             'observed_bus_mismatches',
             'observed_bus_LMPs',
+            'reserve_requirements',
+            'reserve_RT_prices',
+            'reserve_shortfalls',
             'storage_input_dispatch_levels',
             'storage_output_dispatch_levels',
             'storage_soc_dispatch_levels',
             'planning_energy_prices',
             'thermal_gen_cleared_DA',
-            'thermal_reserve_cleared_DA',
             'renewable_gen_cleared_DA',
             'virtual_gen_cleared_DA',
            ]
@@ -277,12 +289,29 @@ class HourlyStats:
                 my_dict = {}
                 setattr(self, field, my_dict)
 
-            for k,val in their_dict.items():
-                if k in my_dict:
-                    old_sum = my_dict[k]*self.sced_count
-                    my_dict[k] = (old_sum+val)/(self.sced_count+1)
-                else:
-                    my_dict[k] = val
+            update_dict_avgs(their_dict, my_dict)
+
+        double_keyed_averaging_fields = [
+            'thermal_reserve_cleared_DA',
+           ]
+        for field in double_keyed_averaging_fields:
+            if not hasattr(ops_stats, field):
+                continue
+            their_dict = getattr(ops_stats, field)
+
+            # Make sure self has the field
+            if hasattr(self, field):
+                my_dict = getattr(self, field)
+            else:
+                my_dict = {}
+                setattr(self, field, my_dict)
+
+            # Go through all keys in their_dict
+            for k,their_subdict in their_dict.items():
+                # Make sure self.field has the key
+                if not k in my_dict:
+                    my_dict[k] = {}
+                update_dict_avgs(their_subdict, my_dict[k])
 
         # Flag which generators were used for quickstart at least once in the hour
         for g,used in ops_stats.used_as_quickstart.items():

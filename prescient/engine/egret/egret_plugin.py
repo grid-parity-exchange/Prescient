@@ -30,6 +30,7 @@ from prescient.util.math_utils import round_small_values
 from prescient.simulator.data_manager import RucMarket
 from ..modeling_engine import ForecastErrorMethod, PricingType, NetworkType as EngineNetworkType
 from ..forecast_helper import get_forecastables, get_forecastables_with_inferral_method, InferralType
+from .data_extractors import ScedDataExtractor
 from . import reporting
 
 from typing import TYPE_CHECKING
@@ -148,6 +149,12 @@ def create_sced_instance(data_provider:DataProvider,
 
     _ensure_reserve_factor_honored(options, sced_md, range(sced_horizon))
     _ensure_contingencies_monitored(options, sced_md)
+
+    # ensure reserves dispatch is consistent with pricing
+    system = sced_md.data['system']
+    for system_key, threshold_value in get_attrs_to_price_option(options):
+        if threshold_value is not None and system_key not in system:
+            system[system_key] = 1000.*threshold_value
 
     # Set generator commitments & future state
     for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
@@ -314,6 +321,12 @@ def _solve_deterministic_ruc(deterministic_ruc_data,
                              network_type,
                              slack_type,
                              ptdf_manager):
+
+    # set RUC penalites high enough to drive commitment
+    system = deterministic_ruc_data.data['system']
+    for system_key, threshold_value in get_attrs_to_price_option(options):
+        if threshold_value is not None and system_key not in system:
+            system[system_key] = 1000.*threshold_value
 
     if options.ruc_network_type == EngineNetworkType.PTDF:
         ptdf_manager.mark_active(deterministic_ruc_data)
@@ -485,9 +498,6 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
     else:
         raise RuntimeError("Unknown pricing type "+pricing_type+".")
 
-    ## change the penalty prices to the caps, if necessary
-    reserve_requirement = ('reserve_requirement' in pricing_instance.data['system'])
-
     system = pricing_instance.data['system']
 
     # In case of shortfall, the price skyrockets, so we threshold the value.
@@ -496,7 +506,9 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
                 (system[system_key] > threshold_value)):
             system[system_key] = threshold_value
 
-    ptdf_manager.mark_active(pricing_instance)
+    if options.ruc_network_type == EngineNetworkType.PTDF:
+        ptdf_manager.mark_active(pricing_instance)
+
     pyo_model = create_pricing_model(pricing_instance, relaxed=True,
                                      ptdf_options=ptdf_manager.damarket_ptdf_options,
                                      PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict)
@@ -517,51 +529,42 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
         print("Wrote failed RUC model to file=" + output_filename)
         raise
 
-    ptdf_manager.update_active(pricing_results)
+    if options.ruc_network_type == EngineNetworkType.PTDF:
+        ptdf_manager.update_active(pricing_results)
 
     day_ahead_prices = {}
     for b, b_dict in pricing_results.elements(element_type='bus'):
         for t,lmp in enumerate(b_dict['lmp']['values']):
             day_ahead_prices[b,t] = lmp
 
-    if reserve_requirement:
-        day_ahead_reserve_prices = {}
-        for t,price in enumerate(pricing_results.data['system']['reserve_price']['values']):
-            # Thresholding the value of the reserve price to the passed in option
-            day_ahead_reserve_prices[t] = price
+    ## change the penalty prices to the caps, if necessary
+    thermal_reserve_cleared_DA = {}
+    DA_reserve_requirements = {}
+    DA_reserve_shortfalls = {}
+    DA_reserve_prices = {}
+    for reserve_prod in ScedDataExtractor.get_reserve_products(pricing_results):
+        reserve_data = ScedDataExtractor._get_reserve_parent(pricing_results, reserve_prod)
 
-        print("Recalculating RUC reserve procurement")
+        DA_reserve_prices[reserve_prod] = list(reserve_data[f'{reserve_prod.reserve_name}_price']['values'])
 
-        ## scale the provided reserves by the amount over we are
-        thermal_reserve_cleared_DA = {}
 
-        g_reserve_values = { g : g_dict['rg']['values'] for g, g_dict in ruc_results.elements(element_type='generator', generator_type='thermal') }
-        reserve_shortfall = ruc_results.data['system']['reserve_shortfall']['values']
-        reserve_requirement = ruc_results.data['system']['reserve_requirement']['values']
+        res_supplied_name = f'{reserve_prod.reserve_name}_supplied'
+        g_reserve_values = { g : g_dict[res_supplied_name]['values'] 
+                            for g, g_dict in ruc_results.elements(element_type='generator', generator_type='thermal')
+                            if ScedDataExtractor.generator_is_in_scope(g_dict, reserve_prod.region_type, reserve_prod.region_name)}
+        reserve_shortfall = reserve_data[f'{reserve_prod.reserve_name}_shortfall']['values']
+        reserve_requirement = reserve_data[f'{reserve_prod.reserve_name}_requirement']
+        if isinstance(reserve_requirement, dict):
+            reserve_requirement = reserve_requirement['values']
+        else:
+            reserve_requirement = [reserve_requirement]*len(reserve_shortfall)
+        DA_reserve_shortfalls[reserve_prod] = list(reserve_shortfall)
+        DA_reserve_requirements[reserve_prod] = list(reserve_requirement)
 
-        for t in range(0,options.ruc_every_hours):
-            reserve_provided_t = sum(reserve_vals[t] for reserve_vals in g_reserve_values.values()) 
-            reserve_shortfall_t = reserve_shortfall[t]
-            reserve_requirement_t = reserve_requirement[t]
+        thermal_reserve_cleared_DA[reserve_prod] = {(g,t): reserve_vals[t]
+                                                    for g, reserve_vals in g_reserve_values.items()
+                                                    for t in range(0,options.ruc_every_hours)}
 
-            surplus_reserves_t = reserve_provided_t + reserve_shortfall_t - reserve_requirement_t
-
-            ## if there's a shortfall, grab the full amount from the RUC solve
-            ## or if there's no provided reserves this can safely be set to 1.
-            if round_small_values(reserve_shortfall_t) > 0 or reserve_provided_t == 0:
-                surplus_multiple_t = 1.
-            else:
-                ## scale the reserves from the RUC down by the same fraction
-                ## so that they exactly meed the needed reserves
-                surplus_multiple_t = reserve_requirement_t/reserve_provided_t
-            for g, reserve_vals in g_reserve_values.items():
-                thermal_reserve_cleared_DA[g,t] = reserve_vals[t]*surplus_multiple_t
-    else:
-        day_ahead_reserve_prices = { t : 0. for t,_ in enumerate(ruc_results.data['system']['time_keys']) }
-        thermal_reserve_cleared_DA = { (g,t) : 0. \
-                for t,_ in enumerate(ruc_results.data['system']['time_keys']) \
-                for g,_ in ruc_results.elements(element_type='generator', generator_type='thermal') }
-               
     thermal_gen_cleared_DA = {}
     renewable_gen_cleared_DA = {}
     virtual_gen_cleared_DA = {}
@@ -580,7 +583,9 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
             store_dict[g,t] = pg[t]
 
     return RucMarket(day_ahead_prices=day_ahead_prices,
-                    day_ahead_reserve_prices=day_ahead_reserve_prices,
+                    DA_reserve_prices=DA_reserve_prices,
+                    DA_reserve_requirements=DA_reserve_requirements,
+                    DA_reserve_shortfalls=DA_reserve_shortfalls,
                     thermal_gen_cleared_DA=thermal_gen_cleared_DA,
                     thermal_reserve_cleared_DA=thermal_reserve_cleared_DA,
                     renewable_gen_cleared_DA=renewable_gen_cleared_DA,

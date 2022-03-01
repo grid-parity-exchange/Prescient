@@ -325,10 +325,11 @@ class OracleManager(_Manager):
         if ops_stats.over_generation!= 0.0:
             print("Over-generation reported at t=%d -   total=%12.2f" % (1, ops_stats.over_generation))
 
-        if ops_stats.reserve_shortfall != 0.0:
-            print("Reserve shortfall reported at t=%2d: %12.2f" % (1, ops_stats.reserve_shortfall))
-            print("Quick start generation capacity available at t=%2d: %12.2f" % (1, ops_stats.available_quickstart))
-            print("")
+        for res in ops_stats.rt_reserve_products:
+            if res in ops_stats.reserve_shortfalls and ops_stats.reserve_shortfalls[res] != 0.0:
+                print("Reserve shortfall reported at t=%2d: %12.2f" % (1, ops_stats.reserve_shortfalls[res]))
+                print("Quick start generation capacity available at t=%2d: %12.2f" % (1, ops_stats.available_quickstart))
+                print("")
 
         if ops_stats.renewables_curtailment > 0:
             print("Renewables curtailment reported at t=%d - total=%12.2f" % (1, ops_stats.renewables_curtailment))

@@ -100,25 +100,25 @@ class OverallStats(object):
     def incorporate_day_stats(self, day_stats: DailyStats):
         self.daily_stats.append(day_stats)
 
-        self.cumulative_demand += day_stats.this_date_demand
-        self.total_overall_fixed_costs += day_stats.this_date_fixed_costs
-        self.total_overall_generation_costs += day_stats.this_date_variable_costs
-        self.total_overall_load_shedding += day_stats.this_date_load_shedding
-        self.total_overall_over_generation += day_stats.this_date_over_generation
-        self.cumulative_renewables_used += day_stats.this_date_renewables_used
-        self.total_overall_reserve_shortfall += day_stats.this_date_reserve_shortfall
-        self.total_overall_renewables_curtailment += day_stats.this_date_renewables_curtailment
-        self.total_on_offs += day_stats.this_date_on_offs
-        self.total_sum_on_off_ramps += day_stats.this_date_sum_on_off_ramps
-        self.total_sum_nominal_ramps += day_stats.this_date_sum_nominal_ramps
-        self.total_quick_start_additional_costs += day_stats.this_date_quick_start_additional_costs
-        self.total_quick_start_additional_power_generated += day_stats.this_date_quick_start_additional_power_generated
+        self.cumulative_demand += day_stats.demand
+        self.total_overall_fixed_costs += day_stats.fixed_costs
+        self.total_overall_generation_costs += day_stats.variable_costs
+        self.total_overall_load_shedding += day_stats.load_shedding
+        self.total_overall_over_generation += day_stats.over_generation
+        self.cumulative_renewables_used += day_stats.renewables_used
+        self.total_overall_reserve_shortfall += day_stats.reserve_shortfall
+        self.total_overall_renewables_curtailment += day_stats.renewables_curtailment
+        self.total_on_offs += day_stats.on_offs
+        self.total_sum_on_off_ramps += day_stats.sum_on_off_ramps
+        self.total_sum_nominal_ramps += day_stats.sum_nominal_ramps
+        self.total_quick_start_additional_costs += day_stats.quick_start_additional_costs
+        self.total_quick_start_additional_power_generated += day_stats.quick_start_additional_power_generated
         self.max_hourly_demand = max(self.max_hourly_demand, day_stats.max_hourly_demand)
 
-        self.total_thermal_energy_payments += day_stats.this_date_thermal_energy_payments
-        self.total_renewable_energy_payments += day_stats.this_date_renewable_energy_payments
-        self.total_virtual_energy_payments += day_stats.this_date_virtual_energy_payments
-        self.total_reserve_payments += day_stats.this_date_reserve_payments
-        self.total_thermal_uplift_payments += day_stats.this_date_thermal_uplift
-        self.total_renewable_uplift_payments += day_stats.this_date_renewable_uplift
-        self.total_virtual_uplift_payments += day_stats.this_date_virtual_uplift
+        self.total_thermal_energy_payments += day_stats.thermal_energy_payments
+        self.total_renewable_energy_payments += day_stats.renewable_energy_payments
+        self.total_virtual_energy_payments += day_stats.virtual_energy_payments
+        self.total_reserve_payments += day_stats.reserve_payments
+        self.total_thermal_uplift_payments += day_stats.thermal_uplift
+        self.total_renewable_uplift_payments += day_stats.renewable_uplift
+        self.total_virtual_uplift_payments += day_stats.virtual_uplift

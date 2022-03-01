@@ -56,7 +56,7 @@ class SimulatorRegressionBase:
         simulator_config_filename = self.simulator_config_filename
         script, options = runner.parse_commands(simulator_config_filename)
         # Consider using the following instead of launching a separate process:
-        # Prescient().simulate(config_file=simulator_config_filename)
+        Prescient().simulate(config_file=simulator_config_filename)
 
         if sys.platform.startswith('win'):
             subprocess.call([script] + options, shell=True)
@@ -84,7 +84,7 @@ class SimulatorRegressionBase:
         self._assert_file_equality("hourly_summary")
 
         #test hourly gen summary
-        self._assert_column_equality("hourly_gen_summary", "Available reserves")
+        self._assert_column_equality("hourly_gen_summary", "Available headroom")
         self._assert_column_equality("hourly_gen_summary", "Load shedding")
         self._assert_column_equality("hourly_gen_summary", "Reserve shortfall")
         self._assert_column_equality("hourly_gen_summary", "Over generation")
@@ -117,7 +117,7 @@ class SimulatorRegressionBase:
         df_a = self.test_results[filename]
         df_b = self.baseline_results[filename]
         dtype = df_a.dtypes[column_name]
-        if dtype == 'float' or dtype == 'int':
+        if dtype == 'float' or dtype == 'int' or dtype == 'int64' or dtype == 'float64':
             diff = np.allclose(df_a[column_name].to_numpy(dtype=dtype), df_b[column_name].to_numpy(dtype=dtype), atol=self.COMPARISON_THRESHOLD)
             assert diff, f"Column: '{column_name}' of File: '{filename}.csv' diverges."
         elif column_name != 'Date' and column_name != 'Hour':

@@ -1,4 +1,4 @@
-Date,Hour,Load shedding,Reserve shortfall,Available reserves,Over generation,Reserve Price DA,Reserve Price RT
+Date,Hour,Load shedding,Reserve shortfall,Available headroom,Over generation,Reserve Price DA,Reserve Price RT
 2020-07-10,0,0.0,0.0,538.0,0.0,,0.0
 2020-07-10,1,0.0,0.0,538.0,0.0,,0.0
 2020-07-10,2,0.0,0.0,538.0,0.0,,0.0
