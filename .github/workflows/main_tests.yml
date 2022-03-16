@@ -52,7 +52,7 @@ jobs:
                 unzip cbc-win64.zip
                 cp cbc.exe $CONDA_PREFIX
               else
-                conda install coincbc
+                conda install coincbc==2.10.5
               fi
               # test cbc executable
               cbc -quit
