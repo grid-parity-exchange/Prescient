@@ -56,15 +56,12 @@ solver is not available we recommend installing the open source CBC MILP solver.
 
 #### CBC
 
-The specific mechanics of installing CBC are platform-specific. When using 
-Anaconda on Linux and Mac platforms, this can be accomplished simply by:
+On Windows, Linux, and Mac platforms, CBC can be installed using 
+Anaconda:
 
 ```
 conda install -c conda-forge coincbc
 ```
-
-To install CBC on Windows, download from https://ampl.com/dl/open/cbc/cbc-win64.zip.
-Unzip the downloaded file and then ensure `cbc.exe` is in your path.
 
 Binaries for additional platforms may be available from https://github.com/coin-or/Cbc/releases.
 
