@@ -51,19 +51,13 @@ class SimulatorRegressionBase:
 
     def _run_simulator(self):
         """Runs the simulator for the test data set."""
+        old_cwd = os.getcwd()
         os.chdir(self.test_case_path)
 
         simulator_config_filename = self.simulator_config_filename
-        script, options = runner.parse_commands(simulator_config_filename)
-        # Consider using the following instead of launching a separate process:
-        # Prescient().simulate(config_file=simulator_config_filename)
+        Prescient().simulate(config_file=simulator_config_filename)
 
-        if sys.platform.startswith('win'):
-            subprocess.call([script] + options, shell=True)
-        else:
-            subprocess.call([script] + options)
-
-        os.chdir(self.this_file_path)
+        os.chdir(old_cwd)
     
     def test_simulator(self):
         #test overall output
@@ -117,7 +111,7 @@ class SimulatorRegressionBase:
         df_a = self.test_results[filename]
         df_b = self.baseline_results[filename]
         dtype = df_a.dtypes[column_name]
-        if dtype == 'float' or dtype == 'int':
+        if dtype.kind in "iuf":
             diff = np.allclose(df_a[column_name].to_numpy(dtype=dtype), df_b[column_name].to_numpy(dtype=dtype), atol=self.COMPARISON_THRESHOLD)
             assert diff, f"Column: '{column_name}' of File: '{filename}.csv' diverges."
         elif column_name != 'Date' and column_name != 'Hour':
