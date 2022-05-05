@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from prescient.simulator.config import PrescientConfig
-    import prescient.plugins as pplugins
 
 from pyomo.common.config import ConfigDict, ConfigValue
+import prescient.plugins as pplugins
 
 # This is a required function, must have this name and signature
 def get_configuration(key):

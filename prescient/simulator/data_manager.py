@@ -10,7 +10,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Dict, Optional
+    from typing import Dict, Optional, Sequence
 
 import os.path
 
@@ -21,7 +21,9 @@ from .manager import _Manager
 
 class RucMarket(NamedTuple):
     day_ahead_prices: Dict
-    day_ahead_reserve_prices: Dict
+    DA_reserve_prices: Dict[ReserveProductID, Sequence[float]]
+    DA_reserve_requirements: Dict[ReserveProductID, Sequence[float]]
+    DA_reserve_shortfalls: Dict[ReserveProductID, Sequence[float]]
     thermal_gen_cleared_DA: Dict
     thermal_reserve_cleared_DA: Dict
     renewable_gen_cleared_DA: Dict

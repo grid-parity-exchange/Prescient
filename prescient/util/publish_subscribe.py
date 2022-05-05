@@ -17,11 +17,11 @@ class Dispatcher(Generic[T]):
     """
     An object which broadcasts messages to subscribers in a publish/subscribe pattern.
 
-    Instances of this class broadcast a single type of data upon request.  The request
+    Instances of this class broadcast a single data item upon request.  The request
     to broadcast is made by calling the publish() method.  Code elements that want to receive
     published data must subscribe to the instance, by calling the subscribe() method.
-    Subscribers can be any callable which expects the published data to be passed as a
-    parameter.
+    Subscribers can be any callable which expects the published data to be passed as an
+    argument.
 
     You should use a separate Dispatcher instance for each type of data to be broadcast.
     The type of data passed to the publish() method should be known in advance so that 

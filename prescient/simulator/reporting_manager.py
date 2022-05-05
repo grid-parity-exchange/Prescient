@@ -61,6 +61,7 @@ class ReportingManager(_Manager):
         self.setup_bus_detail(options, stats_manager)
         self.setup_line_detail(options, stats_manager)
         self.setup_contingency_detail(options, stats_manager)
+        self.setup_reserves_detail(options, stats_manager)
         self.setup_hourly_gen_summary(options, stats_manager)
         self.setup_hourly_summary(options, stats_manager)
         self.setup_daily_summary(options, stats_manager)
@@ -110,7 +111,7 @@ class ReportingManager(_Manager):
             'Unit State': lambda ops,g: ops.observed_thermal_states[g],
             'Unit Cost':  lambda ops,g: _round(ops.observed_costs[g]),
             'Unit Market Revenue': lambda ops,g: _round(
-                ops.thermal_gen_revenue[g] + ops.thermal_reserve_revenue[g]) \
+                ops.thermal_gen_revenue[g] + ops.thermal_total_reserve_revenue[g]) \
                 if options.compute_market_settlements else None,
             'Unit Uplift Payment': lambda hourly,g: _round(hourly.thermal_uplift[g])\
                     if options.compute_market_settlements else None,
@@ -221,6 +222,42 @@ class ReportingManager(_Manager):
         stats_manager.register_for_sced_stats(line_writer.write_record)
         stats_manager.register_for_overall_stats(lambda overall: line_file.close())
 
+    def setup_reserves_detail(self, options, stats_manager:StatsManager):
+        _round = self._round
+        path = os.path.join(options.output_directory, 'reserves_detail.csv')
+        file = open(path, 'w', newline='')
+        columns = {
+               'Date': lambda ops,r: str(ops.timestamp.date()),
+               'Hour': lambda ops,r: ops.timestamp.hour,
+             'Minute': lambda ops,r: ops.timestamp.minute,
+            'Reserve': lambda ops,r: r.reserve_name,
+              'Scope': lambda ops,r: r.scope,
+          'Magnitude': lambda ops,r: _round(ops.reserve_requirements[r]) \
+                                     if r in ops.rt_reserve_products \
+                                     else None,
+          'Shortfall': lambda ops,r: _round(ops.reserve_shortfalls[r]) \
+                                     if r in ops.rt_reserve_products \
+                                     else None,
+              'Price': lambda ops,r: _round(ops.reserve_RT_prices[r]) \
+                                     if r in ops.rt_reserve_products \
+                                     else None,
+        }
+        if options.compute_market_settlements:
+            columns.update({'DA Magnitude': lambda ops,r: _round(ops.DA_reserve_requirements[r]) \
+                                                          if r in ops.da_reserve_products \
+                                                          else None,
+                            'DA Shortfall': lambda ops,r: _round(ops.DA_reserve_shortfalls[r]) \
+                                                          if r in ops.da_reserve_products \
+                                                          else None,
+                                'DA Price': lambda ops,r: _round(ops.DA_reserve_prices[r]) \
+                                                          if r in ops.da_reserve_products \
+                                                          else None,
+                           })
+        rows_per_ops = lambda ops: ops.all_reserve_products
+        writer = CsvMultiRowReporter.from_dict(file, rows_per_ops, columns)
+        stats_manager.register_for_sced_stats(writer.write_record)
+        stats_manager.register_for_overall_stats(lambda overall: file.close())
+
     def setup_hourly_gen_summary(self, options, stats_manager: StatsManager):
         _round = self._round
         hourly_gen_path = os.path.join(options.output_directory, 'hourly_gen_summary.csv')
@@ -228,12 +265,9 @@ class ReportingManager(_Manager):
         hourly_gen_columns = {'Date': lambda hourly: str(hourly.date),
                               'Hour': lambda hourly: hourly.hour,
                               'Load shedding': lambda hourly: _round(hourly.load_shedding),
-                              'Reserve shortfall': lambda hourly: _round(hourly.reserve_shortfall),
-                              'Available reserves': lambda hourly: _round(hourly.available_reserve),
-                              'Over generation': lambda hourly: _round(hourly.over_generation),
-                              'Reserve Price DA': lambda hourly: _round(hourly.planning_reserve_price)\
-                                      if options.compute_market_settlements else None,
-                              'Reserve Price RT': lambda hourly: _round(hourly.reserve_RT_price)
+                              'Reserve shortfall': lambda hourly: _round(hourly.total_reserve_shortfall),
+                              'Available headroom': lambda hourly: _round(hourly.total_thermal_headroom),
+                              'Over generation': lambda hourly: _round(hourly.over_generation)
                              }
         hourly_gen_writer = CsvReporter.from_dict(hourly_gen_file, hourly_gen_columns)
         stats_manager.register_for_hourly_stats(hourly_gen_writer.write_record)
@@ -250,7 +284,7 @@ class ReportingManager(_Manager):
                           'VariableCosts': lambda hourly: _round(hourly.variable_costs),
                           'LoadShedding': lambda hourly: _round(hourly.load_shedding),
                           'OverGeneration': lambda hourly: _round(hourly.over_generation),
-                          'ReserveShortfall': lambda hourly: _round(hourly.reserve_shortfall),
+                          'ReserveShortfall': lambda hourly: _round(hourly.total_reserve_shortfall),
                           'RenewablesUsed': lambda hourly: _round(hourly.renewables_used),
                           'RenewablesCurtailment': lambda hourly: _round(hourly.renewables_curtailment),
                           'Demand': lambda hourly: _round(hourly.total_demand),
@@ -265,44 +299,42 @@ class ReportingManager(_Manager):
         daily_path = os.path.join(options.output_directory, 'daily_summary.csv')
         daily_file = open(daily_path, 'w', newline='')
         daily_columns = {'Date': lambda daily: str(daily.date),
-                         'Demand': lambda daily: _round(daily.this_date_demand),
+                         'Demand': lambda daily: _round(daily.demand),
                          'Renewables available': lambda daily: _round(
-                             daily.this_date_renewables_available),
-                         'Renewables used': lambda daily: _round(daily.this_date_renewables_used),
+                             daily.renewables_available),
+                         'Renewables used': lambda daily: _round(daily.renewables_used),
                          'Renewables penetration rate': lambda daily: _round(
-                             daily.this_date_renewables_penetration_rate),
-                             ############  TODO: Implement ##############
-                         'Average price': lambda daily: _round(daily.this_date_average_price),
-                         'Fixed costs': lambda daily: _round(daily.this_date_fixed_costs),
-                         'Generation costs': lambda daily: _round(daily.this_date_variable_costs),
-                         'Load shedding': lambda daily: _round(daily.this_date_load_shedding),
-                         'Over generation': lambda daily: _round(daily.this_date_over_generation),
-                         'Reserve shortfall': lambda daily: _round(daily.this_date_reserve_shortfall),
-                         'Renewables curtailment': lambda daily: _round(
-                             daily.this_date_renewables_curtailment),
-                         'Number on/offs': lambda daily: daily.this_date_on_offs,
-                         'Sum on/off ramps': lambda daily: _round(daily.this_date_sum_on_off_ramps),
-                         'Sum nominal ramps': lambda daily: _round(daily.this_date_sum_nominal_ramps)}
+                             daily.renewables_penetration_rate),
+                         'Average price': lambda daily: _round(daily.average_price),
+                         'Fixed costs': lambda daily: _round(daily.fixed_costs),
+                         'Generation costs': lambda daily: _round(daily.variable_costs),
+                         'Load shedding': lambda daily: _round(daily.load_shedding),
+                         'Over generation': lambda daily: _round(daily.over_generation),
+                         'Reserve shortfall': lambda daily: _round(daily.reserve_shortfall),
+                         'Renewables curtailment': lambda daily: _round(daily.renewables_curtailment),
+                         'Number on/offs': lambda daily: daily.on_offs,
+                         'Sum on/off ramps': lambda daily: _round(daily.sum_on_off_ramps),
+                         'Sum nominal ramps': lambda daily: _round(daily.sum_nominal_ramps)}
         if options.compute_market_settlements:
-            daily_columns.update( {'Renewables energy payments': lambda daily: _round(
-                                        daily.this_date_renewable_energy_payments),
-                                  'Renewables uplift payments': lambda daily: _round(
-                                        daily.this_date_renewable_uplift),
-                                  'Thermal energy payments': lambda daily: _round(
-                                        daily.this_date_thermal_energy_payments),
-                                  'Thermal uplift payments': lambda daily: _round(
-                                        daily.this_date_thermal_uplift),
-                                  'Total energy payments': lambda daily: _round(
-                                        daily.this_date_energy_payments),
-                                  'Total uplift payments': lambda daily: _round(
-                                        daily.this_date_uplift_payments),
-                                  'Total reserve payments': lambda daily: _round(
-                                        daily.this_date_reserve_payments),
-                                  'Total payments': lambda daily: _round(
-                                        daily.this_date_total_payments),
-                                  'Average payments': lambda daily: _round(
-                                        daily.this_date_average_payments),
-                                } )
+            daily_columns.update({'Renewables energy payments':
+                                      lambda daily: _round(daily.renewable_energy_payments),
+                                  'Renewables uplift payments':
+                                      lambda daily: _round(daily.renewable_uplift),
+                                  'Thermal energy payments':
+                                      lambda daily: _round(daily.thermal_energy_payments),
+                                  'Thermal uplift payments':
+                                      lambda daily: _round(daily.thermal_uplift),
+                                  'Total energy payments':
+                                      lambda daily: _round(daily.energy_payments),
+                                  'Total uplift payments':
+                                      lambda daily: _round(daily.uplift_payments),
+                                  'Total reserve payments':
+                                      lambda daily: _round(daily.reserve_payments),
+                                  'Total payments':
+                                      lambda daily: _round(daily.total_payments),
+                                  'Average payments':
+                                      lambda daily: _round(daily.average_payments),
+                                 })
         daily_writer = CsvReporter.from_dict(daily_file, daily_columns)
         stats_manager.register_for_daily_stats(daily_writer.write_record)
         stats_manager.register_for_overall_stats(lambda overall: daily_file.close())
@@ -356,11 +388,13 @@ class ReportingManager(_Manager):
         system['time_keys'] = [ str(opstats.timestamp.time())[0:5] for opstats in daily_stats.operations_stats() ]
 
         system['reserve_requirement'] = _time_series_dict(
-                                            [ opstats.reserve_requirement for opstats in daily_stats.operations_stats() ]
-                                            )
+                                            [sum(opstats.reserve_requirements.values())
+                                             for opstats in daily_stats.operations_stats()
+                                            ])
         system['reserve_shortfall'] = _time_series_dict(
-                                            [ opstats.reserve_shortfall for opstats in daily_stats.operations_stats() ]
-                                            )
+                                            [sum(opstats.reserve_shortfalls.values())
+                                             for opstats in daily_stats.operations_stats() 
+                                            ])
 
         elements = md_dict['elements']
 
@@ -461,12 +495,12 @@ class ReportingManager(_Manager):
 
     @staticmethod
     def generate_cost_summary_graph(options, overall_stats: OverallStats):
-        daily_fixed_costs = [daily_stats.this_date_fixed_costs for daily_stats in overall_stats.daily_stats]
-        daily_generation_costs = [daily_stats.this_date_variable_costs for daily_stats in overall_stats.daily_stats]
-        daily_load_shedding = [daily_stats.this_date_load_shedding for daily_stats in overall_stats.daily_stats]
-        daily_over_generation = [daily_stats.this_date_over_generation for daily_stats in overall_stats.daily_stats]
-        daily_reserve_shortfall = [daily_stats.this_date_reserve_shortfall for daily_stats in overall_stats.daily_stats]
-        daily_renewables_curtailment = [daily_stats.this_date_renewables_curtailment for daily_stats in overall_stats.daily_stats]
+        daily_fixed_costs = [daily_stats.fixed_costs for daily_stats in overall_stats.daily_stats]
+        daily_generation_costs = [daily_stats.variable_costs for daily_stats in overall_stats.daily_stats]
+        daily_load_shedding = [daily_stats.load_shedding for daily_stats in overall_stats.daily_stats]
+        daily_over_generation = [daily_stats.over_generation for daily_stats in overall_stats.daily_stats]
+        daily_reserve_shortfall = [daily_stats.reserve_shortfall for daily_stats in overall_stats.daily_stats]
+        daily_renewables_curtailment = [daily_stats.renewables_curtailment for daily_stats in overall_stats.daily_stats]
 
         graphutils.generate_cost_summary_graph(daily_fixed_costs, daily_generation_costs,
                                                daily_load_shedding, daily_over_generation,

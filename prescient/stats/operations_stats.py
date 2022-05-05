@@ -13,9 +13,11 @@ if TYPE_CHECKING:
     from typing import Dict, Sequence, TypeVar, Any, Tuple
     from datetime import datetime
     from prescient.engine.data_extractors import ScedDataExtractor
-    from prescient.engine.abstract_types import OperationsModel, G, L, B, S
+    from prescient.engine.abstract_types import OperationsModel, G, L, B, S, R
 
 from dataclasses import dataclass, field
+
+from prescient.engine.data_extractors import ReserveIdentifier
 
 @dataclass(init=False)
 class OperationsStats:
@@ -39,8 +41,7 @@ class OperationsStats:
     power_generated: float = 0.0
     load_shedding: float = 0.0
     over_generation: float = 0.0
-    reserve_shortfall: float = 0.0
-    available_reserve: float = 0.0
+    total_thermal_headroom: float = 0.0
     available_quickstart: float = 0.0
 
     renewables_available: float = 0.0
@@ -85,16 +86,22 @@ class OperationsStats:
     storage_soc_dispatch_levels: Dict[S, Sequence[float]]
     storage_types: Dict[S, Sequence[float]]
 
-    reserve_requirement: float = 0.0
-    reserve_RT_price: float = 0.0
+    reserve_requirements: Dict[R, float]
+    reserve_shortfalls: Dict[R, float]
+    reserve_RT_prices: Dict[R, float]
 
-    planning_reserve_price: float = 0.0
+    DA_reserve_requirements: Dict[R, float]
+    DA_reserve_prices: Dict[R, float]
+    DA_reserve_shortfalls: Dict[R, float]
+
     planning_energy_prices: Dict[B, float]
 
     thermal_gen_cleared_DA: Dict[G, float]
     thermal_gen_revenue: Dict[G, float]
-    thermal_reserve_cleared_DA: Dict[G, float]
-    thermal_reserve_revenue: Dict[G, float]
+    thermal_reserve_cleared_DA: Dict[R, Dict[G, float]]
+    thermal_reserve_cleared_RT: Dict[R, Dict[G, float]]
+    thermal_per_reserve_revenue: Dict[Tuple[R,G], float]
+    thermal_total_reserve_revenue: Dict[G, float]
     thermal_uplift: Dict[G, float]
 
     renewable_gen_cleared_DA: Dict[G, float]
@@ -144,8 +151,26 @@ class OperationsStats:
     @property
     def reserve_payments(self) -> float:
         if self._options.compute_market_settlements:
-            return sum(self.thermal_reserve_revenue.values())
+            return sum(self.thermal_total_reserve_revenue.values())
         return 0.
+
+    @property
+    def rt_reserve_products(self) -> Iterable[R]:
+        return self.reserve_requirements.keys()
+
+    @property
+    def da_reserve_products(self) -> Iterable[R]:
+        if self._options.compute_market_settlements:
+            return self.DA_reserve_requirements.keys()
+        else:
+            return []
+
+    @property
+    def all_reserve_products(self) -> Iterable[R]:
+        yield from self.rt_reserve_products
+        for r in self.da_reserve_products:
+            if r not in self.reserve_requirements:
+                yield r
 
     def __init__(self, options, timestamp: datetime):
         self._options = options
@@ -178,11 +203,17 @@ class OperationsStats:
         if self.over_generation > 0.0:
             self.event_annotations.append('Over Generation')
 
-        self.reserve_shortfall = extractor.get_reserve_shortfall(sced)
-        if self.reserve_shortfall > 0.0:
-            self.event_annotations.append('Reserve Shortfall')
+        self.reserve_requirements = {}
+        self.reserve_shortfalls = {}
+        self.reserve_RT_prices = {}
+        for res in extractor.get_reserve_products(sced):
+            self.reserve_shortfalls[res] = extractor.get_reserve_shortfall(sced, res)
+            if self.reserve_shortfalls[res] > 0.0:
+                self.event_annotations.append('Reserve Shortfall')
+            self.reserve_requirements[res] = extractor.get_reserve_requirement(sced, res)
+            self.reserve_RT_prices[res] = extractor.get_reserve_RT_price(lmp_sced, res)
 
-        self.available_reserve = extractor.get_available_reserve(sced)
+        self.total_thermal_headroom = extractor.get_total_thermal_headroom(sced)
         self.available_quickstart = extractor.get_available_quick_start(sced)
 
         self.renewables_available = extractor.get_renewables_available(sced)
@@ -223,31 +254,39 @@ class OperationsStats:
         self.storage_soc_dispatch_levels = extractor.get_all_storage_soc_dispatch_levels(sced)
         self.storage_types = extractor.get_all_storage_types(sced)
 
-        self.reserve_requirement = extractor.get_reserve_requirement(sced)
-
-        self.reserve_RT_price = extractor.get_reserve_RT_price(lmp_sced)
-
     def populate_market_settlement(self,
                                    sced: OperationsModel,
                                    extractor: ScedDataExtractor,
                                    ruc_market: RucMarket,
                                    time_index: int):
+        default_res_prod = ReserveIdentifier("system", None, "reserve")
+        self.DA_reserve_shortfalls = {}
+        self.DA_reserve_requirements = {}
+        self.DA_reserve_prices = {}
+        self.thermal_reserve_cleared_DA = {}
+        for res in ruc_market.DA_reserve_requirements.keys():
+            self.DA_reserve_shortfalls[res] = ruc_market.DA_reserve_shortfalls[res][time_index]
+            if self.DA_reserve_shortfalls[res] > 0.0:
+                self.event_annotations.append('DA Reserve Shortfall')
+            self.DA_reserve_requirements[res] = ruc_market.DA_reserve_requirements[res][time_index]
+            self.DA_reserve_prices[res] = ruc_market.DA_reserve_prices[res][time_index]
 
-        self.planning_reserve_price = ruc_market.day_ahead_reserve_prices[time_index]
-        self.planning_energy_prices = { b : ruc_market.day_ahead_prices[b,time_index] \
+            res_cleared_DA = ruc_market.thermal_reserve_cleared_DA[res]
+            self.thermal_reserve_cleared_DA[res] = { g : res_cleared_DA[g,time_index]
+                                                     for g in extractor.get_thermal_generators(sced)
+                                                     if (g,time_index) in res_cleared_DA }
+
+        self.planning_energy_prices = { b : ruc_market.day_ahead_prices[b,time_index]
                                         for b in extractor.get_buses(sced) }
 
-        self.thermal_gen_cleared_DA = { g : ruc_market.thermal_gen_cleared_DA[g,time_index] \
+        self.thermal_gen_cleared_DA = { g : ruc_market.thermal_gen_cleared_DA[g,time_index]
                                         for g in extractor.get_thermal_generators(sced) }
 
-        self.renewable_gen_cleared_DA = { g : ruc_market.renewable_gen_cleared_DA[g,time_index] \
+        self.renewable_gen_cleared_DA = { g : ruc_market.renewable_gen_cleared_DA[g,time_index]
                                           for g in extractor.get_nondispatchable_generators(sced) }
 
-        self.virtual_gen_cleared_DA = { g : ruc_market.virtual_gen_cleared_DA[g,time_index] \
-                                          for g in extractor.get_virtual_generators(sced) }
-
-        self.thermal_reserve_cleared_DA = { g : ruc_market.thermal_reserve_cleared_DA[g,time_index] \
-                                            for g in extractor.get_thermal_generators(sced) }
+        self.virtual_gen_cleared_DA = { g : ruc_market.virtual_gen_cleared_DA[g,time_index]
+                                        for g in extractor.get_virtual_generators(sced) }
 
         self.thermal_gen_revenue = dict()
         self.renewable_gen_revenue = dict()
@@ -274,14 +313,24 @@ class OperationsStats:
                      (self.observed_virtual_dispatch_levels[g] - self.virtual_gen_cleared_DA[g])*price_RT
                     ) * self.sced_duration_minutes / 60
 
-
-        r_price_DA = self.planning_reserve_price
-        r_price_RT = self.reserve_RT_price
-        self.thermal_reserve_revenue = { g : (self.thermal_reserve_cleared_DA[g]*r_price_DA + \
-                                                ( self.observed_thermal_headroom_levels[g] - \
-                                                   self.thermal_reserve_cleared_DA[g] )*r_price_RT
-                                             ) * self.sced_duration_minutes / 60
-                                         for g in extractor.get_thermal_generators(sced) }
+        self.thermal_per_reserve_revenue = {}
+        self.thermal_total_reserve_revenue = {g : 0.
+                                              for g in extractor.get_thermal_generators(sced)}
+        for res in ruc_market.DA_reserve_requirements.keys():
+            r_price_DA = self.DA_reserve_prices[res]
+            r_price_RT = \
+                self.reserve_RT_prices[res] \
+                if res in self.reserve_RT_prices \
+                else 0.
+            for g in self.thermal_reserve_cleared_DA[res]:
+                revenue = (
+                    self.thermal_reserve_cleared_DA[res][g]*r_price_DA 
+                    + (extractor.get_thermal_reserve_provided(sced, res, g)
+                       - self.thermal_reserve_cleared_DA[res][g]
+                      )*r_price_RT
+                ) * self.sced_duration_minutes / 60
+                self.thermal_per_reserve_revenue[res,g] = revenue
+                self.thermal_total_reserve_revenue[g] += revenue
 
         ## TODO: calculate uplift for the day
         self.thermal_uplift = { g : 0. for g in extractor.get_thermal_generators(sced) }
