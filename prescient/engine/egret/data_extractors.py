@@ -40,7 +40,9 @@ class ScedDataExtractor(BaseScedExtractor):
 
     @staticmethod
     def get_transmission_lines(sced: OperationsModel) -> Iterable[L]:
-        return sced.data['elements']['branch'].keys()
+        yield from sced.data['elements']['branch'].keys()
+        if 'dc_branch' in sced.data['elements']:
+            yield from sced.data['elements']['dc_branch'].keys()
 
     @staticmethod
     def get_all_storage(sced: OperationsModel) -> Iterable[S]:
@@ -292,13 +294,19 @@ class ScedDataExtractor(BaseScedExtractor):
         return sced.data['elements']['generator'][g]['commitment_cost']['values'][0] + \
                sced.data['elements']['generator'][g]['production_cost']['values'][0]
 
+    @staticmethod 
+    def _get_line_dict(sced: OperationsModel, line: L) -> dict:
+        return (sced.data['elements']['branch'].get(line)
+                or sced.data['elements']['dc_branch'].get(line)
+        )
+
     @staticmethod
     def get_flow_level(sced: OperationsModel, line: L) -> float:
-        return sced.data['elements']['branch'][line]['pf']['values'][0]
+        return ScedDataExtractor._get_line_dict(sced, line)['pf']['values'][0]
 
     @staticmethod
     def get_flow_violation_level(sced: OperationsModel, line: L) -> float:
-        pf_violation = sced.data['elements']['branch'][line].get('pf_violation', 0.)
+        pf_violation = ScedDataExtractor._get_line_dict(sced, line).get('pf_violation', 0.)
         if pf_violation != 0.:
             pf_violation = pf_violation['values'][0]
         return pf_violation

@@ -676,13 +676,18 @@ def _ensure_contingencies_monitored(options:Options, md:EgretModel, initial_ruc:
         if not b.get('in_service', True):
             raise RuntimeError(f"Remove branches from service by setting the `planned_outage` attribute. "
                     f"Branch {bn} has `in_service`:False")
+    for bn, b in md.elements('dc_branch'): 
+        if not b.get('in_service', True):
+            raise RuntimeError(f"Remove branches from service by setting the `planned_outage` attribute. "
+                    f"DC Branch {bn} has `in_service`:False")
     for bn, b in md.elements('bus'): 
         if not b.get('in_service', True):
             raise RuntimeError(f"Buses cannot be removed from service in Prescient")
 
     if options.monitor_all_contingencies:
         key = []
-        for bn, b in md.elements('branch'):
+        for bn, b in (kv for btype in ('branch', 'dc_branch')
+                         for kv in md.elements(btype)):
             if 'planned_outage' in b:
                 if isinstance(b['planned_outage'], dict):
                     if any(b['planned_outage']['values']):
@@ -692,6 +697,7 @@ def _ensure_contingencies_monitored(options:Options, md:EgretModel, initial_ruc:
         key = tuple(key)
         if key not in _ensure_contingencies_monitored.contingency_dicts:
             mapping_bus_to_idx = { k : i for i,k in enumerate(md.data['elements']['bus'].keys())}
+            # TODO: Should we include DC branches here?
             graph = construct_connection_graph(md.data['elements']['branch'], mapping_bus_to_idx)
             contingency_list = get_N_minus_1_branches(graph, md.data['elements']['branch'], mapping_bus_to_idx)
             contingency_dict = { cn : {'branch_contingency':cn} for cn in contingency_list} 

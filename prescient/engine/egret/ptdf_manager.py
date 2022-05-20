@@ -54,9 +54,11 @@ class PTDFManager:
         self._calls_since_last_miss = 0
 
     def mark_active(self, md):
-        for bn, branch in md.elements(element_type='branch'):
+        for bn, branch in (kv for btype in ('branch', 'dc_branch')
+                              for kv in md.elements(element_type=btype)):
             if bn in self._active_branch_constraints:
                 branch['lazy'] = False
+        # TODO: Should the line below be element_type='interface'?
         for i_n, interface in md.elements(element_type='branch'):
             if i_n in self._active_interface_constraints:
                 interface['lazy'] = False
@@ -69,7 +71,8 @@ class PTDFManager:
             self._active_interface_constraints[i_n] += 1
 
         misses = 0
-        for bn, branch in md.elements(element_type='branch'):
+        for bn, branch in (kv for btype in ('branch', 'dc_branch') 
+                              for kv in md.elements(element_type=btype)):
             if _at_limit(branch['pf']['values'],branch['rating_long_term']):
                 # we're seeing it now, so reset its counter
                 # or make a new one
