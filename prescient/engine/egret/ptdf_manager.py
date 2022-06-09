@@ -54,8 +54,7 @@ class PTDFManager:
         self._calls_since_last_miss = 0
 
     def mark_active(self, md):
-        for bn, branch in (kv for btype in ('branch', 'dc_branch')
-                              for kv in md.elements(element_type=btype)):
+        for bn, branch in md.elements(element_type='branch'):
             if bn in self._active_branch_constraints:
                 branch['lazy'] = False
         for i_n, interface in md.elements(element_type='interface'):
