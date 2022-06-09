@@ -58,8 +58,7 @@ class PTDFManager:
                               for kv in md.elements(element_type=btype)):
             if bn in self._active_branch_constraints:
                 branch['lazy'] = False
-        # TODO: Should the line below be element_type='interface'?
-        for i_n, interface in md.elements(element_type='branch'):
+        for i_n, interface in md.elements(element_type='interface'):
             if i_n in self._active_interface_constraints:
                 interface['lazy'] = False
 
