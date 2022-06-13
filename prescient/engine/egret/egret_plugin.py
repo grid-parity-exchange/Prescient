@@ -686,8 +686,7 @@ def _ensure_contingencies_monitored(options:Options, md:EgretModel, initial_ruc:
 
     if options.monitor_all_contingencies:
         key = []
-        for bn, b in (kv for btype in ('branch', 'dc_branch')
-                         for kv in md.elements(btype)):
+        for bn, b in md.elements('branch'):
             if 'planned_outage' in b:
                 if isinstance(b['planned_outage'], dict):
                     if any(b['planned_outage']['values']):
