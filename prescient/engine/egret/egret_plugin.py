@@ -696,7 +696,6 @@ def _ensure_contingencies_monitored(options:Options, md:EgretModel, initial_ruc:
         key = tuple(key)
         if key not in _ensure_contingencies_monitored.contingency_dicts:
             mapping_bus_to_idx = { k : i for i,k in enumerate(md.data['elements']['bus'].keys())}
-            # TODO: Should we include DC branches here?
             graph = construct_connection_graph(md.data['elements']['branch'], mapping_bus_to_idx)
             contingency_list = get_N_minus_1_branches(graph, md.data['elements']['branch'], mapping_bus_to_idx)
             contingency_dict = { cn : {'branch_contingency':cn} for cn in contingency_list} 
