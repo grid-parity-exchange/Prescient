@@ -69,8 +69,7 @@ class PTDFManager:
             self._active_interface_constraints[i_n] += 1
 
         misses = 0
-        for bn, branch in (kv for btype in ('branch', 'dc_branch') 
-                              for kv in md.elements(element_type=btype)):
+        for bn, branch in md.elements(element_type='branch'):
             if _at_limit(branch['pf']['values'],branch['rating_long_term']):
                 # we're seeing it now, so reset its counter
                 # or make a new one
