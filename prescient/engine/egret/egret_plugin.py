@@ -676,6 +676,10 @@ def _ensure_contingencies_monitored(options:Options, md:EgretModel, initial_ruc:
         if not b.get('in_service', True):
             raise RuntimeError(f"Remove branches from service by setting the `planned_outage` attribute. "
                     f"Branch {bn} has `in_service`:False")
+    for bn, b in md.elements('dc_branch'): 
+        if not b.get('in_service', True):
+            raise RuntimeError(f"Remove branches from service by setting the `planned_outage` attribute. "
+                    f"DC Branch {bn} has `in_service`:False")
     for bn, b in md.elements('bus'): 
         if not b.get('in_service', True):
             raise RuntimeError(f"Buses cannot be removed from service in Prescient")

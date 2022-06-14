@@ -331,12 +331,6 @@ class EgretEngine(ModelingEngine):
         loads = list(sced_data_extractor.get_loads(sced_instance))
         max_load_label_length = max((len(this_load) for this_load in loads))
 
-        lines = list(sced_data_extractor.get_transmission_lines(sced_instance))
-        if len(lines) == 0:
-            max_line_label_length = None
-        else:
-            max_line_label_length = max((len(this_line) for this_line in lines))
-
         thermal_gens = list(sced_data_extractor.get_thermal_generators(sced_instance))
         if len(thermal_gens) == 0:
             max_thermal_generator_label_length = None
