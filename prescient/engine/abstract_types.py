@@ -13,7 +13,8 @@ G = TypeVar('G') # Generator
 B = TypeVar('B') # Bus
 L = TypeVar('L') # Line
 S = TypeVar('S') # Storage
+R = TypeVar('R') # Reserve Product Identifier
+
 OperationsModel = TypeVar('OperationsModel')
 RucModel = TypeVar('RucModel')
-ScenarioTree = TypeVar('ScenarioTree')
 EgretModel = TypeVar('EgretModel')

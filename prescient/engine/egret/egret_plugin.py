@@ -399,8 +399,8 @@ def create_deterministic_ruc(options,
 
     # Make some near-term forecasts more accurate
     ruc_delay = -(options.ruc_execution_hour%(-options.ruc_every_hours))
-    if options.ruc_prescience_hour > ruc_delay + 1:
-        improved_hour_count = options.ruc_prescience_hour - ruc_delay - 1
+    if options.ruc_prescience_hour > ruc_delay:
+        improved_hour_count = options.ruc_prescience_hour - ruc_delay
         for forecastable, forecast in get_forecastables(md):
             actuals = current_state.get_future_actuals(forecastable)
             for t in range(0, improved_hour_count):
