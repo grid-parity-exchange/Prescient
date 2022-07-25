@@ -1,7 +1,9 @@
 Installation
 ============
 
-Prescient is a python package with a number of dependencies and prerequisites.
+The Prescient python package can be installed using pip, or it can be installed
+from source. Python and a linear solver are prerequisites for either installation
+method.
 
 To install Prescient, follow these steps:
 
@@ -10,25 +12,58 @@ To install Prescient, follow these steps:
 
 
 Install python
---------------
+~~~~~~~~~~~~~~
 Prescient requires python 3.7 or later. We recommend installing `Anaconda <https://www.anaconda.com>`_
 to manage python and other dependencies.
 
 
+Install a linear solver
+~~~~~~~~~~~~~~~~~~~~~~~
+Prescient requires a mixed-integer linear programming (MILP) solver that is compatible with
+`Pyomo <https://pyomo.readthedocs.io>`_. Options include open source solvers such as CBC or GLPK,
+and commercial solvers such as CPLEX, Gurobi, or Xpress.
+
+The specific mechanics of installing a solver is specific to the solver and/or the platform. An easy way to
+install an open source solver on Windows, Linux, and Mac is to install the CBC Anaconda package into the 
+current conda environment::
+
+	conda install -c conda-forge coincbc
+
+.. tip::
+   Be sure to activate the correct python environment before running the command above.
+
+Note that the CBC solver is used in most Prescient tests, so you may want to install it even if
+you intend to use another solver in your own runs.
+
+Install Using Pip
+~~~~~~~~~~~~~~~~~
+Prescient is available as a python package that can be installed using pip. To install the latest 
+release of Prescient use the following command:
+
+    pip install gridx-prescient
+
+Be sure the intended python environment is active before issuing the command above.
+
+Install From Source
+~~~~~~~~~~~~~~~~~~~
+
+You may want to install from source if you want to use the latest pre-release 
+version of the code, or if you want to modify/contribute to the code yourself.
+The steps required to install Prescient from source are described below:
+
 Get Prescient source code
 -------------------------
-The latest stable version of Prescient can be acquired as source from
+The latest version of Prescient can be acquired as source from
 `the Prescient github project <https://github.com/grid-parity-exchange/Prescient>`_,
 either by downloading a zip file of the source code or by cloning the `main` branch of
 the github repository.
 
-
-Install dependencies
---------------------
-Prescient runs in a python environment that must include a number of python prerequisites.
+Install Python Dependencies
+---------------------------
+The python environment where you run Prescient must include a number of prerequisites.
 You may want to create a python environment specifically for Prescient. To create a new
-Anaconda environment that includes Prescient's prerequisites, issue the following command
-from the root folder of the Prescient source code::
+Anaconda environment and install Prescient's prerequisites into the new environment, issue
+the following command from the root folder of the Prescient source code::
 
 	conda env create -f environment.yml
 
@@ -45,30 +80,19 @@ If you are using something other than Anaconda to manage your python environment
 information in `environment.yml` to identify which packages to install. 
 
 
-Install a linear solver
------------------------
-Prescient requires a mixed-integer linear programming (MILP) solver that is compatible with
-`Pyomo <https://pyomo.readthedocs.io>`_. Options include open source solvers such as CBC or GLPK,
-and commercial solvers such as CPLEX, Gurobi, or Xpress.
-
-The specific mechanics of installing a solver is specific to the solver and/or the platform. An easy way to
-install an open source solver on Linux and Mac is to install the CBC Anaconda package into the current conda
-environment::
-
-	conda install -c conda-forge coincbc
-
-.. tip::
-   Be sure to activate the correct python environment before running the command above.
-
-Note that the CBC solver is used in most Prescient tests, so you may want to install it even if
-you intend to use another solver in your own runs.
-
 .. _install-prescient-package:
+
+Install Egret
+-------------
+When installing Prescient from the latest version of the source code, Egret may need 
+to be installed manually because pre-release versions of Prescient sometimes depend 
+on pre-release versions of EGRET. Install EGRET from source according to the instructions 
+`here <https://github.com/grid-parity-exchange/Egret/blob/main/README.md>`.
 
 Install the Prescient python package
 ------------------------------------
-The steps above configure a python environment with Prescient's prerequisites. Now we must install Prescient itself.
-From the prescient python environment, issue the following command::
+The steps above configure a python environment with Prescient's prerequisites. Now we must 
+install Prescient itself. From the prescient python environment, issue the following command::
 
 	pip install -e .
 
@@ -77,7 +101,6 @@ source code will take affect each time Prescient is run.
 
 This command will also install a few utilities that Prescient users may find useful, 
 including `runner.py` (see :doc:`run`).
-
 
 Verify your installation
 ------------------------
