@@ -182,13 +182,14 @@ class StatsManager(_Manager):
 
 
     def _finish_timestep(self):
+        ''' Close the latest batch of operations statistics, and roll them into the current hour's stats '''
         if self._current_sced_stats is not None:
             self._current_hour_stats.incorporate_operations_stats(self._current_sced_stats)
             self._sced_publisher.publish(self._current_sced_stats)
             self._current_sced_stats = None
 
     def _finish_hour(self):
-        ''' Close the latest batch of hourly statistics, and roll them into the current day's stats'''
+        ''' Close the latest batch of hourly statistics, and roll them into the current day's stats '''
         if self._current_hour_stats is not None:
             self._current_day_stats.incorporate_hour_stats(self._current_hour_stats)
             self._hourly_publisher.publish(self._current_hour_stats)
@@ -203,6 +204,7 @@ class StatsManager(_Manager):
             self._finish_hour()
             self._overall_stats.incorporate_day_stats(self._current_day_stats)
             self._daily_publisher.publish(self._current_day_stats)
+            self._current_day_stats.finalize_day()
             self._current_day_stats = None
 
     def _finish_simulation(self):

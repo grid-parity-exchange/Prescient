@@ -102,6 +102,11 @@ class DailyStats:
         return 0.0 if self.demand == 0.0 else self.total_payments / self.demand
 
     def operations_stats(self):
+        ''' Return any operations_stats in this day.
+
+            Note that operations_stats are discarded just after the day's stats are
+            published, so this property only returns data for the current day.
+        '''
         yield from (opstat for hrstat in self.hourly_stats for opstat in hrstat.operations_stats)
 
     def __init__(self, options, day: date):
@@ -141,3 +146,10 @@ class DailyStats:
             self.thermal_uplift += hourly_stats.thermal_uplift_payments
             self.renewable_uplift += hourly_stats.renewable_uplift_payments
             self.virtual_uplift += hourly_stats.virtual_uplift_payments
+
+    def finalize_day(self):
+        ''' Indicate that the day is done.
+
+        Once the day is finalized, its hourly and operations data is no longer available.
+        '''
+        self.hourly_stats = ()
