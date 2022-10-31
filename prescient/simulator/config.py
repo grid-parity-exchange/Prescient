@@ -246,7 +246,7 @@ class PrescientConfig(ConfigDict):
             domain=PositiveInt,
             default=48,
             description="The number of hours for which the reliability unit commitment is executed. "
-                        "Must be <= 48 hours and >= --ruc-every-hours. "
+                        "Must be <= 48 hours and >= ruc_every_hours + sced_horizon - 1. "
                         "Default is 48.",
         )).declare_as_argument()
 
