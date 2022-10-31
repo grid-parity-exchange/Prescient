@@ -81,10 +81,11 @@ class TimeManager(manager._Manager):
         print("RUC activation hours:", ", ".join(str(hr) for hr in range(0, 24, options.ruc_every_hours)))
 
         # validate the RUC horizon
-        if not options.ruc_every_hours <= options.ruc_horizon <= 48:
+        if not options.ruc_every_hours + options.sced_horizon - 1 <= options.ruc_horizon <= 48:
             raise RuntimeError(
-                "--ruc-horizon must be greater than or equal --ruc-every-hours and"
-                " less than or equal to 48! {options.ruc_horizon} supplied!")
+                "ruc_horizon must be greater than or equal ruc_every_hours + sced_horizon - 1 and"
+                f" less than or equal to 48!\n\truc_horizon={options.ruc_horizon}"
+                f"\n\truc_every_hours={options.ruc_every_hours}\n\tsced_horizon={options.sced_horizon}" )
 
         # Compute RUC delay
         self._ruc_delay = -(options.ruc_execution_hour%-self._ruc_every_hours)
