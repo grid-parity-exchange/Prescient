@@ -634,7 +634,7 @@ def create_simulation_actuals(
     else:
         # only get up to 24 hours of data, then copy it
         timesteps_per_day = 24 * 60 / step_size_minutes
-        steps_to_request = math.min(timesteps_per_day, total_step_count)
+        steps_to_request = min(timesteps_per_day, total_step_count)
         get_data_func(options, start_time, steps_to_request, step_size_minutes, md)
         for _, vals in get_forecastables(md):
             for t in range(timesteps_per_day, total_step_count):
