@@ -47,10 +47,33 @@ jobs:
             run: |
               if [ ${{ matrix.os }} = windows-latest ]
               then
-                # download CBC binary, copy to place already in PATH
-                curl -O https://ampl.com/dl/open/cbc/cbc-win64.zip
-                unzip cbc-win64.zip
-                cp cbc.exe $CONDA_PREFIX
+                # download CBC from idaes-ext
+                echo "...downloading solvers"
+                SOLVER_DIR="${GITHUB_WORKSPACE}/cache/solvers"
+                mkdir -p "$SOLVER_DIR"
+                echo "$SOLVER_DIR" >> $GITHUB_PATH
+                DOWNLOAD_DIR="${GITHUB_WORKSPACE}/cache/download"
+                mkdir -p "$DOWNLOAD_DIR"
+                SOLVER_TAR=${DOWNLOAD_DIR}/solvers.tar.gz
+                URL=https://github.com/IDAES/idaes-ext
+                RELEASE=$(curl --max-time 150 --retry 8 \
+                    -L -s -H 'Accept: application/json' ${URL}/releases/latest)
+                VER=$(echo $RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+                URL=${URL}/releases/download/$VER
+                if test "${{matrix.os}}" == ubuntu-20.04; then
+                    curl --max-time 150 --retry 8 \
+                        -L $URL/idaes-solvers-ubuntu2004-x86_64.tar.gz \
+                        > $SOLVER_TAR
+                else
+                    curl --max-time 150 --retry 8 \
+                        -L $URL/idaes-solvers-windows-x86_64.tar.gz \
+                        $URL/idaes-lib-windows-x86_64.tar.gz > $SOLVER_TAR
+                fi
+                cd $SOLVER_DIR
+                tar -xzi < $SOLVER_TAR
+                echo ""
+                echo "$SOLVER_DIR"
+                ls -l $SOLVER_DIR
               else
                 conda install coincbc==2.10.5
               fi
