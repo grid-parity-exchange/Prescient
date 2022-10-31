@@ -77,8 +77,6 @@ jobs:
               else
                 conda install coincbc==2.10.5
               fi
-              # test cbc executable
-              cbc -quit
           - name: Install EGRET
             # don't install if this is a tag
             # use the version specified in setup.py
