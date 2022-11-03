@@ -143,6 +143,13 @@ class DailyStats:
 
             self.reserve_payments += hourly_stats.reserve_payments
 
+            if hourly_stats.hour == 23:
+                final_ops = hourly_stats.operations_stats[-1]
+                for g in hourly_stats.thermal_gen_revenue.keys():
+                    revenue = sum(stat.thermal_gen_revenue[g] for stat in self.hourly_stats)
+                    costs = sum(stat.observed_costs[g] for stat in self.hourly_stats)
+                    final_ops.thermal_uplift[g] = max(costs - revenue, 0.0)
+
             self.thermal_uplift += hourly_stats.thermal_uplift_payments
             self.renewable_uplift += hourly_stats.renewable_uplift_payments
             self.virtual_uplift += hourly_stats.virtual_uplift_payments

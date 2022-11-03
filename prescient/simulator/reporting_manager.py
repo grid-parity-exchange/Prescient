@@ -113,7 +113,7 @@ class ReportingManager(_Manager):
             'Unit Market Revenue': lambda ops,g: _round(
                 ops.thermal_gen_revenue[g] + ops.thermal_total_reserve_revenue[g]) \
                 if options.compute_market_settlements else None,
-            'Unit Uplift Payment': lambda hourly,g: _round(hourly.thermal_uplift[g])\
+            'Unit Uplift Payment': lambda ops,g: _round(ops.thermal_uplift[g])\
                     if options.compute_market_settlements else None,
            }
         thermal_details_entries_per_report = lambda stats: stats.observed_thermal_dispatch_levels.keys()

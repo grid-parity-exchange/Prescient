@@ -119,7 +119,6 @@ class StatsManager(_Manager):
         if self._current_sced_stats is None:
             self._current_sced_stats = OperationsStats(self._options, time_step.datetime)
 
-
     def collect_operations(self, sced, runtime, lmp_sced, pre_quickstart_cache, extractor):
         '''Called when a new operations sced has been run
         
@@ -142,20 +141,31 @@ class StatsManager(_Manager):
     def end_timestep(self, time_step: PrescientTime):
         '''Called after the simulation has completed the indicated time'''
 
-        self._finish_timestep()
-
         this_time = time_step.datetime
         next_time = this_time + self._step_interval
         
         is_hour_end = next_time.hour != this_time.hour
         is_day_end = next_time.day != this_time.day
 
-        if is_day_end:
-            # this will finish the hour and then the day, ensuring everything is 
-            # rolled up before stats observers are notified
-            self._finish_day()
-        elif is_hour_end:
+        # In the code below, we don't publish anything until we've incorporated data
+        # at all relevant time scales. That way we can update sced stats with per-day
+        # info before it is published. It may seem like we're putting daily data in 
+        # the wrong place, and we kind of are, but we do it that way because there is
+        # no per-generator data in daily output files.
+
+        # Incorporate / roll up data
+        self._finish_timestep()
+        if is_hour_end:
             self._finish_hour()
+        if is_day_end:
+            self._finish_day()
+
+        # Publish statistics
+        self._publish_sced_stats()
+        if is_hour_end:
+            self._publish_hour_stats()
+        if is_day_end:
+            self._publish_day_stats()
 
     def end_simulation(self):
         self._finish_simulation()
@@ -185,6 +195,9 @@ class StatsManager(_Manager):
         ''' Close the latest batch of operations statistics, and roll them into the current hour's stats '''
         if self._current_sced_stats is not None:
             self._current_hour_stats.incorporate_operations_stats(self._current_sced_stats)
+
+    def _publish_sced_stats(self):
+        if self._current_sced_stats is not None:
             self._sced_publisher.publish(self._current_sced_stats)
             self._current_sced_stats = None
 
@@ -192,26 +205,24 @@ class StatsManager(_Manager):
         ''' Close the latest batch of hourly statistics, and roll them into the current day's stats '''
         if self._current_hour_stats is not None:
             self._current_day_stats.incorporate_hour_stats(self._current_hour_stats)
+
+    def _publish_hour_stats(self):
+        if self._current_hour_stats is not None:
             self._hourly_publisher.publish(self._current_hour_stats)
             self._current_hour_stats = None
 
     def _finish_day(self):
-        ''' Close the latest batch of daily statistics, and roll them into overall stats.
-
-            The current hour is also closed, if not already done
-        '''
+        ''' Close the latest batch of daily statistics, and roll them into overall stats. '''
         if self._current_day_stats is not None:
-            self._finish_hour()
             self._overall_stats.incorporate_day_stats(self._current_day_stats)
+
+    def _publish_day_stats(self):
+        if self._current_day_stats is not None:
             self._daily_publisher.publish(self._current_day_stats)
             self._current_day_stats.finalize_day()
             self._current_day_stats = None
 
     def _finish_simulation(self):
-        '''Close overall statistics.
-
-           The current day and hour are also closed, if not already done
-        '''
+        '''Close overall statistics '''
         if self._overall_stats is not None:
-            self._finish_day()
             self._overall_publisher.publish(self._overall_stats)
