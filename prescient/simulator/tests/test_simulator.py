@@ -123,7 +123,7 @@ class SimulatorRegressionBase:
                 diff_df.index = ['result', 'baseline']
                 pd.set_option('display.max_columns', None)
                 pd.set_option('display.width', None)
-                pd.set_option('display.max_colwidth', -1)
+                pd.set_option('display.max_colwidth', None)
                 assert False, f"Column: '{column_name}' of File: '{filename}.csv' diverges at row {first_diff_idx}.\n{diff_df}"
         elif column_name != 'Date' and column_name != 'Hour':
             diff = df_a[column_name].equals(df_b[column_name])
