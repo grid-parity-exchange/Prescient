@@ -332,7 +332,7 @@ class OperationsStats:
                 self.thermal_per_reserve_revenue[res,g] = revenue
                 self.thermal_total_reserve_revenue[g] += revenue
 
-        ## TODO: calculate uplift for the day
+        # These values are set to non-zero in the final sced of the day by the owning DailyStats instance
         self.thermal_uplift = { g : 0. for g in extractor.get_thermal_generators(sced) }
         self.renewable_uplift = { g : 0. for g in extractor.get_nondispatchable_generators(sced) }
         self.virtual_uplift = { g : 0. for g in extractor.get_virtual_generators(sced) }
