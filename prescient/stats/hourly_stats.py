@@ -175,6 +175,12 @@ class HourlyStats:
         self.event_annotations = []
         self.extensions = {}
 
+    def get_per_gen_reserve_revenue(self, g: G) -> float:
+        """ Get all reserve revenue for a single generator across all reserve products """
+        return sum(payment
+                   for key,payment in self.thermal_per_reserve_revenue.items()
+                   if key[1] == g)
+
     def incorporate_operations_stats(self, ops_stats: OperationsStats):
         # This is a constant, doesn't need to be recalculated over and over, keep it here until
         # we decide on a better place to keep it.
