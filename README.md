@@ -56,14 +56,13 @@ solver is not available we recommend installing the open source CBC MILP solver.
 
 #### CBC
 
-On Windows, Linux, and Mac platforms, CBC can be installed using 
-Anaconda:
+On Linux and Mac platforms, CBC can be installed using Anaconda:
 
 ```
 conda install -c conda-forge coincbc
 ```
 
-Binaries for additional platforms may be available from https://github.com/coin-or/Cbc/releases.
+Binaries for additional platforms, including Windows, may be available from https://github.com/coin-or/Cbc/releases.
 
 #### CPLEX
 Instructions for installing Python bindings for CPLEX can be found [here](https://www.ibm.com/support/knowledgecenter/en/SSSA5P_12.8.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/set_up/Python_setup.html).
