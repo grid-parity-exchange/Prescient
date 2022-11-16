@@ -24,13 +24,15 @@ Prescient requires a mixed-integer linear programming (MILP) solver that is comp
 and commercial solvers such as CPLEX, Gurobi, or Xpress.
 
 The specific mechanics of installing a solver is specific to the solver and/or the platform. An easy way to
-install an open source solver on Windows, Linux, and Mac is to install the CBC Anaconda package into the 
+install an open source solver on Linux and Mac is to install the CBC Anaconda package into the 
 current conda environment::
 
 	conda install -c conda-forge coincbc
 
 .. tip::
    Be sure to activate the correct python environment before running the command above.
+
+Binaries for Windows and other platforms may be available from https://github.com/coin-or/Cbc/releases.
 
 Note that the CBC solver is used in most Prescient tests, so you may want to install it even if
 you intend to use another solver in your own runs.
@@ -106,7 +108,8 @@ Verify your installation
 ------------------------
 Prescient is packaged with tests to verify it has been set up correctly. To execute the tests, issue the following command::
 
-	python -m unittest tests/simulator_tests/test_sim_rts_mod.py
+	pytest -v prescient/simulator/tests/test_simulator.py
 
 This command runs the tests using the CBC solver and will fail if you haven't installed CBC. The tests can take
 as long as 30 minutes to run, depending on your machine. If Prescient was installed correctly then all tests should pass.
+
