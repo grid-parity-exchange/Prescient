@@ -37,13 +37,28 @@ class SimulationState(ABC):
         pass
 
     @abstractmethod
+    def get_all_initial_generator_state(self):
+        ''' Get the generator's state in the previous time period for each generator '''
+        pass
+
+    @abstractmethod
     def get_initial_power_generated(self, g:G):
         ''' Get how much power was generated in the previous time period '''
         pass
 
     @abstractmethod
+    def get_all_initial_power_generated(self):
+        ''' Get how much power was generated in the previous time period for each generator '''
+        pass
+
+    @abstractmethod
     def get_initial_state_of_charge(self, s:S):
         ''' Get state of charge in the previous time period '''
+        pass
+
+    @abstractmethod
+    def get_all_initial_state_of_charge(self):
+        ''' Get state of charge in the previous time period for each storage device '''
         pass
 
     @abstractmethod
