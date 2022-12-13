@@ -190,7 +190,7 @@ class TestSimulatorModRtsGmlcNetwork_python(SimulatorRegressionBase, unittest.Te
         Prescient().simulate(**options)
 
 # test options are correctly re-freshed, Python, and network
-@pytest.mark.xfail(sys.platform == "darwin", reason="unknown -- only seems to fail on GHA")
+@pytest.mark.xfail(sys.platform in ("darwin", "win32"), reason="unknown -- only seems to fail on GHA")
 class TestSimulatorModRtsGmlcNetwork_python_csv(SimulatorRegressionBase, unittest.TestCase):
 
     def _set_names(self):
