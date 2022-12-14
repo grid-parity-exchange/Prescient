@@ -21,7 +21,7 @@ from setuptools import setup, find_namespace_packages
 packages = find_namespace_packages(include=['prescient.*'])
 
 setup(name='gridx-prescient',
-      version='2.1.1.dev0',
+      version='2.2',
       description='Power Generation Scenario creation and simulation utilities',
       url='https://github.com/grid-parity-exchange/Prescient',
       author='Jean-Paul Watson, David Woodruff, Andrea Staid, Dominic Yang',
@@ -40,6 +40,6 @@ setup(name='gridx-prescient',
                     'prescient.simulator.tests':['regression_tests_data/**/*'],
                    },
       install_requires=['numpy','matplotlib','pandas','scipy','pyomo>=6.1.2',
-                        'python-dateutil','networkx','jupyter', 'gridx-egret>=0.5.3.dev0',
+                        'python-dateutil','networkx','jupyter', 'gridx-egret==0.5.3',
                        ],
      )
