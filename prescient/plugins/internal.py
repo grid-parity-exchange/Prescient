@@ -15,12 +15,16 @@ class _StatisticsSubscribers(NamedTuple):
 
 callbacks = ['options_preview',
              'update_operations_stats',
+             'after_get_initial_actuals_model_for_sced',
+             'after_get_initial_forecast_model_for_ruc',
+             'after_get_initial_actuals_model_for_simulation_actuals',
              'after_ruc_generation',
              'after_ruc_activation',
              'before_operations_solve',
              'before_ruc_solve',
              'after_operations',
-             'finalization',]
+             'finalization',
+             ]
 
 class PluginCallbackManager():
     '''

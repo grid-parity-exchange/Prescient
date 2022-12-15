@@ -106,6 +106,33 @@ class PluginRegistrationContext:
         '''
         self.callback_manager.register_initialization_callback(callback)
 
+    def register_after_get_initial_actuals_model_for_sced_callback(
+        self,
+        callback: Callable[[Options, OperationsModel], None]
+        ) -> None:
+        ''' Request a method to be called immediately after an actuals model for the sced has
+            been generated, but before any data is loaded into it.
+        '''
+        self.callback_manager.register_after_get_initial_actuals_model_for_sced_callback(callback)
+
+    def register_after_get_initial_forecast_model_for_ruc_callback(
+        self,
+        callback: Callable[[Options, RucModel], None]
+        ) -> None:
+        ''' Request a method to be called immediately after an forecast model for the ruc has
+            been generated, but before any data is loaded into it.
+        '''
+        self.callback_manager.register_after_get_initial_forecast_model_for_ruc_callback(callback)
+
+    def register_after_get_initial_actuals_model_for_simulation_actuals_callback(
+        self,
+        callback: Callable[[Options, RucModel], None]
+        ) -> None:
+        ''' Request a method to be called immediately after an actuals model for the simulation_actuals has
+            been generated, but before any data is loaded into it.
+        '''
+        self.callback_manager.register_after_get_initial_actuals_model_for_simulation_actuals_callback(callback)
+
     def register_finalization_callback(
         self,
         callback: Callable[[Options, Simulator], None]
