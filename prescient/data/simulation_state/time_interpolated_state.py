@@ -9,7 +9,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from types import Iterable, Tuple
     from prescient.engine.abstract_types import G, S
 
 import math
@@ -123,25 +122,13 @@ class TimeInterpolatedState(SimulationState):
         ''' Get the generator's state in the previous time period '''
         return self._inner_state.get_initial_generator_state(g)
 
-    def get_all_initial_generator_state(self) -> Iterable[Tuple[G,float]]:
-        ''' Get the generator's state in the previous time period for each generator '''
-        yield from self._inner_state.get_all_initial_generator_state()
-
     def get_initial_power_generated(self, g:G):
         ''' Get how much power was generated in the previous time period '''
         return self._inner_state.get_initial_power_generated(g)
 
-    def get_all_initial_power_generated(self) -> Iterable[Tuple[G,float]]:
-        ''' Get how much power was generated in the previous time period for each generator '''
-        yield from self._inner_state.get_all_initial_power_generated()
-
     def get_initial_state_of_charge(self, s:S):
         ''' Get state of charge in the previous time period '''
         return self._inner_state.get_initial_state_of_charge(s)
-
-    def get_all_initial_state_of_charge(self) -> Iterable[Tuple[S,float]]:
-        ''' Get state of charge in the previous time period for each storage device '''
-        yield from self._inner_state.get_all_initial_state_of_charge()
 
     def get_current_actuals(self, forecastable:str) -> float:
         ''' Get the current actual value for a forecastable data item
