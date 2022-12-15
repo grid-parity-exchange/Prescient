@@ -115,6 +115,8 @@ def create_sced_instance(data_provider:DataProvider,
     assert current_state is not None
 
     sced_md = data_provider.get_initial_actuals_model(options, sced_horizon, current_state.minutes_per_step)
+    options.plugin_context.callback_manager.invoke_after_get_initial_actuals_model_for_sced_callbacks(
+            options, sced_md)
 
     # Set initial state
     _copy_initial_state_into_model(options, current_state, sced_md)
@@ -382,6 +384,8 @@ def create_deterministic_ruc(options,
 
     # Create a new model
     md = data_provider.get_initial_forecast_model(options, ruc_horizon, 60)
+    options.plugin_context.callback_manager.invoke_after_get_initial_forecast_model_for_ruc_callbacks(
+            options, md)
 
     initial_ruc = current_state is None or current_state.timestep_count == 0
 
@@ -627,6 +631,8 @@ def create_simulation_actuals(
     # Get a new model
     total_step_count = options.ruc_horizon * 60 // step_size_minutes
     md = data_provider.get_initial_actuals_model(options, total_step_count, step_size_minutes)
+    options.plugin_context.callback_manager.invoke_after_get_initial_actuals_model_for_simulation_actuals_callbacks(
+            options, md)
 
     # Fill it in with data
     if this_hour == 0:
@@ -706,12 +712,11 @@ def _ensure_contingencies_monitored(options:Options, md:EgretModel, initial_ruc:
 def _copy_initial_state_into_model(options:Options, 
                                    current_state:SimulationState, 
                                    md:EgretModel):
-    for g, initial_status in current_state.get_all_initial_generator_state():
-        md.data['elements']['generator'][g]['initial_status'] = initial_status
-    for g, initial_p_output in current_state.get_all_initial_power_generated():
-        md.data['elements']['generator'][g]['initial_p_output'] = initial_p_output
-    for s, initial_state_of_charge in current_state.get_all_initial_state_of_charge():
-        md.data['elements']['storage'][s]['initial_state_of_charge'] = initial_state_of_charge
+    for g, g_dict in md.elements('generator', generator_type='thermal'):
+        g_dict['initial_status'] = current_state.get_initial_generator_state(g)
+        g_dict['initial_p_output']  = current_state.get_initial_power_generated(g)
+    for s,s_dict in md.elements('storage'):
+        s_dict['initial_state_of_charge'] = current_state.get_initial_state_of_charge(s)
 
 def get_attrs_to_price_option(options:Options):
     '''

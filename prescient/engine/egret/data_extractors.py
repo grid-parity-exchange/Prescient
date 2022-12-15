@@ -95,7 +95,10 @@ class ScedDataExtractor(BaseScedExtractor):
     def is_generator_on(sced: OperationsModel, g: G) -> bool:
         g_dict = sced.data['elements']['generator'][g]
         if 'fixed_commitment' in g_dict:
-            return g_dict['fixed_commitment']['values'][0] > 0
+            if isinstance(g_dict['fixed_commitment'], dict):
+                return g_dict['fixed_commitment']['values'][0] > 0
+            else:
+                return g_dict['fixed_commitment'] > 0
         elif 'commitment' in g_dict:
             return g_dict['commitment']['values'][0] > 0
         else:
