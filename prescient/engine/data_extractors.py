@@ -224,7 +224,8 @@ class ScedDataExtractor(ABC):
         pass
 
     @abstractmethod
-    def get_reserve_requirement(self, sced: OperationsModel) -> float:
+    def get_reserve_requirement(self, sced: OperationsModel,
+                                reserve_id: ReserveIdentifier) -> float:
         pass
 
     @abstractmethod

@@ -366,9 +366,14 @@ class EgretEngine(ModelingEngine):
                        sced_data_extractor.get_load_demand(sced_instance,l)))
 
             print("")
-            print(("%-" + str(max_bus_label_length) + "s %12.2f") %
-                  ("Reserve requirement:",
-                    sced_data_extractor.get_reserve_requirement(sced_instance)))
+            max_res_scope_length = max(
+                (len(res.scope) for res in sced_data_extractor.get_reserve_products(sced_instance)),
+                default=None
+            )
+            if max_res_scope_length is not None:
+                print("Reserve requirement:")
+                for res in sced_data_extractor.get_reserve_products(sced_instance):
+                    print(f"   {res.scope:<{max_res_scope_length}}  {sced_data_extractor.get_reserve_requirement(sced_instance, res):12.2f}")
 
             total_max_nondispatchable_power = {b : 0. for b in buses}
             total_min_nondispatchable_power = {b : 0. for b in buses}
