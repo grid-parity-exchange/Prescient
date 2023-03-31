@@ -75,7 +75,4 @@ class ColumnRole(SphinxRole):
         return [node], []
 
 def setup(app):
-    #sphinx.roles.specific_docroles['col'] = ColumnRole()
     app.add_role('col', ColumnRole())
-    #app.add_role('col', sphinx.roles.specific_docroles['col'])
-    #app.add_role('col', sphinx.roles.specific_docroles['guilabel'])
