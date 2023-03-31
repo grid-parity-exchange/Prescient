@@ -1,7 +1,7 @@
 Prescient Documentation
 =======================
 
-Prescient is a python library that provides production cost modeling 
+Prescient is a python library that provides production cost modeling
 capabilities for power generation and distribution networks.
 
 .. toctree::
