@@ -2,8 +2,8 @@ Reference
 ---------
 
 .. toctree::
-   :maxdepth: 2
-   
-   file_formats.rst
+   :maxdepth: 1
+
+   input_data.rst
    code.rst
    
