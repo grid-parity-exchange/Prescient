@@ -62,3 +62,20 @@ html_static_path = ['_static']
 html_css_files = [
     'css/custom.css',
 ]
+
+# Add :col: as an alias for :guilabel: role
+import sphinx.roles
+from sphinx.util.docutils import SphinxRole
+from docutils import nodes
+
+class ColumnRole(SphinxRole):
+    def run(self):
+        node = nodes.inline(rawtext=self.rawtext, classes=['guilabel'])
+        node += nodes.Text(self.text)
+        return [node], []
+
+def setup(app):
+    #sphinx.roles.specific_docroles['col'] = ColumnRole()
+    app.add_role('col', ColumnRole())
+    #app.add_role('col', sphinx.roles.specific_docroles['col'])
+    #app.add_role('col', sphinx.roles.specific_docroles['guilabel'])
