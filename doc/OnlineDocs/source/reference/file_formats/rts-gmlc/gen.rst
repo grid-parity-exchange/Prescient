@@ -172,7 +172,10 @@ fuel curve point 0) and by :col:`HR_incr\_<N>` columns (for fuel curve points 1
 and above). :col:`HR_avg_0` is the fuel required to achieve :col:`Output_pct_0`.
 :col:`HR_incr_1` is the amount of *additional* fuel (the fuel increment) required to achieve
 :col:`Output_pct_1`, :col:`HR_incr_2` is the amount of additional fuel required to go
-from :col:`Output_pct_1` to :col:`Ouput_pct_2`, and so on.
+from :col:`Output_pct_1` to :col:`Ouput_pct_2`, and so on. The fuel consumption curve
+is required to be convex above point 0; the slope of lines between fuel curve points
+must increase as you move to the right. Values of :col:`HR_incr_*` must be chosen to
+reflect this requirement.
 
 Within each row, the number of non-blank :col:`HR\_\*` columns must must match
 the number of non-blank :col:`Output_pct\_<N>` columns. However, different rows
@@ -182,7 +185,8 @@ beyond the number of points in the fuel curve should be left blank.
 The diagram below shows an example of a fuel curve with 4 points. The
 output percentage increases along the X-axis with each successive point.
 Fuel consumption values on the Y-axis are calculated by adding fuel
-increments to the previous Y values.
+increments to the previous Y values. Note that the fuel consumption curve
+is convex above :col:`Output_pct_0`.
 
 .. image:: ../../../_static/image/Example-Fuel-Curve.png
    :width: 6.5in
