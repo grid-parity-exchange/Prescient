@@ -17,6 +17,10 @@ if sys.version_info >= (4,0):
     sys.exit("Support for Python 4 is undetermined")
 
 from setuptools import setup, find_namespace_packages
+from pathlib import Path
+
+this_directory = Path(__file__).parent
+long_description = (this_directory / 'README.md').read_text()
 
 packages = find_namespace_packages(include=['prescient.*'])
 
@@ -28,6 +32,8 @@ setup(name='gridx-prescient',
       author_email='jwatson@sandia.gov',
       python_requires='>=3.7, <4',
       packages=packages,
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       entry_points={
             'console_scripts': [
                 'runner.py = prescient.scripts.runner:main',
