@@ -24,7 +24,7 @@ copyright = "Copyright 2020 National Technology & Engineering Solutions of Sandi
 author = 'Prescient Developers'
 
 # The full version, including alpha/beta/rc tags
-release = '2.2.2'
+release = '2.2.3.dev0'
 
 
 # -- General configuration ---------------------------------------------------
