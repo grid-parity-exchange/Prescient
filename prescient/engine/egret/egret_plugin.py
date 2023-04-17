@@ -472,7 +472,8 @@ def _get_fixed_if_off(cur_commit, cur_fixed):
             new_fixed[idx] = fixed
     return {'data_type':'time_series', 'values':new_fixed}
 
-def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, ptdf_manager):
+def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options,
+                                                  slack_type, network_type, ptdf_manager):
 
     ## create a copy because we want to maintain the solution data
     ## in ruc_results
@@ -513,9 +514,12 @@ def solve_deterministic_day_ahead_pricing_problem(solver, ruc_results, options, 
     if options.ruc_network_type == EngineNetworkType.PTDF:
         ptdf_manager.mark_active(pricing_instance)
 
-    pyo_model = create_pricing_model(pricing_instance, relaxed=True,
+    pyo_model = create_pricing_model(pricing_instance,
+                                     network_constraints=network_type,
+                                     relaxed=True,
                                      ptdf_options=ptdf_manager.damarket_ptdf_options,
-                                     PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict)
+                                     PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict,
+                                     slack_type=slack_type)
 
     pyo_model.dual = Suffix(direction=Suffix.IMPORT)
 
