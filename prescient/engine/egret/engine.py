@@ -111,9 +111,13 @@ class EgretEngine(ModelingEngine):
             options: Options,
             deterministic_ruc_instance: RucModel,
             ) -> RucMarket:
+        network_type = _network_type_to_egret_network_constraints[options.ruc_network_type]
+        slack_type = _slack_type_to_egret_slack_type[options.ruc_slack_type]
         return self._p.solve_deterministic_day_ahead_pricing_problem(self._ruc_solver,
                                                                 deterministic_ruc_instance,
                                                                 options,
+                                                                slack_type,
+                                                                network_type,
                                                                 self._ptdf_manager)
 
     def create_simulation_actuals(
