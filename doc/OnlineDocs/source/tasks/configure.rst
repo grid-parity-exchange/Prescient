@@ -117,7 +117,7 @@ The table below describes all available configuration options.
        should be a file or a folder depends on the input format. See :doc:`input`.
    * - \-\-input-format
      - input_format
-     - String. Default=dat.
+     - String. Default=rts_gmlc.
      - The format of the input data. Valid values are *dat* and *rts_gmlc*.
        Ignored when using a custom data provider. See :doc:`input`.
    * - \-\-data-provider

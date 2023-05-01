@@ -169,7 +169,7 @@ class PrescientConfig(ConfigDict):
 
         self.declare("input_format", ConfigValue(
             domain=_InEnumStr(InputFormats),
-            default="dat",
+            default="rts_gmlc",
             description="Indicate the format input data is in",
         )).declare_as_argument()
 
