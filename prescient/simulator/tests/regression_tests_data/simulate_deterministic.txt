@@ -1,5 +1,6 @@
 command/exec simulator.py
 --data-directory=deterministic_scenarios
+--input-format=dat
 --simulate-out-of-sample 
 --run-sced-with-persistent-forecast-errors 
 --output-directory=deterministic_simulation_output

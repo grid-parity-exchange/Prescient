@@ -184,6 +184,7 @@ class TestSimulatorModRtsGmlcNetwork_python(SimulatorRegressionBase, unittest.Te
         os.chdir(self.test_case_path)
         options = {**base_options}
         options['data_path'] = 'deterministic_with_network_scenarios'
+        options['input_format'] = 'dat'
         options['output_directory'] = 'deterministic_with_network_simulation_output_python'
         options['plugin'] = {'test':{'module':'test_plugin.py', 
                                      'print_callback_message':True}}

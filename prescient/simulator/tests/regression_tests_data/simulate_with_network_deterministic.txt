@@ -1,5 +1,6 @@
 command/exec simulator.py
 --data-directory=deterministic_with_network_scenarios
+--input-format=dat
 --simulate-out-of-sample 
 --run-sced-with-persistent-forecast-errors 
 --output-directory=deterministic_with_network_simulation_output
