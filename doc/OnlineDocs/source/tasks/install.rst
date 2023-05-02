@@ -2,7 +2,7 @@ Installation
 ============
 
 The Prescient python package can be installed using pip, or it can be installed
-from source. Python and a linear solver are prerequisites for either installation
+from source. Python and a MILP solver are prerequisites for either installation
 method.
 
 To install Prescient, follow these steps:
@@ -17,7 +17,7 @@ Prescient requires python 3.7 or later. We recommend installing `Anaconda <https
 to manage python and other dependencies.
 
 
-Install a linear solver
+Install a MILP solver
 ~~~~~~~~~~~~~~~~~~~~~~~
 Prescient requires a mixed-integer linear programming (MILP) solver that is compatible with
 `Pyomo <https://pyomo.readthedocs.io>`_. Options include open source solvers such as CBC or GLPK,
@@ -32,13 +32,21 @@ current conda environment::
 .. tip::
    Be sure to activate the correct python environment before running the command above.
 
-Binaries for Windows and other platforms may be available from https://github.com/coin-or/Cbc/releases.
+CBC binaries for Windows and other platforms may be available from https://github.com/coin-or/Cbc/releases.
 
 Note that the CBC solver is used in most Prescient tests, so you may want to install it even if
 you intend to use another solver in your own runs.
 
-Install Using Pip
-~~~~~~~~~~~~~~~~~
+Instructions to install other solvers can be found :doc:`here <install_solvers>`.
+
+.. toctree::
+   :hidden:
+   :maxdepth: 0
+
+   install_solvers
+
+Install Prescient Using Pip
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Prescient is available as a python package that can be installed using pip. To install the latest 
 release of Prescient use the following command:
 
@@ -46,8 +54,8 @@ release of Prescient use the following command:
 
 Be sure the intended python environment is active before issuing the command above.
 
-Install From Source
-~~~~~~~~~~~~~~~~~~~
+Install Prescient From Source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You may want to install from source if you want to use the latest pre-release 
 version of the code, or if you want to modify/contribute to the code yourself.

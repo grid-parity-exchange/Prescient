@@ -9,8 +9,9 @@ document identifies the columns read by Prescient, their meaning, and how they
 are represented in the Egret model used by Prescient at runtime. Any additional
 columns be present in the input are ignored.
 
-There are six required CSV files and two optional CSV file. Timeseries
-data is stored in an additional set of files you specify in
+There are six required CSV files and two optional CSV file. Files must have the
+names specified below. In addition to the 6 to 8 files identified below,
+timeseries data is stored in an additional set of files you specify in
 timeseries_pointers.csv. Documentation for each of the files is found
 below:
 
@@ -23,11 +24,11 @@ Required Files
       gen
       reserves
       simulation_objects
+      timeseries_pointers
 
 Optional Files
    .. toctree::
       :maxdepth: 1
 
-      timeseries_pointers
       dc_branch
       initial_status
