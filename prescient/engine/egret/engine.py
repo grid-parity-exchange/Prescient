@@ -178,11 +178,26 @@ class EgretEngine(ModelingEngine):
         else:
             ptdf_options = None
 
-        pyo_model = create_sced_uc_model(sced_instance,
-                                         ptdf_options = ptdf_options,
-                                         PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict,
-                                         network_constraints=network_type,
-                                         slack_type=slack_type)
+        try:
+            pyo_model = create_sced_uc_model(sced_instance,
+                                             ptdf_options = ptdf_options,
+                                             PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict,
+                                             network_constraints=network_type,
+                                             slack_type=slack_type)
+        except:
+            print("Some isssue with SCED, writing instance")
+            print("Problematic SCED from to file")
+            # for diagnostic purposes, save the failed SCED instance.
+            if lp_filename is not None:
+                if lp_filename.endswith(".json"):
+                    infeasible_sced_filename = lp_filename[:-5] + ".FAILED.json"
+                else:
+                    infeasible_sced_filename = lp_filename + ".FAILED.json"
+            else:
+                infeasible_sced_filename = options.output_directory + os.sep + "FAILED_SCED.json"
+            sced_instance.write(infeasible_sced_filename)
+            print("Problematic SCED instance written to file=" + infeasible_sced_filename)
+            raise
 
         if options.sced_network_type == EngineNetworkType.PTDF:
             # update in case lines were taken out
