@@ -333,14 +333,21 @@ def _solve_deterministic_ruc(deterministic_ruc_data,
     if options.ruc_network_type == EngineNetworkType.PTDF:
         ptdf_manager.mark_active(deterministic_ruc_data)
 
-    st = time.time()
-    pyo_model = create_tight_unit_commitment_model(deterministic_ruc_data,
-                                                   ptdf_options=ptdf_manager.ruc_ptdf_options,
-                                                   PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict,
-                                                   network_constraints=network_type,
-                                                   slack_type=slack_type)
+    try:
+        st = time.time()
+        pyo_model = create_tight_unit_commitment_model(deterministic_ruc_data,
+                                                       ptdf_options=ptdf_manager.ruc_ptdf_options,
+                                                       PTDF_matrix_dict=ptdf_manager.PTDF_matrix_dict,
+                                                       network_constraints=network_type,
+                                                       slack_type=slack_type)
 
-    print("\nPyomo model construction time: %12.2f\n" % (time.time()-st))
+        print("\nPyomo model construction time: %12.2f\n" % (time.time()-st))
+    except:
+        print("Failed to create deterministic RUC instance - likely because no feasible solution exists!")        
+        output_filename = "bad_ruc.json"
+        deterministic_ruc_data.write(output_filename)
+        print("Wrote failed RUC data to file=" + output_filename)
+        raise
 
     if options.ruc_network_type == EngineNetworkType.PTDF:
         # update in case lines were taken out
