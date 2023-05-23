@@ -197,10 +197,9 @@ class PrescientConfig(ConfigDict):
 
         self.declare("run_sced_with_persistent_forecast_errors", ConfigValue(
             domain=bool,
-            default=False,
-            description="Create all SCED instances assuming persistent forecast error, "
-                        "instead of the default prescience.",
-        )).declare_as_argument()
+            default=True,
+            description="Create all SCED instances assuming persistent forecast errors.",
+        )).declare_as_argument(action='store_true')
 
         self.declare("ruc_prescience_hour", ConfigValue(
             domain=NonNegativeInt,
