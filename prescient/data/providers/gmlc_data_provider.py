@@ -28,10 +28,21 @@ class GmlcDataProvider(DataProvider):
     '''
 
     def __init__(self, options:Options):
-                                            # midnight start
+        # See how much extra time to parse for lookahead horizon
+        sced_extra_minutes = options.sced_horizon * options.sced_frequency_minutes
+        ruc_extra_minutes = (options.ruc_horizon - options.ruc_every_hours)*60
+        extra_minutes = max(sced_extra_minutes, ruc_extra_minutes)
+
+        # Move minutes to days as needed
+        days=options.num_days
+        while extra_minutes >= 24*60:
+            days += 1
+            extra_minutes -= 24*60
+
+        # Start at midnight of start date
         self._start_time = datetime.combine(options.start_date, datetime.min.time())
-        self._end_time = self._start_time + timedelta(days=options.num_days)
-        self._cache = parser.parse_to_cache(options.data_path, self._start_time, self._end_time)
+        self._end_time = self._start_time + timedelta(days=days, minutes=extra_minutes)
+        self._cache = parser.parse_to_cache(options.data_path, self._start_time, self._end_time, honor_lookahead=False)
 
     def negotiate_data_frequency(self, desired_frequency_minutes:int):
         ''' Get the number of minutes between each timestep of actuals data this provider will supply,
