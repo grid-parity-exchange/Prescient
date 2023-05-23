@@ -39,7 +39,7 @@ class OracleManager(_Manager):
 
     def _get_ruc_delay(self, options):
         ''' The number of hours between the generation of a RUC plan and when it is activated '''
-        return -(options.ruc_execution_hour % (-options.ruc_every_hours))
+        return options.ruc_delay
 
     def _get_uc_activation_time(self, options, time_step):
         ''' Get the hour and date that a RUC generated at the given time will be activated '''
