@@ -179,7 +179,7 @@ class MutableSimulationState(SimulationState):
         is used to set up the initial simulation state with no offset.
         '''
  
-        ruc_delay = -(options.ruc_execution_hour % (-options.ruc_every_hours))
+        ruc_delay = options.ruc_delay
 
         # If we've never stored a RUC before...
         first_ruc = (len(self._init_gen_state) == 0)
@@ -261,7 +261,7 @@ class MutableSimulationState(SimulationState):
 
 def _save_forecastables(options, model, where_to_store, steps_per_hour):
     first_data = (len(where_to_store) == 0)
-    ruc_delay = -(options.ruc_execution_hour % (-options.ruc_every_hours))
+    ruc_delay = options.ruc_delay
     max_length = steps_per_hour*(ruc_delay + options.ruc_horizon)
 
     # Save all forecastables, indexed by unique forecastable key

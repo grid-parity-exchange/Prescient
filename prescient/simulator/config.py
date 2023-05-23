@@ -595,6 +595,11 @@ class PrescientConfig(ConfigDict):
         self.import_argparse(args)
         return self
 
+    @property
+    def ruc_delay(self) -> int:
+        ''' Get the number of hours before each RUC goes into effect that it is generated '''
+        return -(self.ruc_execution_hour % (-self.ruc_every_hours))
+
 
 
 class _InEnumStr(InEnum):
