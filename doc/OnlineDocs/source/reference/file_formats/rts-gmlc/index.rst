@@ -2,7 +2,7 @@ The CSV Input File Format
 =========================
 
 The system being modeled by Prescient is read from a set of CSV files. The
-CSV files and their format is based on the 
+CSV files and their format is based on the
 `RTS-GMLC format <https://github.com/GridMod/RTS-GMLC/blob/master/RTS_Data/SourceData/README.md>`_.
 Prescient uses only a subset of the columns present in RTS-GMLC format. This
 document identifies the columns read by Prescient, their meaning, and how they
@@ -18,7 +18,7 @@ below:
 Required Files
    .. toctree::
       :maxdepth: 1
-   
+
       bus
       branch
       gen

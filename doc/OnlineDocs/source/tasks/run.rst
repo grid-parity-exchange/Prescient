@@ -24,7 +24,7 @@ Launch with runner.py
 
 Prescient can be run using `runner.py`, a utility which is installed
 along with Prescient (see :ref:`install-prescient-package`).
-Before executing `runner.py`, you must create a configuration file 
+Before executing `runner.py`, you must create a configuration file
 indicating how Prescient should be run. Here is an example of a configuration
 file that can be used with `runner.py`::
 
@@ -32,19 +32,19 @@ file that can be used with `runner.py`::
    --data-directory=example_scenario_input
    --output-directory=example_scenario_output
    --input-format=rts-gmlc
-   --run-sced-with-persistent-forecast-errors 
+   --run-sced-with-persistent-forecast-errors
    --start-date=07-11-2024
    --num-days=7
    --sced-horizon=1
    --sced-frequency-minutes=10
    --ruc-horizon=36
 
-Because runner.py can potentially be used for more than launching 
+Because runner.py can potentially be used for more than launching
 Prescient, the first line of the configuration file must match the line
 shown in the example above. Otherwise runner.py won't know that you
 intend to run Prescient.
 
-All subsequent lines set the value of a configuration option. Configuration 
+All subsequent lines set the value of a configuration option. Configuration
 options are described in :doc:`configure`.
 
 Once you have the configuration file prepared, you can launch Prescient
@@ -63,7 +63,7 @@ Another way to run Prescient is to execute the `prescient.simulator` module::
 
 	python -m prescient.simulator <options>
 
-where `options` specifies the configuration options for the run. An example might 
+where `options` specifies the configuration options for the run. An example might
 be something like this::
 
 	python -m prescient.simulator --data-directory=example_scenario_input --output-directory=example_scenario_output --input-format=rts-gmlc --run-sced-with-persistent-forecast-errors --start-date=07-11-2024 --num-days=7 --sced-horizon=1 --sced-frequency-minutes=10 --ruc-horizon=36
@@ -73,10 +73,10 @@ Configuration options can also be specified in a configuration file::
 	python -m prescient.simulator --config-file=config.txt
 
 You can combine the `--config-file` option with other command line options. The contents of the configuration
-file are effectively inserted into the command line at the location of the `--config-file` option. You can 
+file are effectively inserted into the command line at the location of the `--config-file` option. You can
 override values in a configuration file by repeating the option at some point after the `--config-file` option.
 
-Running the `prescient.simulator` module allows you to run Prescient without explicitly installing it, as long 
+Running the `prescient.simulator` module allows you to run Prescient without explicitly installing it, as long
 as Prescient is found in the python module search path.
 
 .. _launch-with-code:
@@ -106,8 +106,8 @@ Prescient can be configured and launched from python code:
             enforce_sced_shutdown_ramprate=True,
             no_startup_shutdown_curves=True)
 
-The code example above creates an instance of the Prescient class and passes 
-configuration options to its `simulate()` method. An alternative is to set 
+The code example above creates an instance of the Prescient class and passes
+configuration options to its `simulate()` method. An alternative is to set
 values on a configuration object, and then run the simulation after configuration
 is done:
 
@@ -151,7 +151,7 @@ be shared among multiple runs:
 
     Prescient().simulate(**options)
 
-These three methods can be used together quite flexibly. The example below 
+These three methods can be used together quite flexibly. The example below
 demonstrates a combination of approaches to configuring a prescient run:
 
 .. code-block:: python
@@ -167,7 +167,7 @@ demonstrates a combination of approaches to configuring a prescient run:
     config.run_sced_with_persistent_forecast_errors=True
     config.output_directory='deterministic_simulation_output'
 
-    # Others will be stored in a dictionary that can 
+    # Others will be stored in a dictionary that can
     # potentially be shared among multiple prescient runs
     options = {
         'start_date':'07-10-2020',
@@ -180,7 +180,7 @@ demonstrates a combination of approaches to configuring a prescient run:
         'enforce_sced_shutdown_ramprate':True,
         'no_startup_shutdown_curves':True,
     }
-    
-    # And finally, pass the dictionary to the simulate() method, 
+
+    # And finally, pass the dictionary to the simulate() method,
     # along with an additional function argument.
     simulator.simulate(**options, num_days=7)

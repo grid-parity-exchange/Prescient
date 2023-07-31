@@ -6,7 +6,7 @@ for DC branches, as indicated by the small number of columns in this file.
 
 This file is optional; if the file does not exist, no DC branches are added
 to the model. If the file exists, add a row for each DC branch in the model.
-Each row in the file will cause a DC branch dictionary to be added to 
+Each row in the file will cause a DC branch dictionary to be added to
 ``['elements']['dc_branch']`` in the Egret model.
 
 .. list-table:: dc_branch.csv Columns
@@ -21,12 +21,12 @@ Each row in the file will cause a DC branch dictionary to be added to
        branch dictionary located at :samp:`['elements']['dc_branch'][{<UID>}]`.
    * - :col:`From Bus`
      - The :col:`Bus ID` of one end of the branch
-     - The :col:`Bus Name` of the bus with the matching :col:`Bus ID`, as 
+     - The :col:`Bus Name` of the bus with the matching :col:`Bus ID`, as
        entered in bus.csv, is stored in the Egret branch dictionary as
        ``from_bus``.
    * - :col:`To Bus`
      - The :col:`Bus ID` of the other end of the branch
-     - The :col:`Bus Name` of the bus with the matching :col:`Bus ID`, as 
+     - The :col:`Bus Name` of the bus with the matching :col:`Bus ID`, as
        entered in bus.csv, is stored in the Egret branch dictionary as
        ``to_bus``.
    * - :col:`MW Load`

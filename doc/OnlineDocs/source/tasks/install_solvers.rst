@@ -36,7 +36,7 @@ Gurobi
 ------
 
 Gurobi is a highly regarded commercial solver. Gurobi requires a valid
-license to be used by Prescient. See the documentation on the 
+license to be used by Prescient. See the documentation on the
 `Gurobi <https://gurobi.com>`_ website for instructions on how to acquire
 and install a license.
 

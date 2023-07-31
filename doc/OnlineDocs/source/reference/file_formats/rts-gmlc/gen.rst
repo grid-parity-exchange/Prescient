@@ -208,7 +208,7 @@ based on how long it has been since the generator was shut off.
    than either the :col:`Min Down Time Hr` or the :col:`Start Time Hot Hr`,
    the generator cannot yet be restarted.
 
--  If the time since shutdown is at least :col:`Min Down Time Hr` and 
+-  If the time since shutdown is at least :col:`Min Down Time Hr` and
    :col:`Start Time Hot Hr`, but less than :col:`Start Time Warm Hr`,
    then the generator can do a hot start, consuming :col:`Start Heat Hot MMBTU`.
 

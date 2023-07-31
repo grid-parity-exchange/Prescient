@@ -7,7 +7,7 @@ Configuration Options
 Overview
 --------
 
-Prescient configuration options are used to indicate how 
+Prescient configuration options are used to indicate how
 the Prescient simulation should be run. Configuration
 options can be specified on the command line, in a text
 configuration file, or in code, depending on how Prescient
@@ -16,14 +16,14 @@ is launched (see :doc:`run`).
 Each configuration option has a name, a data type, and a default value.
 The name used on the command line and the name used in code vary slightly.
 For example, the number of days to simulate is specified as `\-\-num-days`
-on the command line, and `num_days` in code. 
+on the command line, and `num_days` in code.
 
 Option Data Types
 -----------------
 
 Most options use self-explanatory data types like `String`,
 `Integer`, and `Float`, but some data types require more
-explanation and may be specified in code in ways that are unavailable 
+explanation and may be specified in code in ways that are unavailable
 on the command line:
 
 .. list-table:: Configuration Data Types
@@ -55,9 +55,9 @@ on the command line:
 
        * The name of a python module (such as `prescient.simulator.prescient`)
        * The path to a python file (such as `prescient/simulator/prescient.py`)
-     - In addition to the two string options available to the command-line, 
+     - In addition to the two string options available to the command-line,
        code may also use a python module object. For example::
-         
+
          import my_custom_data_provider
          config.data_provider = my_custom_data_provider
 
@@ -106,14 +106,14 @@ The table below describes all available configuration options.
      -
      -
      -
-   * - \-\-data-path 
-        
-       or 
-       
+   * - \-\-data-path
+
+       or
+
        \-\-data-directory
      - data_path
      - Path. Default=input_data.
-     - Path to a file or folder where input data is located. Whether it 
+     - Path to a file or folder where input data is located. Whether it
        should be a file or a folder depends on the input format. See :doc:`input`.
    * - \-\-input-format
      - input_format
@@ -125,13 +125,13 @@ The table below describes all available configuration options.
      - Module. Default=No custom data provider.
      - A python module with a custom data provider that will supply
        data to Prescient during the simulation. Don't specify this option
-       unless you are using a custom data provider; use data_path and 
+       unless you are using a custom data provider; use data_path and
        input_format instead.
        See :ref:`custom-data-providers`.
    * - \-\-output-directory
      - output_directory
      - Path. Default=outdir.
-     - The path to the root directory to which all generated simulation 
+     - The path to the root directory to which all generated simulation
        output files and associated data are written.
    * - **RUC Options**
      -
@@ -146,40 +146,40 @@ The table below describes all available configuration options.
      - ruc_execution_hour
      - Integer. Default=16
      - Specifies an hour of the day the RUC process is executed.
-       If multiple RUCs are executed each day (because `ruc_every_hours` 
+       If multiple RUCs are executed each day (because `ruc_every_hours`
        is less than 24), any of the execution times may be specified.
        Negative values indicate hours before midnight, positive after.
    * - .. _config_ruc-horizon:
-   
+
        \-\-ruc-horizon
      - ruc_horizon
      - Integer. Default=48
      - The number of hours to include in each RUC.
        Must be >= `ruc_every_hours` and <= 48.
    * - .. _config_ruc-prescience-hour:
-   
+
        \-\-ruc-prescience-hour
      - ruc_prescience_hour
      - Integer. Default=0.
-     - The number of initial hours of each RUC in which linear blending of 
+     - The number of initial hours of each RUC in which linear blending of
        forecasts and actual values is done, making some near-term
        forecasts more accurate.
    * - \-\-run-ruc-with-next-day-data
      - run_ruc_with_next_day_data
      - Flag. Default=false.
      - If false (the default), never use more than 24 hours of
-       forecast data even if the RUC horizon is longer than 24 
+       forecast data even if the RUC horizon is longer than 24
        hours. Instead, infer values beyond 24 hours.
-       
+
        If true, use forecast data for the full RUC horizon.
    * - \-\-simulate-out-of-sample
      - simulate_out_of_sample
      - Flag. Default=false.
      - If false, use forecast input data as both forecasts and actual
-       values; the actual value input data is ignored. 
-       
+       values; the actual value input data is ignored.
+
        If true, values for the current simulation time are taken from
-       the actual value input, and actual values are used to blend 
+       the actual value input, and actual values are used to blend
        near-term values if `ruc_prescience_hour` is non-zero.
    * - \-\-ruc-network-type
      - ruc_network_type
@@ -222,7 +222,7 @@ The table below describes all available configuration options.
    * - \-\-deterministic-ruc-solver-plugin
      - deterministic_ruc_solver_plugin
      - Module. Default=None.
-     - If the user has an alternative method to solve 
+     - If the user has an alternative method to solve
        RUCs, it should be specified here, e.g.,
        my_special_plugin.py.
 
@@ -242,22 +242,22 @@ The table below describes all available configuration options.
    * - \-\-sced-horizon
      - sced_horizon
      - Integer. Default=1
-     - The number of time periods to include in each SCED. 
+     - The number of time periods to include in each SCED.
        Must be at least 1.
    * - .. _config_run-sced-with-persistent-forecast-errors:
-   
+
        \-\-run-sced-with-persistent-forecast-errors
      - run_sced_with_persistent_forecast_errors
      - Flag. Default=false.
      - If true, then values in SCEDs use persistent forecast errors.
-       If false, all values in SCEDs use actual values for all time 
-       periods, including future time periods. 
+       If false, all values in SCEDs use actual values for all time
+       periods, including future time periods.
        See :ref:`forecast_smoothing`.
    * - \-\-enforce-sced-shutdown-ramprate
      - enforce_sced_shutdown_ramprate
      - Flag. Default=false.
      - Enforces shutdown ramp-rate constraints in the SCED.
-       Enabling this option requires a long SCED look-ahead 
+       Enabling this option requires a long SCED look-ahead
        (at least an hour) to ensure the shutdown ramp-rate
        constraints can be statisfied.
    * - \-\-sced-network-type
@@ -332,7 +332,7 @@ The table below describes all available configuration options.
    * - \-\-symbolic-solver-labels
      - symbolic_solver_labels
      - Flag. Default=False.
-     - Whether to use symbol names derived from the model when interfacing with 
+     - Whether to use symbol names derived from the model when interfacing with
        the solver.
    * - \-\-enable-quick-start-generator-commitment
      - enable_quick_start_generator_commitment
@@ -360,7 +360,7 @@ The table below describes all available configuration options.
    * - \-\-price-threshold
      - price_threshold
      - Float. Default=10000.0.
-     - Maximum possible value the price can take. If the price exceeds this 
+     - Maximum possible value the price can take. If the price exceeds this
        value due to Load Mismatch, then it is set to this value.
    * - \-\-reserve-price-threshold
      - reserve_price_threshold
