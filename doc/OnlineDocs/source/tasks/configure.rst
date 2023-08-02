@@ -94,7 +94,9 @@ The table below describes all available configuration options.
      -
      -
      -
-   * - \-\-start-date
+   * - .. _config_start-date:
+
+       \-\-start-date
      - start_date
      - Date. Default=2020-01-01.
      - The start date for the simulation.
@@ -137,12 +139,16 @@ The table below describes all available configuration options.
      -
      -
      -
-   * - \-\-ruc_every-hours
+   * - .. _config_ruc-every-hours:
+
+       \-\-ruc-every-hours
      - ruc_every_hours
      - Integer. Default=24
      - How often a RUC is executed, in hours. Default is 24.
        Must be a divisor of 24.
-   * - \-\-ruc-execution-hour
+   * - .. _config_ruc-execution-hour:
+
+       \-\-ruc-execution-hour
      - ruc_execution_hour
      - Integer. Default=16
      - Specifies an hour of the day the RUC process is executed.
@@ -239,7 +245,9 @@ The table below describes all available configuration options.
      - Integer. Default=60.
      - How often a SCED will be run, in minutes.
        Must divide evenly into 60, or be a multiple of 60.
-   * - \-\-sced-horizon
+   * - .. _config_sced-horizon:
+
+       \-\-sced-horizon
      - sced_horizon
      - Integer. Default=1
      - The number of time periods to include in each SCED.
@@ -371,7 +379,9 @@ The table below describes all available configuration options.
      -
      -
      -
-   * - \-\-plugin
+   * - .. _config_plugin:
+
+       \-\-plugin
      - plugin
      - Module. Default=None.
      - Python plugins are analyst-provided code that Prescient calls at
