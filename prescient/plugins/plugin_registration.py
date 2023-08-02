@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from prescient.simulator.simulator import Simulator
     from prescient.engine.abstract_types import OperationsModel, RucModel
     from prescient.simulator.config import PrescientConfig
+    from prescient.simulator.data_manager import RucPlan
 from pyomo.common.fileutils import import_file
 
 class PluginRegistrationContext:
@@ -26,8 +27,8 @@ class PluginRegistrationContext:
         self._callback_manager = PluginCallbackManager()
 
     def register_plugin(
-        self, 
-        plugin_module:'module', 
+        self,
+        plugin_module:'module',
         config: PrescientConfig,
         plugin_config: ConfigDict) -> None:
         ''' Allow a plugin module to register for callbacks
@@ -36,7 +37,7 @@ class PluginRegistrationContext:
         this registration context as an argument. The register_plugins
         method should use the context to register whatever callbacks are
         appropriate for the plugin. The method is also provided with the
-        PrescientConfig to be used in the simulation, as well as the 
+        PrescientConfig to be used in the simulation, as well as the
         plugin-specific portion of the configuration.
         '''
         register_func = getattr(plugin_module, "register_plugins", None)
@@ -45,7 +46,7 @@ class PluginRegistrationContext:
         register_func(self, config, plugin_config)
 
     def register_for_operations_stats(
-        self, 
+        self,
         callback: Callable[[OperationsStats], None]
         ) -> None:
         '''
@@ -56,7 +57,7 @@ class PluginRegistrationContext:
         self.callback_manager.register_operations_stats_callback(callback)
 
     def register_for_hourly_stats(
-        self, 
+        self,
         callback: Callable[[HourlyStats], None]
         ) -> None:
         '''
@@ -67,7 +68,7 @@ class PluginRegistrationContext:
         self.callback_manager.register_hourly_stats_callback(callback)
 
     def register_for_daily_stats(
-        self, 
+        self,
         callback: Callable[[DailyStats], None]
         ) -> None:
         '''
@@ -78,7 +79,7 @@ class PluginRegistrationContext:
         self.callback_manager.register_daily_stats_callback(callback)
 
     def register_for_overall_stats(
-        self, 
+        self,
         callback: Callable[[OverallStats], None]
         ) -> None:
         '''
@@ -89,7 +90,7 @@ class PluginRegistrationContext:
         self.callback_manager.register_overall_stats_callback(callback)
 
     def register_options_preview_callback(
-        self, 
+        self,
         callback: Callable[[Options], None]
         ) -> None:
         ''' Request a method be called after options have been parsed, but before they
@@ -98,7 +99,7 @@ class PluginRegistrationContext:
         self.callback_manager.register_options_preview_callback(callback)
 
     def register_initialization_callback(
-        self, 
+        self,
         callback: Callable[[Options, Simulator], None]
         ) -> None:
         ''' Request a method be called after core prescient objects have been initialized, but
@@ -106,32 +107,32 @@ class PluginRegistrationContext:
         '''
         self.callback_manager.register_initialization_callback(callback)
 
-    def register_after_get_initial_actuals_model_for_sced_callback(
+    def register_after_get_initial_model_for_sced_callback(
         self,
         callback: Callable[[Options, OperationsModel], None]
         ) -> None:
         ''' Request a method to be called immediately after an actuals model for the sced has
             been generated, but before any data is loaded into it.
         '''
-        self.callback_manager.register_after_get_initial_actuals_model_for_sced_callback(callback)
+        self.callback_manager.register_after_get_initial_model_for_sced_callback(callback)
 
-    def register_after_get_initial_forecast_model_for_ruc_callback(
+    def register_after_get_initial_model_for_ruc_callback(
         self,
         callback: Callable[[Options, RucModel], None]
         ) -> None:
         ''' Request a method to be called immediately after an forecast model for the ruc has
             been generated, but before any data is loaded into it.
         '''
-        self.callback_manager.register_after_get_initial_forecast_model_for_ruc_callback(callback)
+        self.callback_manager.register_after_get_initial_model_for_ruc_callback(callback)
 
-    def register_after_get_initial_actuals_model_for_simulation_actuals_callback(
+    def register_after_get_initial_model_for_simulation_actuals_callback(
         self,
         callback: Callable[[Options, RucModel], None]
         ) -> None:
         ''' Request a method to be called immediately after an actuals model for the simulation_actuals has
             been generated, but before any data is loaded into it.
         '''
-        self.callback_manager.register_after_get_initial_actuals_model_for_simulation_actuals_callback(callback)
+        self.callback_manager.register_after_get_initial_model_for_simulation_actuals_callback(callback)
 
     def register_finalization_callback(
         self,
@@ -142,7 +143,7 @@ class PluginRegistrationContext:
         self.callback_manager.register_finalization_callback(callback)
 
     def register_before_ruc_solve_callback(
-        self, 
+        self,
         callback: Callable[[Options, Simulator, RucModel, str, int], None]
         ) -> None:
         ''' Register a callback to be called before a ruc model is solved.
@@ -152,7 +153,7 @@ class PluginRegistrationContext:
         self.callback_manager.register_before_ruc_solve_callback(callback)
 
     def register_after_ruc_generation_callback(
-        self, 
+        self,
         callback: Callable[[Options, Simulator, RucPlan, str, int], None]
         ) -> None:
         ''' Register a callback to be called after each new RUC plan is generated.
@@ -161,9 +162,9 @@ class PluginRegistrationContext:
             are stored in the DataManager.
         '''
         self.callback_manager.register_after_ruc_generation_callback(callback)
-    
+
     def register_after_ruc_activation_callback(
-        self, 
+        self,
         callback: Callable[[Options, Simulator], None]
         ):
         ''' Register a callback to be called after activating a RUC.
@@ -175,7 +176,7 @@ class PluginRegistrationContext:
         self.callback_manager.register_after_ruc_activation_callback(callback)
 
     def register_before_operations_solve_callback(
-        self, 
+        self,
         callback: Callable[[Options, Simulator, OperationsModel], None]
         ) -> None:
         ''' Register a callback to be called before an operations model is solved.
@@ -185,7 +186,7 @@ class PluginRegistrationContext:
         self.callback_manager.register_before_operations_solve_callback(callback)
 
     def register_after_operations_callback(
-        self, 
+        self,
         callback: Callable[[Options, Simulator, OperationsModel, OperationsModel], None]
         ) -> None:
         ''' Register a callback to be called after the operations model has been created and
@@ -207,7 +208,7 @@ class PluginRegistrationContext:
         self,
         callback: Callable[[Options, Simulator, OperationsStats], None]
         ) -> None:
-        ''' Register a callback to be called after intial statistics have been gathered for an 
+        ''' Register a callback to be called after intial statistics have been gathered for an
             solved operations model, but before the statistics have been published.
 
             The operations stats object may be modified by the registered callback.
@@ -239,7 +240,7 @@ class PluginRegistrationContext:
         ''' Register a callback to be called just before an actuals RUC is generated.
 
             The callback will be called once for each actuals RUC.  It is called after
-            the corresponding forecast RUC has been created and solved, but before the 
+            the corresponding forecast RUC has been created and solved, but before the
             actuals RUC is created and solved.
         '''
         raise RuntimeError("This callback is not yet implemented")
