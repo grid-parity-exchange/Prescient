@@ -18,8 +18,6 @@ and line limits. SCEDs always honor unit commitment decisions made by the active
 RUC. The number of hours of forecast data to include in the SCED model is
 determined by the :ref:`SCED horizon<config_sced-horizon>`.
 
-Something about calculating costs.
-
 If :ref:`market settlement<config_compute-market-settlements>` is enabled,
 additional market-related statistics are calculated with each SCED. These
 statistics report performance against day-ahead commitments and reserve

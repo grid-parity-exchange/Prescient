@@ -191,6 +191,7 @@ The table below describes all available configuration options.
      - ruc_network_type
      - String. Default=ptdf.
      - Specifies how the network is represented in RUC models. Choices are:
+
        * ptdf   -- power transfer distribution factor representation
        * btheta -- b-theta representation
    * - \-\-ruc-slack-type
@@ -198,6 +199,7 @@ The table below describes all available configuration options.
      - String. Default=every-bus.
      - Specifies the type of slack variables to use in the RUC model formulation.
        Choices are:
+
        * every-bus            -- slack variables at every system bus
        * ref-bus-and-branches -- slack variables at only reference bus and each system branch
    * - \-\-deterministic-ruc-solver
@@ -272,12 +274,14 @@ The table below describes all available configuration options.
      - sced_network_type
      - String. Default=ptdf.
      - Specifies how the network is represented in SCED models. Choices are:
+
        * ptdf   -- power transfer distribution factor representation
        * btheta -- b-theta representation
    * - \-\-sced-slack-type
      - sced_slack_type
      - String. Default=every-bus.
      - Specifies the type of slack variables to use in SCED models. Choices are:
+
        * every-bus            -- slack variables at every system bus
        * ref-bus-and-branches -- slack variables at only reference bus and each system branch
    * - \-\-sced-solver
@@ -362,6 +366,7 @@ The table below describes all available configuration options.
      - day_ahead_pricing
      - String. Default=aCHP.
      - The pricing mechanism to use for the day-ahead market. Choices are:
+
        * LMP -- locational marginal price
        * ELMP -- enhanced locational marginal price
        * aCHP -- approximated convex hull price.

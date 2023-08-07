@@ -285,7 +285,7 @@ will be overwritten after this callback returns.
 
 .. _plugin-before_operations_solve:
 
-The plugin-before_operations_solve Callback
+The before_operations_solve Callback
 ...........................................
 
 This callback is called after a fully populated SCED Egret model has been generated,
@@ -293,7 +293,7 @@ before the model has been solved. The callback may modify the Egret model.
 
 .. _plugin-after_operations:
 
-The plugin-after_operations Callback
+The after_operations Callback
 ....................................
 
 This callback is called after an Egret SCED model has been solved. The callback can
