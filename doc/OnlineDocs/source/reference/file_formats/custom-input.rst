@@ -16,7 +16,7 @@ to acquire initial data, and to request updates to data for specific time
 periods.
 
 For an example or a custom data provider, see the
-`example <https://github.com/grid-parity-exchange/Prescient/blob/main/prescient/simulator/tests/custom_data_provider.py>`_ 
+`example <https://github.com/grid-parity-exchange/Prescient/blob/main/prescient/simulator/tests/custom_data_provider.py>`_
 in the source code, or examine one of the `standard data providers
 <https://github.com/grid-parity-exchange/Prescient/tree/main/prescient/data/providers>`_.
 

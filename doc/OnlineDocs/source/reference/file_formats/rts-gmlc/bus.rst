@@ -4,11 +4,11 @@ bus.csv
 =======
 
 This file is used to define buses. Add one row for each bus in the system. Each
-row in the CSV file will cause a bus dictionary object to be added to 
+row in the CSV file will cause a bus dictionary object to be added to
 ``['elements']['bus']`` in the Egret model.
 
 Each row with a non-zero :col:`MW Load` and/or non-zero :col:`MVAR Load` will also cause a
-load to be added to ``['elements']['load']`` in Egret, and each row with a non-zero 
+load to be added to ``['elements']['load']`` in Egret, and each row with a non-zero
 :col:`MW Shunt G` and/or non-zero :col:`MVAR Shunt B` will cause a shunt to be added
 to ``['elements']['shunt']`` in Egret.
 
@@ -26,11 +26,11 @@ to ``['elements']['shunt']`` in Egret.
      - A human-friendly unique string for this bus.
      - Used as the bus name in Egret. Data for this bus is stored in a bus
        dictionary stored at :samp:`['elements']['bus'][{<Bus Name>}]`.
-       
+
        This is also the name of the load, if a load is added for the bus (a load
        is added if MW Load or MVAR Load is non-zero). The load dictionary is
        stored at :samp:`['elements']['load'][{<Bus Name>}]`.
-       
+
        This is also the name of the shunt, if a shunt is added for the bus (a bus
        is added if :col:`MW Shunt G` or :col:`MVAR Shunt G` is non-zero). The shunt
        dictionary is stored at :samp:`['elements']['shunt'][{<Bus Name>}]`.
@@ -77,7 +77,7 @@ to ``['elements']['shunt']`` in Egret.
    * - :col:`va`
      - Reference bus angle. If the :col:`Bus Type` is *Ref*, :col:`va` is required and must
        be zero.
-     - 
+     -
 
 Additional Bus Values
 ~~~~~~~~~~~~~~~~~~~~~
