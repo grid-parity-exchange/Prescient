@@ -11,8 +11,8 @@ generator in the model, including both thermal and renewable generators.
      - **Description**
      - **Egret**
    * - :col:`GEN UID`
-     - A unique string identifier for the generator.
-     - Used as the branch name in Egret. Data for this branch is stored in a
+     - A unique string identifier for the generator
+     - Used as the generator name in Egret. Data for this generator is stored in a
        generator dictionary stored at :samp:`['elements']['generator'][{<GEN UID>}]`.
    * - :col:`Bus ID`
      - :col:`Bus ID` of connecting bus
