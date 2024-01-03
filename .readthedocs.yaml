@@ -11,6 +11,10 @@ sphinx:
 
 formats: all
 
+python:
+  install:
+    - requirements: doc/OnlineDocs/requirements.txt
+
 # Set the version of Python and requirements required to build the docs
 #python:
 #  version: 3
