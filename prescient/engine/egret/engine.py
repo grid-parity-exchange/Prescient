@@ -133,6 +133,7 @@ class EgretEngine(ModelingEngine):
 
     def create_sced_instance(self,
             options: Options,
+            when: datetime.datetime,
             current_state: SimulationState,
             hours_in_objective: int,
             sced_horizon: int,
@@ -143,6 +144,7 @@ class EgretEngine(ModelingEngine):
 
         current_sced_instance = self._p.create_sced_instance(
             self._data_provider,
+            when,
             current_state,
             options,
             sced_horizon,
