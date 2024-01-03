@@ -1,19 +1,7 @@
-name: GitHub CI
+name: Run Tests
 
 on:
-    # Trigger the workflow on push or pull request,
-    # but only for the main branch
-    push:
-        branches:
-            - main
-    pull_request:
-        branches:
-            - main
-    # nightly tests at 8:00 UTC
-    schedule:
-        - cron:  '0 8 * * *'
-    workflow_dispatch:
-         types: run-test
+    workflow_call:
 
 defaults:
     run:
@@ -91,3 +79,4 @@ jobs:
           - name: Run Prescient Simulator Tests
             run: |
               pytest -v prescient/simulator/tests/test_simulator.py
+

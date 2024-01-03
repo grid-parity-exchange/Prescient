@@ -1,0 +1,10 @@
+name: Weekly Tests
+
+on:
+  schedule:
+    - cron: 58 7 * * 0
+
+jobs:
+  call-run-tests:
+    uses: ./.github/workflows/run-tests.yml
+
