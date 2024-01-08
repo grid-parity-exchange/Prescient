@@ -70,7 +70,7 @@ from docutils import nodes
 
 class ColumnRole(SphinxRole):
     def run(self):
-        node = nodes.inline(rawtext=self.rawtext, classes=['guilabel'])
+        node = nodes.inline(rawtext=self.rawtext, classes=['guilabel', 'collabel'])
         node += nodes.Text(self.text)
         return [node], []
 
