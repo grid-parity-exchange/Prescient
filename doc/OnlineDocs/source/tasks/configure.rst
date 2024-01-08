@@ -108,11 +108,9 @@ The table below describes all available configuration options.
      -
      -
      -
-   * - \-\-data-path
-
-       or
-
-       \-\-data-directory
+   * - | \-\-data-path
+       | or
+       | \-\-data-directory
      - data_path
      - Path. Default=input_data.
      - Path to a file or folder where input data is located. Whether it

@@ -340,20 +340,20 @@ class ScedDataExtractor(BaseScedExtractor):
 
     @staticmethod
     def get_storage_input_dispatch_level(sced: OperationsModel, storage: S) -> float:
-        return sced.data['elements']['storage'][s]['p_charge']['values'][0]
+        return sced.data['elements']['storage'][storage]['p_charge']['values'][0]
 
     @staticmethod
     def get_storage_output_dispatch_level(sced: OperationsModel, storage: S) -> float:
-        return sced.data['elements']['storage'][s]['p_discharge']['values'][0]
+        return sced.data['elements']['storage'][storage]['p_discharge']['values'][0]
 
     @staticmethod
     def get_storage_soc_dispatch_level(sced: OperationsModel, storage: S) -> float:
-        return sced.data['elements']['storage'][s]['state_of_charge']['values'][0]
+        return sced.data['elements']['storage'][storage]['state_of_charge']['values'][0]
 
     @staticmethod
     def get_storage_type(sced: OperationsModel, storage: S) -> str:
-        if 'fuel' in sced.data['elements']['storage'][s]:
-            return sced.data['elements']['storage'][s]['fuel']
+        if 'fuel' in sced.data['elements']['storage'][storage]:
+            return sced.data['elements']['storage'][storage]['fuel']
         return 'Other'
 
     @staticmethod
