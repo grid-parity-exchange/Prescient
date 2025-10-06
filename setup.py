@@ -46,6 +46,6 @@ setup(name='gridx-prescient',
                     'prescient.simulator.tests':['regression_tests_data/**/*'],
                    },
       install_requires=['numpy','matplotlib','pandas','scipy','pyomo>=6.1.2',
-                        'python-dateutil','networkx','jupyter', 'gridx-egret==0.5.6.dev0',
+                        'python-dateutil','networkx','jupyter', 'gridx-egret==0.6.0',
                        ],
      )
