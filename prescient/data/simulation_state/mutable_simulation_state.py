@@ -194,7 +194,7 @@ class MutableSimulationState(SimulationState):
                 max_ruc_length = ruc_delay + options.ruc_horizon
                 self._commits[g] = deque(maxlen=max_ruc_length)
             for s,s_dict in ruc.elements('storage'):
-                self._init_state_of_charge[s] = s_dict['initial_state_of_charge']
+                self._init_soc[s] = s_dict['initial_state_of_charge']
 
             # If this is first RUC, also save data to indicate when to pop RUC-related state 
             self._minutes_per_forecast_step = ruc.data['system']['time_period_length_minutes']

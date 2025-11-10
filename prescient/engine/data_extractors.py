@@ -487,7 +487,7 @@ class ScedDataExtractor(ABC):
                 for s in self.get_all_storage(sced)}
 
     def get_all_storage_types(self, sced: OperationsModel) -> Dict[S, float]:
-        return {s: self.get_storage_soc_dispatch_level(sced, s)
+        return {s: self.get_storage_type(sced, s)
                 for s in self.get_all_storage(sced)}
 
 

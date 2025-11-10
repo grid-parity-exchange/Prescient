@@ -31,4 +31,5 @@ Optional Files
       :maxdepth: 1
 
       dc_branch
+      storage
       initial_status

@@ -16,3 +16,13 @@
     white-space: normal;
     word-break: break-word;
 }
+
+.rst-content span.collabel {
+    white-space: nowrap;
+}
+
+/* Put space between paragraphs in tables by adding a top margin to all but the first paragraph. */
+/* This preserves zero margin at the top and bottom of each cell. */
+.rst-content .wy-table-responsive table.docutils p ~ p {
+    margin-top: 0.8rem;
+}
