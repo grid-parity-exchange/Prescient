@@ -95,6 +95,7 @@ class ModelingEngine(ABC):
     @abstractmethod
     def create_sced_instance(self,
             options: Options,
+            when: datetime.datetime,
             current_state: SimulationState,
             hours_in_objective: int,
             sced_horizon: int,

@@ -105,6 +105,7 @@ def _zero_out_costs(sced_model, hours_in_objective):
 # TBD - we probably want to grab topology from somewhere, even if the stochastic 
 #       RUC is not solved with the topology.
 def create_sced_instance(data_provider:DataProvider,
+                         when: datetime.datetime,
                          current_state:SimulationState,
                          options,
                          sced_horizon,
@@ -238,6 +239,12 @@ def create_sced_instance(data_provider:DataProvider,
         for g, g_dict in sced_md.elements(element_type='generator', generator_type='thermal'):
             # make sure the generator can immediately turn off
             g_dict['shutdown_capacity'] = max(g_dict['shutdown_capacity'], (60./current_state.minutes_per_step)*g_dict['initial_p_output'] + 1.)
+
+    # Set the time keys
+    timekey_array = sced_md.data['system']['time_keys']
+    for t in range(sced_horizon):
+        dt = when + datetime.timedelta(minutes=t*current_state.minutes_per_step)
+        timekey_array[t] = dt.strftime('%Y-%m-%d %H:%M')
 
     return sced_md
 

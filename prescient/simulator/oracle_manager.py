@@ -46,7 +46,7 @@ class OracleManager(_Manager):
         ruc_delay = self._get_ruc_delay(options)
         activation_time = time_step.datetime + timedelta(hours=ruc_delay)
 
-        return (activation_time.hour, activation_time.date())
+        return activation_time
 
     def _get_projected_state(self, options: Options, time_step: PrescientTime) -> SimulationState:
         ''' Get the simulation state as we project it will appear after the RUC delay '''
@@ -59,10 +59,10 @@ class OracleManager(_Manager):
             print("Drawing UC initial conditions for date:", time_step.date, "hour:", time_step.hour, "from prior SCED instance.")
             return self.data_manager.current_state
 
-        uc_hour, uc_date = self._get_uc_activation_time(options, time_step)
+        act_time = self._get_uc_activation_time(options, time_step)
 
         print("")
-        print("Creating and solving SCED to determine UC initial conditions for date:", str(uc_date), "hour:", uc_hour)
+        print("Creating and solving SCED to determine UC initial conditions for date:", str(act_time.date()), "hour:", act_time.hour)
 
         # determine the SCED execution mode, in terms of how discrepancies between forecast and actuals are handled.
         # prescient processing is identical in the case of deterministic and stochastic RUC.
@@ -81,6 +81,7 @@ class OracleManager(_Manager):
         current_state = self.data_manager.current_state.get_state_with_step_length(60)
         projected_sced_instance = self.engine.create_sced_instance(
             options,
+            act_time,
             current_state,
             hours_in_objective=min(24, current_state.timestep_count),
             sced_horizon=min(24, current_state.timestep_count),
@@ -129,8 +130,8 @@ class OracleManager(_Manager):
         ''' Create a new RUC and make it the pending RUC
         '''
         projected_state = self._get_projected_state(options, time_step)
-        uc_hour, uc_date = self._get_uc_activation_time(options, time_step)
-        self._generate_pending_ruc(options, uc_date, uc_hour, projected_state)
+        act_time = self._get_uc_activation_time(options, time_step)
+        self._generate_pending_ruc(options, act_time.date(), act_time.hour, projected_state)
 
     def _formulate_ruc(self, options, uc_date, uc_hour, sim_state_for_ruc):
         '''Create a RUC model holding forecast data.
@@ -251,6 +252,7 @@ class OracleManager(_Manager):
         sced_horizon_timesteps = options.sced_horizon
         current_sced_instance = self.engine.create_sced_instance(
             options,
+            time_step.datetime,
             self.data_manager.current_state.get_state_with_step_length(options.sced_frequency_minutes),
             hours_in_objective=1,
             sced_horizon=sced_horizon_timesteps,
