@@ -1,0 +1,18 @@
+name: Test Changes
+
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  # Allow it to be manually triggered as well
+  workflow_dispatch:
+
+jobs:
+  call-run-tests:
+    uses: ./.github/workflows/run-tests.yml
+
