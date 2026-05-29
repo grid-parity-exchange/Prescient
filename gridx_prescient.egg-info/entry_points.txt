@@ -1,0 +1,5 @@
+[console_scripts]
+populator.py = prescient.scripts.populator:main
+runner.py = prescient.scripts.runner:main
+scenario_creator.py = prescient.scripts.scenario_creator:main
+simulator.py = prescient.scripts.simulator:main

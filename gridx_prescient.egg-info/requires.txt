@@ -1,0 +1,9 @@
+gridx-egret==0.6.1
+jupyter
+matplotlib
+networkx
+numpy
+pandas
+pyomo>=6.1.2
+python-dateutil
+scipy
