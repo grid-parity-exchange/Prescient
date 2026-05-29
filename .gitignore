@@ -3,6 +3,7 @@ downloads/
 
 **/__pycache__
 Prescient.egg-info/
+*.egg-info/
 build/
 dist/
 
