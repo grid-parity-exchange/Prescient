@@ -294,7 +294,7 @@ def _load_historical_prices(data_directory, start_time, end_time):
     real_time = parse_prices(os.path.join(data_directory, 'real_time_prices.csv'))[start_time:end_time]
 
     # for the day-ahead, only store hourly prices
-    day_ahead = day_ahead.asfreq('H').copy()
+    day_ahead = day_ahead.asfreq('h').copy()
 
     # get the real-time minutes as the space between first two data points
     real_time_minutes = (real_time.index[1] - real_time.index[0]).seconds//60
