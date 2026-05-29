@@ -86,7 +86,7 @@ jobs:
 
           - name: Install Prescient
             run: |
-              python setup.py develop
+              pip install -e .
 
           - name: Run Prescient Simulator Tests
             run: |
