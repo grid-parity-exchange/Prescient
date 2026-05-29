@@ -3,6 +3,7 @@ downloads/
 
 **/__pycache__
 Prescient.egg-info/
+*.egg-info/
 build/
 dist/
 
@@ -21,4 +22,3 @@ prescient/simulator/tests/regression_tests_data/deterministic_simulation_csv_out
 prescient/simulator/tests/regression_tests_data/deterministic_simulation_output/
 prescient/simulator/tests/regression_tests_data/deterministic_with_network_simulation_output_python/
 prescient/simulator/tests/regression_tests_data/deterministic_with_network_simulation_output_python_csv/
-
